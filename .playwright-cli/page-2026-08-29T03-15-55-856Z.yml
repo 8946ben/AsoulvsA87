@@ -1,0 +1,316 @@
+- generic [ref=e2]:
+  - generic [ref=e4]:
+    - generic [ref=e5]:
+      - img [ref=e6] [cursor=pointer]
+      - generic [ref=e7] [cursor=pointer]
+    - generic [ref=e9]:
+      - searchbox [ref=e12]
+      - generic: 登录探索更多内容
+      - generic [ref=e14]:
+        - generic [ref=e15] [cursor=pointer]
+        - generic [ref=e17]:
+          - generic [ref=e18]: asoul
+          - generic [ref=e19]: 吧
+        - generic [ref=e20] [cursor=pointer]
+    - generic [ref=e23]:
+      - generic [ref=e24] [cursor=pointer]: 发贴
+      - generic [ref=e30]:
+        - generic [ref=e31] [cursor=pointer]
+        - generic [ref=e36] [cursor=pointer]
+        - generic [ref=e41] [cursor=pointer]
+        - generic [ref=e44] [cursor=pointer]
+      - generic [ref=e47] [cursor=pointer]: 登录
+  - generic [ref=e54]:
+    - generic [ref=e56] [cursor=pointer]
+    - generic [ref=e66]:
+      - generic [ref=e71]:
+        - generic [ref=e72]: asoul吧
+        - generic [ref=e73]:
+          - generic [ref=e74]: 关注20.8W
+          - generic [ref=e75]: 贴子2.1KW
+      - generic [ref=e76]:
+        - generic [ref=e77]: 关注
+        - generic [ref=e81] [cursor=pointer]: 发贴
+    - generic [ref=e87]:
+      - generic [ref=e88]:
+        - generic [ref=e92]:
+          - link "精华" [ref=e93] [cursor=pointer]:
+            - /url: https://tieba.baidu.com/f?kw=asoul&tab=301
+          - link "热门" [ref=e94] [cursor=pointer]:
+            - /url: https://tieba.baidu.com/f?kw=asoul&tab=1
+          - link "最新" [ref=e95] [cursor=pointer]:
+            - /url: https://tieba.baidu.com/f?kw=asoul&tab=503
+          - link "吧友互助" [ref=e96] [cursor=pointer]:
+            - /url: https://tieba.baidu.com/f?kw=asoul&tab=5237375
+          - link "二创分区" [ref=e97] [cursor=pointer]:
+            - /url: https://tieba.baidu.com/f?kw=asoul&tab=5003775
+          - link "视频" [ref=e98] [cursor=pointer]:
+            - /url: https://tieba.baidu.com/f?kw=asoul&tab=475358
+        - generic [ref=e99]:
+          - generic [ref=e101]:
+            - link [ref=e102] [cursor=pointer]:
+              - /url: https://tieba.baidu.com/p/10968136304?fr=frs
+              - generic: 8.24-8.30枝江日程表（实时更新突击）
+              - generic [ref=e103]:
+                - text: 8.29晚八点 乃琳直播间聊聊
+                - img "#(呀咩爹)" [ref=e105]
+            - link "置顶乃琳生日会-幻梦叠影 二创激励" [ref=e106] [cursor=pointer]:
+              - /url: https://tieba.baidu.com/p/10936239259?fr=frs
+              - generic:
+                - generic:
+                  - generic:
+                    - generic:
+                      - generic: 置顶
+                      - generic: 乃琳生日会-幻梦叠影 二创激励
+            - link "置顶上半年舰礼可以修改地址了" [ref=e107] [cursor=pointer]:
+              - /url: https://tieba.baidu.com/p/10937605872?fr=frs
+              - generic:
+                - generic:
+                  - generic:
+                    - generic:
+                      - generic: 置顶
+                      - generic: 上半年舰礼可以修改地址了
+          - generic [ref=e108]:
+            - generic [ref=e111] [cursor=pointer]:
+              - link "鸭梨山大托莉雅️ 一个魂儿 回复于1分钟前 关注 我说姐三个为什么从洛克s1后就接不到商单了，原来如此 真被恨上了啊，那就说得通了#(呵呵)#(呵呵)#(呵呵)" [ref=e112]:
+                - /url: https://tieba.baidu.com/p/10980518966?fr=frs
+                - generic [ref=e113]:
+                  - generic [ref=e117]:
+                    - link [ref=e118]:
+                      - /url: https://tieba.baidu.com/home/main?id=tb.1.3826b189.gbghXru8mFkms7pxs3HlxA&fr=frs
+                    - link [ref=e119]:
+                      - /url: https://tieba.baidu.com/home/main?id=tb.1.3826b189.gbghXru8mFkms7pxs3HlxA&fr=frs
+                  - generic [ref=e120]:
+                    - link "鸭梨山大托莉雅️ 一个魂儿" [ref=e121]:
+                      - /url: https://tieba.baidu.com/home/main?id=tb.1.3826b189.gbghXru8mFkms7pxs3HlxA&fr=frs
+                      - generic [ref=e122]:
+                        - link "鸭梨山大托莉雅️" [ref=e123]:
+                          - /url: https://tieba.baidu.com/home/main?id=tb.1.3826b189.gbghXru8mFkms7pxs3HlxA&fr=frs
+                        - generic [ref=e127]: 一个魂儿
+                    - generic [ref=e137]: 回复于1分钟前
+                  - generic: 关注
+                - generic [ref=e143]:
+                  - generic [ref=e144]: 我说姐三个为什么从洛克s1后就接不到商单了，原来如此
+                  - generic [ref=e147]:
+                    - text: 真被恨上了啊，那就说得通了
+                    - img "#(呵呵)" [ref=e149]
+                    - img "#(呵呵)" [ref=e151]
+                    - img "#(呵呵)" [ref=e153]
+              - generic [ref=e156]:
+                - link [ref=e157]:
+                  - /url: https://tieba.baidu.com/p/10980518966?fr=frs
+                - generic [ref=e158]:
+                  - link [ref=e159]:
+                    - /url: https://tieba.baidu.com/p/10980518966?fr=frs
+                  - generic [ref=e160]: 分享
+                - generic [ref=e166]:
+                  - link [ref=e167]:
+                    - /url: https://tieba.baidu.com/p/10980518966?fr=frs
+                  - link "38" [ref=e168]:
+                    - /url: https://tieba.baidu.com/p/10980518966?showComment=1&fr=frs
+                - generic [ref=e173]:
+                  - link [ref=e174]:
+                    - /url: https://tieba.baidu.com/p/10980518966?fr=frs
+                  - generic [ref=e175]: "89"
+                - link:
+                  - /url: https://tieba.baidu.com/p/10980518966?fr=frs
+            - generic [ref=e187] [cursor=pointer]:
+              - link "吃瓜萌新mk2 一个魂儿 回复于6分钟前 关注 电池已充好，征集一个晚上A8红sc的内容 来点来点" [ref=e188]:
+                - /url: https://tieba.baidu.com/p/10980618254?fr=frs
+                - generic [ref=e189]:
+                  - generic [ref=e193]:
+                    - link [ref=e194]:
+                      - /url: https://tieba.baidu.com/home/main?id=tb.1.c3c99ad2.-HzyyHLvsWKLuqqE8ZY6UQ&fr=frs
+                    - link [ref=e195]:
+                      - /url: https://tieba.baidu.com/home/main?id=tb.1.c3c99ad2.-HzyyHLvsWKLuqqE8ZY6UQ&fr=frs
+                  - generic [ref=e196]:
+                    - link "吃瓜萌新mk2 一个魂儿" [ref=e197]:
+                      - /url: https://tieba.baidu.com/home/main?id=tb.1.c3c99ad2.-HzyyHLvsWKLuqqE8ZY6UQ&fr=frs
+                      - generic [ref=e198]:
+                        - link "吃瓜萌新mk2" [ref=e199]:
+                          - /url: https://tieba.baidu.com/home/main?id=tb.1.c3c99ad2.-HzyyHLvsWKLuqqE8ZY6UQ&fr=frs
+                        - generic [ref=e210]: 一个魂儿
+                    - generic [ref=e220]: 回复于6分钟前
+                  - generic: 关注
+                - generic [ref=e226]:
+                  - generic [ref=e227]: 电池已充好，征集一个晚上A8红sc的内容
+                  - generic [ref=e229]: 来点来点
+              - generic [ref=e235]:
+                - link [ref=e236]:
+                  - /url: https://tieba.baidu.com/p/10980618254?fr=frs
+                - generic [ref=e237]:
+                  - link [ref=e238]:
+                    - /url: https://tieba.baidu.com/p/10980618254?fr=frs
+                  - generic [ref=e239]: 分享
+                - generic [ref=e245]:
+                  - link [ref=e246]:
+                    - /url: https://tieba.baidu.com/p/10980618254?fr=frs
+                  - link "17" [ref=e247]:
+                    - /url: https://tieba.baidu.com/p/10980618254?showComment=1&fr=frs
+                - generic [ref=e252]:
+                  - link [ref=e253]:
+                    - /url: https://tieba.baidu.com/p/10980618254?fr=frs
+                  - generic [ref=e254]: "34"
+                - link:
+                  - /url: https://tieba.baidu.com/p/10980618254?fr=frs
+            - generic [ref=e267] [cursor=pointer]:
+              - generic [ref=e268]:
+                - generic [ref=e271]:
+                  - generic [ref=e272]: 租号玩：1元畅玩
+                  - generic [ref=e273]: 广告
+                - generic [ref=e274]: 查看
+              - generic [ref=e275]: 0.3元起玩皮肤账号
+              - generic [ref=e279]:
+                - generic [ref=e280]: 分享
+                - generic [ref=e285]: 评论
+                - generic [ref=e290]: "265"
+      - generic [ref=e331]:
+        - generic [ref=e332]:
+          - generic [ref=e333]:
+            - img "登录贴吧彩头"
+            - heading "登录贴吧" [level=3] [ref=e334]
+            - paragraph [ref=e335]: 同步关注、消息、发回贴
+          - list [ref=e336]:
+            - listitem [ref=e337]:
+              - img "关注更新" [ref=e338]
+              - generic [ref=e339]: 关注更新
+            - listitem [ref=e340]:
+              - img "消息提醒" [ref=e341]
+              - generic [ref=e342]: 消息提醒
+            - listitem [ref=e343]:
+              - img "发贴评论" [ref=e344]
+              - generic [ref=e345]: 发贴评论
+            - listitem [ref=e346]:
+              - img "个性推荐" [ref=e347]
+              - generic [ref=e348]: 个性推荐
+          - generic [ref=e350]:
+            - paragraph [ref=e351]: 贴吧APP扫码登录
+            - generic [ref=e352] [cursor=pointer]:
+              - img "扫码登录二维码" [ref=e353]
+              - button "点击登录" [ref=e355]
+          - generic [ref=e356]:
+            - button "其他方式登录" [ref=e357] [cursor=pointer]
+            - link "下载贴吧APP" [ref=e358] [cursor=pointer]:
+              - /url: https://tieba-fe.cdn.bcebos.com/ai-page/pc-download/index.html
+        - generic [ref=e359]:
+          - generic [ref=e364]:
+            - generic [ref=e366]:
+              - generic [ref=e367]: asoul
+              - generic [ref=e368]: 吧
+            - generic [ref=e372]: 关注20.8W 贴子2.1KW
+          - generic [ref=e373]: 建吧日期：2011.08.29
+          - paragraph [ref=e377]: ASOUL粉丝贴吧聚集地
+          - generic [ref=e378]: 虚拟偶像企划A-SOUL团体（灵境少女）的粉丝贴吧。&amp;amp;amp;amp;amp;lt;br&amp;amp;amp;amp;amp;gt;待凛冬离去，雪融草青，相信一定有新的相逢将温暖延续。
+          - generic [ref=e381] [cursor=pointer]: 关注本吧
+        - generic [ref=e384]:
+          - paragraph [ref=e385]: 吧务团队
+          - generic [ref=e386]:
+            - generic [ref=e387]: 吧主
+            - link "asoul吧吧务团队 双向奔赴" [ref=e388] [cursor=pointer]:
+              - /url: https://tieba.baidu.com/home/main?id=tb.1.89bbac68.W2amvnKArRSdkIxHqE0-3A%3Ft%3D1787973352&fr=frs
+              - generic [ref=e393]:
+                - generic [ref=e394]: asoul吧吧务团队
+                - generic [ref=e395]: 双向奔赴
+          - generic [ref=e401]:
+            - generic [ref=e402]: 小吧主
+            - generic [ref=e406] [cursor=pointer]:
+              - paragraph [ref=e407]: 申请成为小吧主
+              - paragraph [ref=e408]: 还剩8个名额
+            - generic [ref=e409]:
+              - generic [ref=e410]:
+                - link "布拉尼斯拉夫 疯狂着迷" [ref=e412] [cursor=pointer]:
+                  - /url: https://tieba.baidu.com/home/main?id=tb.1.2e332d9e.xnLXcVurtlH99a3dyPqFpA%3Ft%3D1787973352&fr=frs
+                  - generic [ref=e417]:
+                    - generic [ref=e418]: 布拉尼斯拉夫
+                    - generic [ref=e419]: 疯狂着迷
+                - link "雪⭐kira 资深魂友" [ref=e424] [cursor=pointer]:
+                  - /url: https://tieba.baidu.com/home/main?id=tb.1.eb03734a.z3rxTAXYhB8CbIqew08Xrw%3Ft%3D1787973352&fr=frs
+                  - generic [ref=e429]:
+                    - generic [ref=e430]: 雪⭐kira
+                    - generic [ref=e431]: 资深魂友
+                - link "风吹吧🍁🍁🍁 快快快快" [ref=e436] [cursor=pointer]:
+                  - /url: https://tieba.baidu.com/home/main?id=tb.1.9b7aec46.Q6G0-UovC0teOMAbtK0LiQ%3Ft%3D1787973352&fr=frs
+                  - generic [ref=e441]:
+                    - generic [ref=e442]: 风吹吧🍁🍁🍁
+                    - generic [ref=e443]: 快快快快
+                - link "南京到阜阳 一个魂儿" [ref=e448] [cursor=pointer]:
+                  - /url: https://tieba.baidu.com/home/main?id=tb.1.68609668.S9XXSFcPtGA0KHvfJ7pLPg%3Ft%3D1787973352&fr=frs
+                  - generic [ref=e453]:
+                    - generic [ref=e454]: 南京到阜阳
+                    - generic [ref=e455]: 一个魂儿
+                - link "灰原A😴 资深魂友" [ref=e460] [cursor=pointer]:
+                  - /url: https://tieba.baidu.com/home/main?id=tb.1.c6e844d6.kPdkggnYwefPx1_1Y9Legw%3Ft%3D1787973352&fr=frs
+                  - generic [ref=e465]:
+                    - generic [ref=e466]: 灰原A😴
+                    - generic [ref=e467]: 资深魂友
+              - generic [ref=e471]: 展开更多
+        - generic [ref=e477]:
+          - paragraph [ref=e478]: 吧规
+          - paragraph [ref=e479]: 2026.07.22 更新
+          - paragraph [ref=e480]:
+            - text: 前言：欢迎来到百度贴吧A-SOUL吧。 这里是虚拟偶像团体A-SOUL粉丝的精神病房、二创发电站，也是中文互联网最抽象又最温暖的兴趣社区之一。 无论你是误入此地的路人，还是准备入坑的mmr，亦或是大手子老资历。以下吧规将助你快速融入这片混沌与爱并存的热土。↓
+            - paragraph [ref=e481]: 一、禁违法信息
+            - paragraph [ref=e482]: 1.严禁发布违禁品、毒品、管制刀具、赌博、假证假票据、售卖考试答案、售卖个人信息相关的违法信息。
+          - generic [ref=e483] [cursor=pointer]: 查看完整吧规
+        - generic [ref=e485]:
+          - paragraph [ref=e486]: 友情吧
+          - generic [ref=e488]:
+            - link "嘉然 吧" [ref=e490] [cursor=pointer]:
+              - /url: https://tieba.baidu.com/f?kw=%E5%98%89%E7%84%B6&fr=frs
+              - generic [ref=e494]:
+                - generic [ref=e495]: 嘉然
+                - generic [ref=e496]: 吧
+            - link "乃琳 吧" [ref=e498] [cursor=pointer]:
+              - /url: https://tieba.baidu.com/f?kw=%E4%B9%83%E7%90%B3&fr=frs
+              - generic [ref=e502]:
+                - generic [ref=e503]: 乃琳
+                - generic [ref=e504]: 吧
+            - link "枝江娱乐 吧" [ref=e506] [cursor=pointer]:
+              - /url: https://tieba.baidu.com/f?kw=%E6%9E%9D%E6%B1%9F%E5%A8%B1%E4%B9%90&fr=frs
+              - generic [ref=e510]:
+                - generic [ref=e511]: 枝江娱乐
+                - generic [ref=e512]: 吧
+            - link "向晚 吧" [ref=e514] [cursor=pointer]:
+              - /url: https://tieba.baidu.com/f?kw=%E5%90%91%E6%99%9A&fr=frs
+              - generic [ref=e518]:
+                - generic [ref=e519]: 向晚
+                - generic [ref=e520]: 吧
+            - link "贝拉 吧" [ref=e522] [cursor=pointer]:
+              - /url: https://tieba.baidu.com/f?kw=%E8%B4%9D%E6%8B%89&fr=frs
+              - generic [ref=e526]:
+                - generic [ref=e527]: 贝拉
+                - generic [ref=e528]: 吧
+        - generic [ref=e529]:
+          - text: 百度版权声明：©2026 Baidu
+          - link "使用百度前必读" [ref=e530] [cursor=pointer]:
+            - /url: https://www.baidu.com/duty/
+          - text: ｜
+          - link "贴吧协议" [ref=e531] [cursor=pointer]:
+            - /url: https://tieba.baidu.com/tb/eula.html
+          - text: ｜
+          - link "隐私政策" [ref=e532] [cursor=pointer]:
+            - /url: https://tieba.baidu.com/tb/cms/tieba-fe/tieba_promise.html
+          - text: ｜
+          - link "投诉反馈" [ref=e533] [cursor=pointer]:
+            - /url: https://tieba.baidu.com/pmc/feedback
+          - text: 信息网络传播视听节目许可证及编号0110516 举报电话：400-921-5119
+  - generic [ref=e535]:
+    - generic [ref=e536]:
+      - generic [ref=e537]:
+        - img "百度贴吧" [ref=e538]
+        - img "百度贴吧" [ref=e539]
+      - paragraph [ref=e540]: 登录贴吧，解锁更多功能
+    - button "关闭登录弹窗" [ref=e541] [cursor=pointer]
+    - generic [ref=e546]:
+      - generic [ref=e547] [cursor=pointer]: APP扫码登录
+      - generic [ref=e548] [cursor=pointer]: 账号密码登录
+    - paragraph
+    - generic [ref=e549]:
+      - paragraph [ref=e554]
+      - paragraph
+      - paragraph [ref=e555]: 打开百度贴吧APP -「我的」右上角 - 扫一扫
+      - paragraph
+    - generic [ref=e556]:
+      - link "立即注册" [ref=e557] [cursor=pointer]:
+        - /url: https://passport.baidu.com/v2/?reg&tpl=tb&u=//tieba.baidu.com
+      - generic [ref=e558] [cursor=pointer]: 下载贴吧App

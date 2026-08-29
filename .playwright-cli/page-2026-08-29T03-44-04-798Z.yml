@@ -1,0 +1,396 @@
+- generic [ref=f44e2]:
+  - generic [ref=f44e4]:
+    - generic [ref=f44e6] [cursor=pointer]
+    - generic [ref=f44e8]:
+      - searchbox "搜索吧内贴子或评论" [ref=f44e11]
+      - generic [ref=f44e13]:
+        - generic [ref=f44e14] [cursor=pointer]
+        - generic [ref=f44e16]:
+          - generic [ref=f44e17]: asoul
+          - generic [ref=f44e18]: 吧
+        - generic [ref=f44e19] [cursor=pointer]
+    - generic [ref=f44e22]:
+      - generic [ref=f44e23] [cursor=pointer]: 发贴
+      - generic [ref=f44e29]:
+        - generic [ref=f44e30] [cursor=pointer]
+        - generic [ref=f44e35] [cursor=pointer]
+        - generic [ref=f44e40] [cursor=pointer]
+        - generic [ref=f44e43] [cursor=pointer]
+      - generic [ref=f44e46] [cursor=pointer]
+  - generic [ref=f44e50]:
+    - generic [ref=f44e52]:
+      - generic [ref=f44e53]:
+        - link "首页" [ref=f44e54] [cursor=pointer]:
+          - /url: https://tieba.baidu.com/
+        - link "我的" [ref=f44e57] [cursor=pointer]:
+          - /url: https://tieba.baidu.com/home/main?id=tb.1.dff76186.f74ehUVV9bmiw8lfw_0QjQ&fr=pb
+      - generic [ref=f44e60]:
+        - generic [ref=f44e61]:
+          - generic [ref=f44e62]: 我常逛的吧
+          - generic [ref=f44e64]:
+            - link "asoul 吧" [ref=f44e66] [cursor=pointer]:
+              - /url: https://tieba.baidu.com/f?kw=asoul&fr=pb
+              - generic [ref=f44e70]:
+                - generic [ref=f44e71]: asoul
+                - generic [ref=f44e72]: 吧
+            - link "v 吧" [ref=f44e74] [cursor=pointer]:
+              - /url: https://tieba.baidu.com/f?kw=v&fr=pb
+              - generic [ref=f44e78]:
+                - generic [ref=f44e79]: v
+                - generic [ref=f44e80]: 吧
+            - link "eoe 吧" [ref=f44e82] [cursor=pointer]:
+              - /url: https://tieba.baidu.com/f?kw=eoe&fr=pb
+              - generic [ref=f44e86]:
+                - generic [ref=f44e87]: eoe
+                - generic [ref=f44e88]: 吧
+            - link "山药姐 吧" [ref=f44e90] [cursor=pointer]:
+              - /url: https://tieba.baidu.com/f?kw=%E5%B1%B1%E8%8D%AF%E5%A7%90&fr=pb
+              - generic [ref=f44e94]:
+                - generic [ref=f44e95]: 山药姐
+                - generic [ref=f44e96]: 吧
+            - link "天才麻将少女 吧" [ref=f44e98] [cursor=pointer]:
+              - /url: https://tieba.baidu.com/f?kw=%E5%A4%A9%E6%89%8D%E9%BA%BB%E5%B0%86%E5%B0%91%E5%A5%B3&fr=pb
+              - generic [ref=f44e102]:
+                - generic [ref=f44e103]: 天才麻将少女
+                - generic [ref=f44e104]: 吧
+          - generic [ref=f44e105]: 展开全部
+        - generic [ref=f44e111]:
+          - generic [ref=f44e112]: 大家都在逛的吧
+          - generic [ref=f44e114]:
+            - link "抗压背锅 吧" [ref=f44e116] [cursor=pointer]:
+              - /url: https://tieba.baidu.com/f?kw=%E6%8A%97%E5%8E%8B%E8%83%8C%E9%94%85&fr=pb
+              - generic [ref=f44e120]:
+                - generic [ref=f44e121]: 抗压背锅
+                - generic [ref=f44e122]: 吧
+            - link "孙笑川 吧" [ref=f44e124] [cursor=pointer]:
+              - /url: https://tieba.baidu.com/f?kw=%E5%AD%99%E7%AC%91%E5%B7%9D&fr=pb
+              - generic [ref=f44e128]:
+                - generic [ref=f44e129]: 孙笑川
+                - generic [ref=f44e130]: 吧
+            - link "崩坏星穹铁道内鬼 吧" [ref=f44e132] [cursor=pointer]:
+              - /url: https://tieba.baidu.com/f?kw=%E5%B4%A9%E5%9D%8F%E6%98%9F%E7%A9%B9%E9%93%81%E9%81%93%E5%86%85%E9%AC%BC&fr=pb
+              - generic [ref=f44e136]:
+                - generic [ref=f44e137]: 崩坏星穹铁道内鬼
+                - generic [ref=f44e138]: 吧
+            - link "bilibili 吧" [ref=f44e140] [cursor=pointer]:
+              - /url: https://tieba.baidu.com/f?kw=bilibili&fr=pb
+              - generic [ref=f44e144]:
+                - generic [ref=f44e145]: bilibili
+                - generic [ref=f44e146]: 吧
+            - link "cs赛事 吧" [ref=f44e148] [cursor=pointer]:
+              - /url: https://tieba.baidu.com/f?kw=cs%E8%B5%9B%E4%BA%8B&fr=pb
+              - generic [ref=f44e152]:
+                - generic [ref=f44e153]: cs赛事
+                - generic [ref=f44e154]: 吧
+            - link "三角洲行动陪玩 吧" [ref=f44e156] [cursor=pointer]:
+              - /url: https://tieba.baidu.com/f?kw=%E4%B8%89%E8%A7%92%E6%B4%B2%E8%A1%8C%E5%8A%A8%E9%99%AA%E7%8E%A9&fr=pb
+              - generic [ref=f44e160]:
+                - generic [ref=f44e161]: 三角洲行动陪玩
+                - generic [ref=f44e162]: 吧
+            - link "三角洲行动 吧" [ref=f44e164] [cursor=pointer]:
+              - /url: https://tieba.baidu.com/f?kw=%E4%B8%89%E8%A7%92%E6%B4%B2%E8%A1%8C%E5%8A%A8&fr=pb
+              - generic [ref=f44e168]:
+                - generic [ref=f44e169]: 三角洲行动
+                - generic [ref=f44e170]: 吧
+            - link "第五人格交易 吧" [ref=f44e172] [cursor=pointer]:
+              - /url: https://tieba.baidu.com/f?kw=%E7%AC%AC%E4%BA%94%E4%BA%BA%E6%A0%BC%E4%BA%A4%E6%98%93&fr=pb
+              - generic [ref=f44e176]:
+                - generic [ref=f44e177]: 第五人格交易
+                - generic [ref=f44e178]: 吧
+            - link "原神内容讨论 吧" [ref=f44e180] [cursor=pointer]:
+              - /url: https://tieba.baidu.com/f?kw=%E5%8E%9F%E7%A5%9E%E5%86%85%E5%AE%B9%E8%AE%A8%E8%AE%BA&fr=pb
+              - generic [ref=f44e184]:
+                - generic [ref=f44e185]: 原神内容讨论
+                - generic [ref=f44e186]: 吧
+            - link "gta6 吧" [ref=f44e188] [cursor=pointer]:
+              - /url: https://tieba.baidu.com/f?kw=gta6&fr=pb
+              - generic [ref=f44e192]:
+                - generic [ref=f44e193]: gta6
+                - generic [ref=f44e194]: 吧
+            - link "奥比交易 吧" [ref=f44e196] [cursor=pointer]:
+              - /url: https://tieba.baidu.com/f?kw=%E5%A5%A5%E6%AF%94%E4%BA%A4%E6%98%93&fr=pb
+              - generic [ref=f44e200]:
+                - generic [ref=f44e201]: 奥比交易
+                - generic [ref=f44e202]: 吧
+            - link "明日方舟 吧" [ref=f44e204] [cursor=pointer]:
+              - /url: https://tieba.baidu.com/f?kw=%E6%98%8E%E6%97%A5%E6%96%B9%E8%88%9F&fr=pb
+              - generic [ref=f44e208]:
+                - generic [ref=f44e209]: 明日方舟
+                - generic [ref=f44e210]: 吧
+            - link "2ch 吧" [ref=f44e212] [cursor=pointer]:
+              - /url: https://tieba.baidu.com/f?kw=2ch&fr=pb
+              - generic [ref=f44e216]:
+                - generic [ref=f44e217]: 2ch
+                - generic [ref=f44e218]: 吧
+            - link "鸣潮爆料 吧" [ref=f44e220] [cursor=pointer]:
+              - /url: https://tieba.baidu.com/f?kw=%E9%B8%A3%E6%BD%AE%E7%88%86%E6%96%99&fr=pb
+              - generic [ref=f44e224]:
+                - generic [ref=f44e225]: 鸣潮爆料
+                - generic [ref=f44e226]: 吧
+            - link "lol陪玩 吧" [ref=f44e228] [cursor=pointer]:
+              - /url: https://tieba.baidu.com/f?kw=lol%E9%99%AA%E7%8E%A9&fr=pb
+              - generic [ref=f44e232]:
+                - generic [ref=f44e233]: lol陪玩
+                - generic [ref=f44e234]: 吧
+            - link "尐家军 吧" [ref=f44e236] [cursor=pointer]:
+              - /url: https://tieba.baidu.com/f?kw=%E5%B0%90%E5%AE%B6%E5%86%9B&fr=pb
+              - generic [ref=f44e240]:
+                - generic [ref=f44e241]: 尐家军
+                - generic [ref=f44e242]: 吧
+            - link "lol半价 吧" [ref=f44e244] [cursor=pointer]:
+              - /url: https://tieba.baidu.com/f?kw=lol%E5%8D%8A%E4%BB%B7&fr=pb
+              - generic [ref=f44e248]:
+                - generic [ref=f44e249]: lol半价
+                - generic [ref=f44e250]: 吧
+            - link "台风 吧" [ref=f44e252] [cursor=pointer]:
+              - /url: https://tieba.baidu.com/f?kw=%E5%8F%B0%E9%A3%8E&fr=pb
+              - generic [ref=f44e256]:
+                - generic [ref=f44e257]: 台风
+                - generic [ref=f44e258]: 吧
+            - link "dota2 吧" [ref=f44e260] [cursor=pointer]:
+              - /url: https://tieba.baidu.com/f?kw=dota2&fr=pb
+              - generic [ref=f44e264]:
+                - generic [ref=f44e265]: dota2
+                - generic [ref=f44e266]: 吧
+            - link "steam 吧" [ref=f44e268] [cursor=pointer]:
+              - /url: https://tieba.baidu.com/f?kw=steam&fr=pb
+              - generic [ref=f44e272]:
+                - generic [ref=f44e273]: steam
+                - generic [ref=f44e274]: 吧
+            - link "有男不玩ml 吧" [ref=f44e276] [cursor=pointer]:
+              - /url: https://tieba.baidu.com/f?kw=%E6%9C%89%E7%94%B7%E4%B8%8D%E7%8E%A9ml&fr=pb
+              - generic [ref=f44e280]:
+                - generic [ref=f44e281]: 有男不玩ml
+                - generic [ref=f44e282]: 吧
+            - link "艾欧尼亚 吧" [ref=f44e284] [cursor=pointer]:
+              - /url: https://tieba.baidu.com/f?kw=%E8%89%BE%E6%AC%A7%E5%B0%BC%E4%BA%9A&fr=pb
+              - generic [ref=f44e288]:
+                - generic [ref=f44e289]: 艾欧尼亚
+                - generic [ref=f44e290]: 吧
+            - link "星穹铁道内鬼 吧" [ref=f44e292] [cursor=pointer]:
+              - /url: https://tieba.baidu.com/f?kw=%E6%98%9F%E7%A9%B9%E9%93%81%E9%81%93%E5%86%85%E9%AC%BC&fr=pb
+              - generic [ref=f44e296]:
+                - generic [ref=f44e297]: 星穹铁道内鬼
+                - generic [ref=f44e298]: 吧
+            - link "原神内鬼 吧" [ref=f44e300] [cursor=pointer]:
+              - /url: https://tieba.baidu.com/f?kw=%E5%8E%9F%E7%A5%9E%E5%86%85%E9%AC%BC&fr=pb
+              - generic [ref=f44e304]:
+                - generic [ref=f44e305]: 原神内鬼
+                - generic [ref=f44e306]: 吧
+            - link "kpl 吧" [ref=f44e308] [cursor=pointer]:
+              - /url: https://tieba.baidu.com/f?kw=kpl&fr=pb
+              - generic [ref=f44e312]:
+                - generic [ref=f44e313]: kpl
+                - generic [ref=f44e314]: 吧
+        - generic [ref=f44e315]:
+          - generic [ref=f44e316]: 我玩过的游戏
+          - generic [ref=f44e318]:
+            - link "帝王霸业" [ref=f44e320] [cursor=pointer]:
+              - /url: https://wan.baidu.com/game?gameId=117056682&idfrom=2060&serverId=30567
+            - link "传奇盛世2" [ref=f44e326] [cursor=pointer]:
+              - /url: https://wan.baidu.com/game?gameId=33342023&idfrom=2060&serverId=21690
+            - link "凡人神将传" [ref=f44e332] [cursor=pointer]:
+              - /url: https://wan.baidu.com/game?gameId=27585373&idfrom=2060&serverId=12380
+          - link "热门游戏" [ref=f44e337] [cursor=pointer]:
+            - /url: https://wan.baidu.com/home?idfrom=2060
+    - generic [ref=f44e343] [cursor=pointer]
+    - generic [ref=f44e349]:
+      - generic [ref=f44e351] [cursor=pointer]
+      - generic [ref=f44e355]:
+        - generic [ref=f44e356]:
+          - generic [ref=f44e360]:
+            - link [ref=f44e361] [cursor=pointer]:
+              - /url: https://tieba.baidu.com/home/main?id=tb.1.c77c6928.rmSZzcBQOZQolvDJRD3tSQ&fr=pb
+            - link [ref=f44e362] [cursor=pointer]:
+              - /url: https://tieba.baidu.com/home/main?id=tb.1.c77c6928.rmSZzcBQOZQolvDJRD3tSQ&fr=pb
+          - generic [ref=f44e363]:
+            - link "然然最甜甜甜的糖 快快快快" [ref=f44e364] [cursor=pointer]:
+              - /url: https://tieba.baidu.com/home/main?id=tb.1.c77c6928.rmSZzcBQOZQolvDJRD3tSQ&fr=pb
+              - generic [ref=f44e365]:
+                - link "然然最甜甜甜的糖" [ref=f44e366]:
+                  - /url: https://tieba.baidu.com/home/main?id=tb.1.c77c6928.rmSZzcBQOZQolvDJRD3tSQ&fr=pb
+                - generic [ref=f44e370]: 快快快快
+            - generic [ref=f44e380]:
+              - generic [ref=f44e381]: 08-24
+              - generic [ref=f44e382]: 北京
+          - generic: 关注
+        - generic [ref=f44e386]: 如何评价A87键盘？
+        - generic [ref=f44e394] [cursor=pointer]
+        - generic [ref=f44e398]:
+          - generic [ref=f44e399]: 转发
+          - link "5" [ref=f44e407] [cursor=pointer]:
+            - /url: https://tieba.baidu.com/p/10967970098?showComment=1&fr=pb
+          - generic [ref=f44e412]: "9"
+          - generic [ref=f44e417]: 收藏
+          - generic [ref=f44e422] [cursor=pointer]
+        - generic [ref=f44e426]:
+          - generic [ref=f44e427]:
+            - generic [ref=f44e429]:
+              - link "全部回复 (5)" [ref=f44e430] [cursor=pointer]:
+                - /url: https://tieba.baidu.com/p/10967970098?tab=%E5%85%A8%E9%83%A8%E5%9B%9E%E5%A4%8D+%285%29
+              - link "只看楼主" [ref=f44e431] [cursor=pointer]:
+                - /url: https://tieba.baidu.com/p/10967970098?tab=%E5%8F%AA%E7%9C%8B%E6%A5%BC%E4%B8%BB
+            - generic [ref=f44e432] [cursor=pointer]:
+              - generic [ref=f44e433]: 热门
+              - generic [ref=f44e434]: 正序
+              - generic [ref=f44e435]: 倒序
+          - generic [ref=f44e436]: 参与讨论涨经验 去APP回复经验更多
+          - generic [ref=f44e444]:
+            - generic [ref=f44e447]:
+              - generic [ref=f44e448]:
+                - generic [ref=f44e452]:
+                  - link [ref=f44e453] [cursor=pointer]:
+                    - /url: https://tieba.baidu.com/home/main?id=tb.1.f8d9f9b7.hI330feerYye1ij6HBQEoQ&fr=pb
+                  - link [ref=f44e454] [cursor=pointer]:
+                    - /url: https://tieba.baidu.com/home/main?id=tb.1.f8d9f9b7.hI330feerYye1ij6HBQEoQ&fr=pb
+                - link "御魂疾 资深魂友" [ref=f44e456] [cursor=pointer]:
+                  - /url: https://tieba.baidu.com/home/main?id=tb.1.f8d9f9b7.hI330feerYye1ij6HBQEoQ&fr=pb
+                  - generic [ref=f44e457]:
+                    - link "御魂疾" [ref=f44e458]:
+                      - /url: https://tieba.baidu.com/home/main?id=tb.1.f8d9f9b7.hI330feerYye1ij6HBQEoQ&fr=pb
+                    - generic [ref=f44e462]: 资深魂友
+              - generic [ref=f44e473]:
+                - generic [ref=f44e474]: 给A87结算一下版权费
+                - generic [ref=f44e480]:
+                  - generic [ref=f44e481]:
+                    - generic [ref=f44e482]: 08-24
+                    - generic [ref=f44e483]: 河北
+                  - generic [ref=f44e484] [cursor=pointer]:
+                    - generic [ref=f44e485]: 赞
+                    - generic [ref=f44e489]: 回复
+            - generic [ref=f44e500] [cursor=pointer]:
+              - generic [ref=f44e501]: 租号玩：1元畅玩
+              - generic [ref=f44e505]:
+                - generic [ref=f44e506]: CFV6账号体验仅需0.3元起租！
+                - generic [ref=f44e509]:
+                  - generic [ref=f44e510]: 广告
+                  - generic [ref=f44e512]:
+                    - generic [ref=f44e513]: "425"
+                    - generic [ref=f44e517]: 回复
+            - generic [ref=f44e526]:
+              - generic [ref=f44e527]:
+                - generic [ref=f44e531]:
+                  - link [ref=f44e532] [cursor=pointer]:
+                    - /url: https://tieba.baidu.com/home/main?id=tb.1.731853a2.Mm1MlLCyJ85WEzkk05i1yQ&fr=pb
+                  - link [ref=f44e533] [cursor=pointer]:
+                    - /url: https://tieba.baidu.com/home/main?id=tb.1.731853a2.Mm1MlLCyJ85WEzkk05i1yQ&fr=pb
+                - link "小红点之2 一个魂儿" [ref=f44e535] [cursor=pointer]:
+                  - /url: https://tieba.baidu.com/home/main?id=tb.1.731853a2.Mm1MlLCyJ85WEzkk05i1yQ&fr=pb
+                  - generic [ref=f44e536]:
+                    - link "小红点之2" [ref=f44e537]:
+                      - /url: https://tieba.baidu.com/home/main?id=tb.1.731853a2.Mm1MlLCyJ85WEzkk05i1yQ&fr=pb
+                    - generic [ref=f44e541]: 一个魂儿
+              - generic [ref=f44e557]:
+                - generic [ref=f44e558]:
+                  - generic [ref=f44e559]: 08-24
+                  - generic [ref=f44e560]: 山东
+                - generic [ref=f44e561] [cursor=pointer]:
+                  - generic [ref=f44e562]: 赞
+                  - generic [ref=f44e566]: 回复
+            - generic [ref=f44e577]:
+              - generic [ref=f44e578]:
+                - generic [ref=f44e582]:
+                  - link [ref=f44e583] [cursor=pointer]:
+                    - /url: https://tieba.baidu.com/home/main?id=tb.1.3908de7f.msAMo4QICU-ZyaNiqshveg&fr=pb
+                  - link [ref=f44e586] [cursor=pointer]:
+                    - /url: https://tieba.baidu.com/home/main?id=tb.1.3908de7f.msAMo4QICU-ZyaNiqshveg&fr=pb
+                - link ".甘织玲奈子 资深魂友" [ref=f44e588] [cursor=pointer]:
+                  - /url: https://tieba.baidu.com/home/main?id=tb.1.3908de7f.msAMo4QICU-ZyaNiqshveg&fr=pb
+                  - generic [ref=f44e589]:
+                    - link ".甘织玲奈子" [ref=f44e590]:
+                      - /url: https://tieba.baidu.com/home/main?id=tb.1.3908de7f.msAMo4QICU-ZyaNiqshveg&fr=pb
+                    - generic [ref=f44e594]: 资深魂友
+              - generic [ref=f44e610]:
+                - generic [ref=f44e611]:
+                  - generic [ref=f44e612]: 08-24
+                  - generic [ref=f44e613]: 重庆
+                - generic [ref=f44e614] [cursor=pointer]:
+                  - generic [ref=f44e615]: 赞
+                  - generic [ref=f44e619]: 回复
+            - generic [ref=f44e630]:
+              - generic [ref=f44e631]:
+                - generic [ref=f44e635]:
+                  - link [ref=f44e636] [cursor=pointer]:
+                    - /url: https://tieba.baidu.com/home/main?id=tb.1.2aa7b990.5lt2YiDxBF5O8LAUGgQUjA&fr=pb
+                  - link [ref=f44e637] [cursor=pointer]:
+                    - /url: https://tieba.baidu.com/home/main?id=tb.1.2aa7b990.5lt2YiDxBF5O8LAUGgQUjA&fr=pb
+                - link "小红点之4 A吧萌新" [ref=f44e639] [cursor=pointer]:
+                  - /url: https://tieba.baidu.com/home/main?id=tb.1.2aa7b990.5lt2YiDxBF5O8LAUGgQUjA&fr=pb
+                  - generic [ref=f44e640]:
+                    - link "小红点之4" [ref=f44e641]:
+                      - /url: https://tieba.baidu.com/home/main?id=tb.1.2aa7b990.5lt2YiDxBF5O8LAUGgQUjA&fr=pb
+                    - generic [ref=f44e645]: A吧萌新
+              - generic [ref=f44e661]:
+                - generic [ref=f44e662]:
+                  - generic [ref=f44e663]: 08-24
+                  - generic [ref=f44e664]: 天津
+                - generic [ref=f44e665] [cursor=pointer]:
+                  - generic [ref=f44e666]: 赞
+                  - generic [ref=f44e670]: 回复
+            - generic [ref=f44e681]:
+              - generic [ref=f44e682]:
+                - generic [ref=f44e686]:
+                  - link [ref=f44e687] [cursor=pointer]:
+                    - /url: https://tieba.baidu.com/home/main?id=tb.1.c81fa4ce.MpVRp3BQLWdUmPioSYxVng&fr=pb
+                  - link [ref=f44e688] [cursor=pointer]:
+                    - /url: https://tieba.baidu.com/home/main?id=tb.1.c81fa4ce.MpVRp3BQLWdUmPioSYxVng&fr=pb
+                - link "清霄大王三号机 沸腾期待" [ref=f44e690] [cursor=pointer]:
+                  - /url: https://tieba.baidu.com/home/main?id=tb.1.c81fa4ce.MpVRp3BQLWdUmPioSYxVng&fr=pb
+                  - generic [ref=f44e691]:
+                    - link "清霄大王三号机" [ref=f44e692]:
+                      - /url: https://tieba.baidu.com/home/main?id=tb.1.c81fa4ce.MpVRp3BQLWdUmPioSYxVng&fr=pb
+                    - generic [ref=f44e696]: 沸腾期待
+              - generic [ref=f44e712]:
+                - generic [ref=f44e713]:
+                  - generic [ref=f44e714]: 08-24
+                  - generic [ref=f44e715]: 天津
+                - generic [ref=f44e716] [cursor=pointer]:
+                  - generic [ref=f44e717]: 赞
+                  - generic [ref=f44e721]: 回复
+            - generic [ref=f44e730]: —— 已加载全部评论 ——
+      - generic [ref=f44e734]:
+        - generic [ref=f44e736]:
+          - generic [ref=f44e737] [cursor=pointer]:
+            - link "asoul 吧 关注20.8W贴子2.1KW" [ref=f44e738]:
+              - /url: https://tieba.baidu.com/f?kw=asoul&fr=pb
+              - generic [ref=f44e741]:
+                - generic [ref=f44e742]:
+                  - generic [ref=f44e743]: asoul
+                  - text: 吧
+                - generic [ref=f44e747]: 关注20.8W贴子2.1KW
+            - generic [ref=f44e748]: 签到
+          - generic [ref=f44e751]:
+            - paragraph [ref=f44e752]: 建吧日期：2011.08.29
+            - paragraph [ref=f44e755]: ASOUL粉丝贴吧聚集地
+            - generic [ref=f44e757]:
+              - generic [ref=f44e758] [cursor=pointer]: ...展开
+              - generic [ref=f44e760]: 虚拟偶像企划A-SOUL团体（灵境少女）的粉丝贴吧。&amp;amp;amp;amp;amp;lt;br&amp;amp;amp;amp;amp;gt;待凛冬离去，雪融草青，相信一定有新的相逢将温暖延续。
+          - link "进吧看看" [ref=f44e761] [cursor=pointer]:
+            - /url: https://tieba.baidu.com/f?kw=asoul&fr=pb
+        - link "本吧独家头条 7010吧友正在讨论 头条【ASOUL吧主题日活动】乃琳的生日大厦！ asoul 2分享7010评论362点赞" [ref=f44e764] [cursor=pointer]:
+          - /url: https://tieba.baidu.com/p/10948434018?fr=pb
+          - generic [ref=f44e765]:
+            - generic [ref=f44e766]:
+              - generic [ref=f44e767]: 本吧独家头条
+              - generic [ref=f44e768]: 7010吧友正在讨论
+            - link "头条【ASOUL吧主题日活动】乃琳的生日大厦！ asoul 2分享7010评论362点赞" [ref=f44e770]:
+              - /url: https://tieba.baidu.com/p/10948434018?fr=pb
+              - generic [ref=f44e771]: 头条【ASOUL吧主题日活动】乃琳的生日大厦！
+              - generic [ref=f44e772]:
+                - link "asoul" [ref=f44e773]:
+                  - /url: https://tieba.baidu.com/f?kw=asoul&fr=pb
+                - generic [ref=f44e775]: 2分享7010评论362点赞
+        - generic [ref=f44e776]:
+          - text: 百度版权声明：©2026 Baidu
+          - link "使用百度前必读" [ref=f44e777] [cursor=pointer]:
+            - /url: https://www.baidu.com/duty/
+          - text: ｜
+          - link "贴吧协议" [ref=f44e778] [cursor=pointer]:
+            - /url: https://tieba.baidu.com/tb/eula.html
+          - text: ｜
+          - link "隐私政策" [ref=f44e779] [cursor=pointer]:
+            - /url: https://tieba.baidu.com/tb/cms/tieba-fe/tieba_promise.html
+          - text: ｜
+          - link "投诉反馈" [ref=f44e780] [cursor=pointer]:
+            - /url: https://tieba.baidu.com/pmc/feedback
+          - text: 信息网络传播视听节目许可证及编号0110516 举报电话：400-921-5119

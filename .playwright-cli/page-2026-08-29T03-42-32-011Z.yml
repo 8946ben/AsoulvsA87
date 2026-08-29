@@ -1,0 +1,20 @@
+- generic [ref=f29e2]:
+  - generic [ref=f29e4]:
+    - generic [ref=f29e6] [cursor=pointer]
+    - searchbox "搜索吧或者贴子" [ref=f29e11]
+    - generic [ref=f29e12]:
+      - generic [ref=f29e13] [cursor=pointer]: 发贴
+      - generic [ref=f29e19]:
+        - generic [ref=f29e20] [cursor=pointer]
+        - generic [ref=f29e25] [cursor=pointer]
+        - generic [ref=f29e30] [cursor=pointer]
+        - generic [ref=f29e33] [cursor=pointer]
+      - generic [ref=f29e36] [cursor=pointer]
+  - generic [ref=f29e40]:
+    - generic [ref=f29e43]:
+      - link "首页" [ref=f29e44] [cursor=pointer]:
+        - /url: https://tieba.baidu.com/
+      - link "我的" [ref=f29e47] [cursor=pointer]:
+        - /url: https://tieba.baidu.com/home/main?id=tb.1.dff76186.f74ehUVV9bmiw8lfw_0QjQ&fr=pb
+    - generic [ref=f29e50] [cursor=pointer]
+    - generic [ref=f29e58] [cursor=pointer]

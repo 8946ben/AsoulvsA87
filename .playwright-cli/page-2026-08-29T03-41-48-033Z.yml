@@ -1,0 +1,35 @@
+- generic [ref=f25e2]:
+  - paragraph [ref=f25e4]:
+    - textbox [ref=f25e6]
+    - button "进入贴吧" [ref=f25e7] [cursor=pointer]
+  - generic [ref=f25e8]:
+    - generic [ref=f25e11]:
+      - generic [ref=f25e12]:
+        - heading [level=1] [ref=f25e13]:
+          - text: 您的访问出错了。
+          - link "返回首页" [ref=f25e14] [cursor=pointer]:
+            - /url: //tieba.baidu.com/
+        - paragraph [ref=f25e15]: 很抱歉，您要访问的页面不存在。请检查您输入的网址是否正确。
+      - generic [ref=f25e18]:
+        - paragraph [ref=f25e19]: 下载贴吧APP
+        - paragraph [ref=f25e20]: 看高清直播、视频！
+    - iframe [ref=f25e22]:
+      - generic [ref=f26e4]:
+        - generic [ref=f26e5]: 娱乐一刻，点开即玩
+        - iframe [ref=f26e6]:
+          - generic [ref=f27e4]:
+            - generic [ref=f27e5] [cursor=pointer]
+            - generic [ref=f27e7] [cursor=pointer]
+    - paragraph [ref=f25e23]:
+      - text: © 2022 Baidu
+      - link "贴吧协议" [ref=f25e24] [cursor=pointer]:
+        - /url: /tb/eula.html
+      - text: "|"
+      - link "吧主制度" [ref=f25e25] [cursor=pointer]:
+        - /url: //tieba.baidu.com/tb/system.html
+      - text: "|"
+      - link "意见反馈" [ref=f25e26] [cursor=pointer]:
+        - /url: //tieba.baidu.com/f?ie=utf-8&kw=%E6%84%8F%E8%A7%81%E5%8F%8D%E9%A6%88%E5%90%A7
+      - text: "|"
+      - link "网络谣言警示" [ref=f25e27] [cursor=pointer]:
+        - /url: /tb/zt/declare/
