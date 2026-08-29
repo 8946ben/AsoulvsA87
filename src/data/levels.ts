@@ -1,73 +1,28 @@
-import { ZombieType } from './zombies';
+import type { ZombieType } from './zombies';
 
-export interface ZombieSpawnEntry {
-  type: ZombieType;
-  /** 出现数量 */
-  count: number;
-  /** 该批次内每只之间的间隔（毫秒） */
-  gap: number;
-  /** 指定行（0 起）；不指定则随机 */
-  row?: number;
-}
+export interface ZombieSpawnEntry { type: ZombieType; count: number; gap: number; row?: number; }
+export interface Wave { delay: number; isHuge?: boolean; title?: string; spawns: ZombieSpawnEntry[]; }
+export interface LevelConfig { id: number; name: string; waves: Wave[]; }
 
-export interface Wave {
-  /** 距离上一波开始的延迟（毫秒）；大波前会给出提示 */
-  delay: number;
-  /** 是否为大波（触发「一大波僵尸正在接近」提示） */
-  isHuge?: boolean;
-  spawns: ZombieSpawnEntry[];
-}
-
-export interface LevelConfig {
-  id: number;
-  name: string;
-  waves: Wave[];
-}
-
-/**
- * 第 1 关：教学难度，全部为普通僵尸，逐步加压。
- * 关卡数据纯配置化，新增关卡只需往这里追加。
- */
 export const LEVEL_1: LevelConfig = {
   id: 1,
-  name: '第一关 · 前院草坪',
+  name: '第一幕 · 舞台保卫战',
   waves: [
-    {
-      delay: 12000,
-      spawns: [{ type: 'basic', count: 1, gap: 0 }],
-    },
-    {
-      delay: 18000,
-      spawns: [{ type: 'basic', count: 2, gap: 2500 }],
-    },
-    {
-      delay: 20000,
-      spawns: [{ type: 'basic', count: 3, gap: 2000 }],
-    },
-    {
-      delay: 22000,
-      isHuge: true,
-      spawns: [
-        { type: 'basic', count: 4, gap: 1500 },
-        { type: 'cone', count: 2, gap: 2500 },
-      ],
-    },
-    {
-      delay: 25000,
-      spawns: [
-        { type: 'basic', count: 3, gap: 1800 },
-        { type: 'bucket', count: 1, gap: 0 },
-      ],
-    },
-    {
-      delay: 28000,
-      isHuge: true,
-      spawns: [
-        { type: 'basic', count: 5, gap: 1400 },
-        { type: 'cone', count: 3, gap: 2000 },
-        { type: 'bucket', count: 2, gap: 3000 },
-      ],
-    },
+    { delay: 8500, title: '白虫来袭', spawns: [{ type: 'basic', count: 3, gap: 2600 }] },
+    { delay: 15000, spawns: [{ type: 'basic', count: 4, gap: 2100 }, { type: 'pole', count: 1, gap: 0 }] },
+    { delay: 17500, isHuge: true, title: '铁桶编队', spawns: [
+      { type: 'basic', count: 4, gap: 1700 }, { type: 'bucket', count: 2, gap: 3300 },
+    ] },
+    { delay: 21000, title: '黑化冲锋', spawns: [
+      { type: 'pole', count: 3, gap: 2600 }, { type: 'knight', count: 2, gap: 4400 },
+    ] },
+    { delay: 23000, isHuge: true, title: '神区化龙', spawns: [
+      { type: 'basic', count: 5, gap: 1400 }, { type: 'dragon', count: 1, gap: 0 },
+    ] },
+    { delay: 26000, isHuge: true, title: '最终返场', spawns: [
+      { type: 'bucket', count: 3, gap: 2800 }, { type: 'knight', count: 2, gap: 3600 },
+      { type: 'carol', count: 1, gap: 0 },
+    ] },
   ],
 };
 

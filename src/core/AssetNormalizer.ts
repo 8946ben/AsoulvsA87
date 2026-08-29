@@ -1,128 +1,113 @@
 import Phaser from 'phaser';
 import { ASSET_SPECS } from '../config/GameConfig';
 
-interface ContentBox {
-  x: number;
-  y: number;
-  w: number;
-  h: number;
-}
+interface ContentBox { x: number; y: number; w: number; h: number; }
 
 /**
- * 素材规范化器。
- *
- * 真实美术素材（尤其是 AI 生成的）有两个共性问题：
- *   1. 分辨率很高（如 1024×1024），而游戏里只需要几十像素；
- *   2. 主体周围留有大片白边，直接等比缩放会让角色显得又小又空。
- *
- * 这里在启动时统一做两件事：
- *   - 扫描出「非白、非透明」的内容边界，裁掉白边；
- *   - 等比缩放并居中到 ASSET_SPECS 声明的目标尺寸。
- *
- * 结果是所有纹理在实体层看来尺寸都是一致的，
- * 因此 Zombie / Projectile / Sun / Plant 等实体无需任何适配代码。
+ * 运行时素材清洗：从四周做连通区域去底色，再按内容边界裁切。
+ * 与简单“裁白边”不同，最终纹理内部不再保留碍眼的白色方框。
  */
 export class AssetNormalizer {
   static normalize(scene: Phaser.Scene): void {
     for (const [key, spec] of Object.entries(ASSET_SPECS)) {
       if (!scene.textures.exists(key)) continue;
-
-      const src = scene.textures.get(key).getSourceImage() as HTMLImageElement | null;
-      if (!src || !src.width || !src.height) continue;
-
-      // 占位图本身就是目标尺寸，无需处理
+      const src = scene.textures.get(key).getSourceImage() as HTMLImageElement | HTMLCanvasElement;
+      if (!src?.width || !src?.height) continue;
       if (src.width === spec.w && src.height === spec.h) continue;
 
-      const box = this.findContentBox(src);
+      const foreground = this.removeConnectedBackground(src);
+      const box = this.findContentBox(foreground);
       if (!box) continue;
-
-      const canvas = this.renderFitted(src, box, spec.w, spec.h);
-
-      // 用规范化后的画布纹理替换掉原始大图
+      const fitted = this.renderFitted(foreground, box, spec.w, spec.h);
       scene.textures.remove(key);
-      scene.textures.addCanvas(key, canvas);
+      scene.textures.addCanvas(key, fitted);
     }
   }
 
-  /**
-   * 扫描图像，找出真正有内容的矩形区域（忽略白色背景与透明像素）。
-   * 采用固定步长采样，在高分辨率图上也能保持可接受的耗时。
-   */
-  private static findContentBox(img: HTMLImageElement): ContentBox | null {
-    const c = document.createElement('canvas');
-    c.width = img.width;
-    c.height = img.height;
-
-    const ctx = c.getContext('2d', { willReadFrequently: true });
-    if (!ctx) return null;
-
+  /** 只清除与画布边缘连通的底色，角色衣服中的白色会被保留。 */
+  private static removeConnectedBackground(img: CanvasImageSource & { width: number; height: number }): HTMLCanvasElement {
+    const canvas = document.createElement('canvas');
+    canvas.width = img.width;
+    canvas.height = img.height;
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    if (!ctx) return canvas;
     ctx.drawImage(img, 0, 0);
 
-    let data: Uint8ClampedArray;
-    try {
-      data = ctx.getImageData(0, 0, c.width, c.height).data;
-    } catch {
-      // 极端情况下的跨域限制，退化为整图
-      return { x: 0, y: 0, w: c.width, h: c.height };
+    let pixels: ImageData;
+    try { pixels = ctx.getImageData(0, 0, canvas.width, canvas.height); }
+    catch { return canvas; }
+
+    const { data } = pixels;
+    const w = canvas.width;
+    const h = canvas.height;
+    const total = w * h;
+    const cornerIds = [0, w - 1, (h - 1) * w, total - 1];
+    let br = 0; let bg = 0; let bb = 0;
+    for (const id of cornerIds) {
+      br += data[id * 4]; bg += data[id * 4 + 1]; bb += data[id * 4 + 2];
+    }
+    br /= 4; bg /= 4; bb /= 4;
+
+    const seen = new Uint8Array(total);
+    const queue = new Int32Array(total);
+    let head = 0; let tail = 0;
+    const isBackground = (id: number): boolean => {
+      const i = id * 4;
+      if (data[i + 3] < 24) return true;
+      const dr = data[i] - br; const dg = data[i + 1] - bg; const db = data[i + 2] - bb;
+      return dr * dr + dg * dg + db * db < 52 * 52;
+    };
+    const enqueue = (id: number): void => {
+      if (seen[id] || !isBackground(id)) return;
+      seen[id] = 1; queue[tail++] = id;
+    };
+
+    for (let x = 0; x < w; x++) { enqueue(x); enqueue((h - 1) * w + x); }
+    for (let y = 0; y < h; y++) { enqueue(y * w); enqueue(y * w + w - 1); }
+
+    while (head < tail) {
+      const id = queue[head++];
+      data[id * 4 + 3] = 0;
+      const x = id % w;
+      if (x > 0) enqueue(id - 1);
+      if (x < w - 1) enqueue(id + 1);
+      if (id >= w) enqueue(id - w);
+      if (id < total - w) enqueue(id + w);
     }
 
-    const step = 2;
-    let minX = c.width;
-    let minY = c.height;
-    let maxX = -1;
-    let maxY = -1;
+    ctx.putImageData(pixels, 0, 0);
+    return canvas;
+  }
 
-    for (let y = 0; y < c.height; y += step) {
-      for (let x = 0; x < c.width; x += step) {
-        const i = (y * c.width + x) * 4;
-        const alpha = data[i + 3];
-        if (alpha < 12) continue;
-        // 接近纯白视为背景
-        if (data[i] > 244 && data[i + 1] > 244 && data[i + 2] > 244) continue;
-
-        if (x < minX) minX = x;
-        if (x > maxX) maxX = x;
-        if (y < minY) minY = y;
-        if (y > maxY) maxY = y;
+  private static findContentBox(canvas: HTMLCanvasElement): ContentBox | null {
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    if (!ctx) return null;
+    const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+    let minX = canvas.width; let minY = canvas.height; let maxX = -1; let maxY = -1;
+    for (let y = 0; y < canvas.height; y += 2) {
+      for (let x = 0; x < canvas.width; x += 2) {
+        if (data[(y * canvas.width + x) * 4 + 3] < 18) continue;
+        minX = Math.min(minX, x); minY = Math.min(minY, y);
+        maxX = Math.max(maxX, x); maxY = Math.max(maxY, y);
       }
     }
-
     if (maxX < 0) return null;
-
-    // 向外留 1% 余量，避免裁到描边
-    const pad = Math.round(Math.max(maxX - minX, maxY - minY) * 0.01);
-    minX = Math.max(0, minX - pad);
-    minY = Math.max(0, minY - pad);
-    maxX = Math.min(c.width - 1, maxX + pad);
-    maxY = Math.min(c.height - 1, maxY + pad);
-
+    const pad = Math.round(Math.max(maxX - minX, maxY - minY) * 0.025);
+    minX = Math.max(0, minX - pad); minY = Math.max(0, minY - pad);
+    maxX = Math.min(canvas.width - 1, maxX + pad); maxY = Math.min(canvas.height - 1, maxY + pad);
     return { x: minX, y: minY, w: maxX - minX + 1, h: maxY - minY + 1 };
   }
 
-  /** 把裁剪后的内容等比缩放并居中绘制到目标尺寸的画布上 */
-  private static renderFitted(
-    img: HTMLImageElement,
-    box: ContentBox,
-    targetW: number,
-    targetH: number,
-  ): HTMLCanvasElement {
-    const c = document.createElement('canvas');
-    c.width = targetW;
-    c.height = targetH;
-
-    const ctx = c.getContext('2d');
-    if (!ctx) return c;
-
-    const scale = Math.min(targetW / box.w, targetH / box.h);
-    const dw = box.w * scale;
-    const dh = box.h * scale;
-    const dx = (targetW - dw) / 2;
-    const dy = (targetH - dh) / 2;
-
+  private static renderFitted(src: HTMLCanvasElement, box: ContentBox, w: number, h: number): HTMLCanvasElement {
+    const out = document.createElement('canvas');
+    out.width = w; out.height = h;
+    const ctx = out.getContext('2d');
+    if (!ctx) return out;
+    const scale = Math.min((w - 4) / box.w, (h - 4) / box.h);
+    const dw = box.w * scale; const dh = box.h * scale;
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = 'high';
-    ctx.drawImage(img, box.x, box.y, box.w, box.h, dx, dy, dw, dh);
-
-    return c;
+    ctx.drawImage(src, box.x, box.y, box.w, box.h, (w - dw) / 2, h - dh - 2, dw, dh);
+    return out;
   }
 }

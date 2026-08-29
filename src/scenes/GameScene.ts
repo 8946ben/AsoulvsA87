@@ -1,600 +1,383 @@
 import Phaser from 'phaser';
-import {
-  GAME_HEIGHT,
-  GAME_WIDTH,
-  GRID,
-  LAWNMOWER_X,
-  SUN_RULES,
-  TEX,
-  ZOMBIE_SPAWN_X,
-} from '../config/GameConfig';
+import { GAME_HEIGHT, GAME_WIDTH, GRID, LAWNMOWER_X, SUN_RULES, TEX, ZOMBIE_SPAWN_X } from '../config/GameConfig';
 import { Grid } from '../core/Grid';
+import { sharpenSceneText, sharpenText } from '../core/TextQuality';
 import { LEVEL_1, type LevelConfig } from '../data/levels';
 import { PLANTS, STARTER_PLANT_ORDER, type PlantType } from '../data/plants';
-import type { ZombieType } from '../data/zombies';
+import { ZOMBIES, type ZombieType } from '../data/zombies';
 import { Plant, type PlantContext } from '../entities/Plant';
-import { Projectile, type ProjectileContext } from '../entities/Projectile';
+import { Projectile, type ProjectileContext, type ProjectileOptions } from '../entities/Projectile';
 import { Sun } from '../entities/Sun';
 import { Zombie, type ZombieContext } from '../entities/Zombie';
 import { createSeedBankBackground, SeedBank } from '../ui/SeedBank';
 
-/** 一条待执行的僵尸生成任务 */
-interface SpawnTask {
-  time: number;
-  type: ZombieType;
-  row: number;
-}
-
-const BAR_X = 620;
-const BAR_Y = 26;
-const BAR_W = 360;
-const BAR_H = 14;
-
+interface SpawnTask { time: number; type: ZombieType; row: number; wave: number; }
+interface WaveAlert { time: number; title: string; huge: boolean; wave: number; }
 type GameState = 'playing' | 'win' | 'lose';
 
-/** 主战斗场景：网格、阳光经济、波次调度、胜负判定都在这里编排 */
+const BAR_X = 958;
+const BAR_Y = 48;
+const BAR_W = 292;
+const BAR_H = 13;
+
 export class GameScene extends Phaser.Scene {
   static readonly KEY = 'GameScene';
-
   private level!: LevelConfig;
-
   private grid!: Grid;
   private seedBank!: SeedBank;
-
   private plants: Plant[] = [];
   private zombies: Zombie[] = [];
   private projectiles: Projectile[] = [];
   private suns: Sun[] = [];
   private mowers: (Phaser.GameObjects.Image | null)[] = [];
-
   private sunAmount = SUN_RULES.START_SUN;
   private sunText!: Phaser.GameObjects.Text;
+  private waveText!: Phaser.GameObjects.Text;
+  private enemyText!: Phaser.GameObjects.Text;
   private progressBar!: Phaser.GameObjects.Graphics;
   private alertText!: Phaser.GameObjects.Text;
   private previewRect!: Phaser.GameObjects.Graphics;
-
   private elapsed = 0;
   private skySunTimer = 0;
   private spawnSchedule: SpawnTask[] = [];
   private spawnIndex = 0;
-  private hugeWaveAlerts: number[] = [];
+  private alerts: WaveAlert[] = [];
   private lastProgress = -1;
   private gameState: GameState = 'playing';
-
   private preview: Phaser.GameObjects.Sprite | null = null;
   private previewType: PlantType | null = null;
+  private currentWave = 0;
+  private isPaused = false;
+  private pauseOverlay!: Phaser.GameObjects.Container;
 
-  /** 植物 → 场景 的交互实现 */
   private readonly plantCtx: PlantContext = {
-    hasZombieInRow: (row, fromX) =>
-      this.zombies.some(
-        (z) => z.active && z.state !== 'dead' && z.row === row && z.x > fromX - 30,
-      ),
-    spawnProjectile: (x, y, texture, damage, row) => {
-      this.projectiles.push(new Projectile(this, x, y, texture, damage, row));
-    },
+    getNearestZombie: (row, fromX) => this.getNearestZombie(row, fromX),
+    spawnProjectile: (x, y, texture, damage, row, options = {}) => this.spawnProjectile(x, y, texture, damage, row, options),
     spawnSun: (x, y, amount) => this.spawnPlantSun(x, y, amount),
+    damageArea: (x, y, radius, damage, stunMs) => this.damageArea(x, y, radius, damage, stunMs),
+    replacePlant: (plant, type) => this.replacePlant(plant, type),
   };
-
-  /** 僵尸 → 场景 的交互实现 */
   private readonly zombieCtx: ZombieContext = {
     getBlockingPlant: (row, zombieX) => this.getBlockingPlant(row, zombieX),
     onReachHouse: (zombie) => this.onZombieReachHouse(zombie),
+    spawnMinion: (type, row, x) => this.spawnZombie(type, row, x),
   };
-
-  /** 子弹 → 场景 的交互实现 */
   private readonly projectileCtx: ProjectileContext = {
-    findTarget: (row, x) => this.findZombieTarget(row, x),
+    findTarget: (row, x, ignored) => this.findZombieTarget(row, x, ignored),
+    damageSplash: (row, x, radius, damage, primary) => {
+      for (const zombie of this.zombies) {
+        if (zombie !== primary && zombie.active && zombie.state !== 'dead' && zombie.row === row && Math.abs(zombie.x - x) <= radius) zombie.takeDamage(damage);
+      }
+    },
   };
 
-  constructor() {
-    super(GameScene.KEY);
-  }
-
-  init(data: { level?: LevelConfig }): void {
-    this.level = data?.level ?? LEVEL_1;
-  }
+  constructor() { super(GameScene.KEY); }
+  init(data: { level?: LevelConfig }): void { this.level = data?.level ?? LEVEL_1; }
 
   create(): void {
-    this.resetState();
-
-    this.createBackground();
-    this.createLawn();
-    this.createMowers();
-    this.createUI();
-    this.createSeedBank();
-    this.buildSpawnSchedule();
-    this.bindInput();
+    this.resetState(); this.createBackground(); this.createLawn(); this.createMowers();
+    this.createUI(); this.createSeedBank(); this.buildSpawnSchedule(); this.bindInput();
+    this.showToast('选择角色卡，守住枝江舞台！', 0x67e8ff);
+    sharpenSceneText(this);
   }
 
   update(time: number, delta: number): void {
-    if (this.gameState !== 'playing') return;
-
-    this.elapsed += delta;
-    this.updateWaves();
-    this.updateSkySun(delta);
-
+    if (this.gameState !== 'playing' || this.isPaused) return;
+    this.elapsed += delta; this.updateWaves(); this.updateSkySun(delta);
     for (const plant of this.plants) plant.update(time, delta, this.plantCtx);
     for (const zombie of this.zombies) zombie.update(time, delta, this.zombieCtx);
-    for (const projectile of this.projectiles) {
-      projectile.update(time, delta, this.projectileCtx);
-    }
+    for (const projectile of this.projectiles) projectile.update(time, delta, this.projectileCtx);
     for (const sun of this.suns) sun.update(time, delta);
-
-    this.cleanup();
-    this.seedBank.update(delta, this.sunAmount);
-    this.updateProgressBar();
-    this.checkWin();
+    this.cleanup(); this.seedBank.update(delta, this.sunAmount); this.updateProgressBar(); this.checkWin();
   }
 
-  // ------------------------------------------------------------------
-  // 初始化
-  // ------------------------------------------------------------------
-
-  /** 场景 restart 时类字段不会自动重置，这里统一清空 */
   private resetState(): void {
-    this.grid = new Grid();
-    this.plants = [];
-    this.zombies = [];
-    this.projectiles = [];
-    this.suns = [];
-    this.mowers = [];
-    this.sunAmount = SUN_RULES.START_SUN;
-    this.elapsed = 0;
-    this.skySunTimer = 0;
-    this.spawnSchedule = [];
-    this.spawnIndex = 0;
-    this.hugeWaveAlerts = [];
-    this.lastProgress = -1;
-    this.gameState = 'playing';
-    this.preview = null;
-    this.previewType = null;
+    this.grid = new Grid(); this.plants = []; this.zombies = []; this.projectiles = []; this.suns = []; this.mowers = [];
+    this.sunAmount = SUN_RULES.START_SUN; this.elapsed = 0; this.skySunTimer = 0; this.spawnSchedule = []; this.spawnIndex = 0;
+    this.alerts = []; this.lastProgress = -1; this.gameState = 'playing'; this.preview = null; this.previewType = null; this.currentWave = 0; this.isPaused = false;
+    this.time.paused = false;
   }
 
   private createBackground(): void {
-    const sky = this.add.graphics();
-    sky.fillGradientStyle(0x9fd8ef, 0x9fd8ef, 0xd7f0d5, 0xd7f0d5, 1);
-    sky.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
-    sky.setDepth(-10);
+    const bg = this.add.graphics().setDepth(-20);
+    bg.fillGradientStyle(0x071225, 0x101c3d, 0x133c4c, 0x0b2536, 1); bg.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+    bg.fillStyle(0x4fe5ff, 0.06); bg.fillTriangle(80, 0, 340, GAME_HEIGHT, 520, GAME_HEIGHT);
+    bg.fillStyle(0xff6ea9, 0.05); bg.fillTriangle(1180, 0, 760, GAME_HEIGHT, 1040, GAME_HEIGHT);
+    for (let x = 22; x < GAME_WIDTH; x += 55) {
+      bg.fillStyle(x % 110 ? 0x55d9ff : 0xff6fa8, 0.14); bg.fillCircle(x, 148 + (x % 4) * 5, 4);
+    }
+    bg.fillStyle(0x050b18, 0.62);
+    for (let x = 0; x < GAME_WIDTH; x += 22) bg.fillCircle(x + 10, 158 + (x % 3) * 4, 15);
+    bg.lineStyle(2, 0x67e7ff, 0.28); bg.strokeRoundedRect(GRID.OFFSET_X - 10, GRID.OFFSET_Y - 10, GRID.COLS * GRID.CELL_W + 20, GRID.ROWS * GRID.CELL_H + 20, 16);
+    bg.fillStyle(0x020713, 0.4); bg.fillRoundedRect(GRID.OFFSET_X - 17, GRID.OFFSET_Y - 3, GRID.COLS * GRID.CELL_W + 34, GRID.ROWS * GRID.CELL_H + 18, 14);
+    this.add.text(28, 166, 'STAGE\nDEFENSE', { fontFamily: 'Arial', fontSize: '22px', color: '#68e8ff', fontStyle: 'bold', align: 'center', lineSpacing: 4 }).setAlpha(0.72).setDepth(-5);
+    this.add.text(1090, 177, 'A87\nENTRY', { fontFamily: 'Arial', fontSize: '18px', color: '#ff6f99', fontStyle: 'bold', align: 'center' }).setAlpha(0.62).setDepth(-5);
   }
 
   private createLawn(): void {
     for (let row = 0; row < GRID.ROWS; row++) {
+      const lane = this.add.rectangle(GRID.OFFSET_X - 24, this.grid.rowToY(row), 30, GRID.CELL_H - 5, row % 2 ? 0x173b4a : 0x1e4855, 0.9).setDepth(0);
+      lane.setStrokeStyle(1, 0x6fe7ff, 0.18);
+      this.add.text(GRID.OFFSET_X - 24, this.grid.rowToY(row), String(row + 1).padStart(2, '0'), { fontFamily: 'Arial', fontSize: '12px', color: '#8eefff' }).setOrigin(0.5).setDepth(1).setAlpha(0.65);
       for (let col = 0; col < GRID.COLS; col++) {
         const texture = (row + col) % 2 === 0 ? TEX.LAWN_LIGHT : TEX.LAWN_DARK;
         const { x, y } = this.grid.cellToWorld(row, col);
-        this.add.image(x, y, texture).setDepth(0);
+        this.add.image(x, y, texture).setDepth(0).setAlpha(0.92);
       }
     }
   }
 
   private createMowers(): void {
     for (let row = 0; row < GRID.ROWS; row++) {
-      const mower = this.add.image(
-        LAWNMOWER_X,
-        this.grid.rowToY(row) + 26,
-        TEX.LAWNMOWER,
-      );
-      mower.setDepth(5 + row * 0.1);
+      const mower = this.add.image(LAWNMOWER_X, this.grid.rowToY(row) + 28, TEX.LAWNMOWER).setDepth(8 + row * 0.1);
+      this.tweens.add({ targets: mower, x: mower.x + 3, duration: 850 + row * 70, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
       this.mowers.push(mower);
     }
   }
 
   private createUI(): void {
-    // 阳光计数器
-    const panel = this.add.graphics();
-    panel.fillStyle(0x3d2f1f, 0.95);
-    panel.fillRoundedRect(8, 12, 94, 76, 6);
-    panel.lineStyle(2, 0x8b6f47, 1);
-    panel.strokeRoundedRect(8, 12, 94, 76, 6);
-    panel.setDepth(90);
+    const resource = this.add.graphics().setDepth(100);
+    resource.fillStyle(0x101b2e, 0.97); resource.fillRoundedRect(854, 8, 88, 116, 14);
+    resource.lineStyle(2, 0xffd86d, 0.45); resource.strokeRoundedRect(854, 8, 88, 116, 14);
+    this.add.image(898, 45, TEX.SUN).setDisplaySize(48, 48).setDepth(104);
+    this.add.text(898, 19, '应援值', { fontFamily: 'Microsoft YaHei', fontSize: '12px', color: '#ffe79b' }).setOrigin(0.5).setDepth(105);
+    this.sunText = this.add.text(898, 94, String(this.sunAmount), { fontFamily: 'Arial', fontSize: '25px', color: '#fff4bf', fontStyle: 'bold' }).setOrigin(0.5).setDepth(105);
 
-    this.add.image(55, 40, TEX.SUN).setDisplaySize(46, 46).setDepth(95);
+    const info = this.add.graphics().setDepth(100);
+    info.fillStyle(0x101b2e, 0.97); info.fillRoundedRect(950, 8, 322, 116, 14);
+    info.lineStyle(2, 0x67e8ff, 0.3); info.strokeRoundedRect(950, 8, 322, 116, 14);
+    this.waveText = this.add.text(BAR_X, 18, 'WAVE 0 / 6', { fontFamily: 'Arial', fontSize: '14px', color: '#84ecff', fontStyle: 'bold' }).setDepth(105);
+    this.enemyText = this.add.text(1252, 18, '敌人 0', { fontFamily: 'Microsoft YaHei', fontSize: '13px', color: '#ff91af' }).setOrigin(1, 0).setDepth(105);
+    this.progressBar = this.add.graphics().setDepth(105);
+    this.add.text(BAR_X, 76, this.level.name, { fontFamily: 'Microsoft YaHei', fontSize: '16px', color: '#effbff', fontStyle: 'bold' }).setDepth(105);
+    this.add.text(BAR_X, 101, '空格 暂停/继续  ·  ESC 取消选择', { fontFamily: 'Microsoft YaHei', fontSize: '12px', color: '#8fb5c9' }).setDepth(105);
 
-    this.sunText = this.add
-      .text(55, 76, String(this.sunAmount), {
-        fontFamily: 'Arial',
-        fontSize: '20px',
-        color: '#FFF8DC',
-        fontStyle: 'bold',
-      })
-      .setOrigin(0.5)
-      .setDepth(95);
+    this.alertText = this.add.text(GAME_WIDTH / 2, 295, '', { fontFamily: 'Microsoft YaHei', fontSize: '39px', color: '#ff678d', fontStyle: 'bold', stroke: '#091426', strokeThickness: 9, align: 'center' }).setOrigin(0.5).setDepth(170).setAlpha(0);
+    this.previewRect = this.add.graphics().setDepth(62);
 
-    // 关卡进度条
-    this.add
-      .text(BAR_X, BAR_Y - 18, '关卡进度', {
-        fontFamily: 'Arial',
-        fontSize: '13px',
-        color: '#2b2b2b',
-        fontStyle: 'bold',
-      })
-      .setDepth(95);
-
-    this.progressBar = this.add.graphics();
-    this.progressBar.setDepth(95);
-
-    // 大波提示
-    this.alertText = this.add
-      .text(GAME_WIDTH / 2, 220, '', {
-        fontFamily: 'Arial',
-        fontSize: '38px',
-        color: '#ff3b3b',
-        fontStyle: 'bold',
-        stroke: '#ffffff',
-        strokeThickness: 6,
-      })
-      .setOrigin(0.5)
-      .setDepth(150)
-      .setAlpha(0);
-
-    this.previewRect = this.add.graphics();
-    this.previewRect.setDepth(60);
+    const pauseShade = this.add.rectangle(0, 0, GAME_WIDTH, GAME_HEIGHT, 0x020713, 0.72).setOrigin(0);
+    const pauseCard = this.add.rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2, 430, 190, 0x101c31, 0.98).setStrokeStyle(3, 0x67e8ff, 0.7);
+    const pauseTitle = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 35, '舞台暂时休息', { fontFamily: 'Microsoft YaHei', fontSize: '31px', color: '#f4fcff', fontStyle: 'bold' }).setOrigin(0.5);
+    const pauseHint = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 + 35, '按空格键继续保卫舞台', { fontFamily: 'Microsoft YaHei', fontSize: '16px', color: '#73e8ff' }).setOrigin(0.5);
+    this.pauseOverlay = this.add.container(0, 0, [pauseShade, pauseCard, pauseTitle, pauseHint]).setDepth(210).setVisible(false);
   }
 
   private createSeedBank(): void {
-    createSeedBankBackground(this);
-    this.seedBank = new SeedBank(this, STARTER_PLANT_ORDER);
-    // 开局给一点冷却，避免瞬间铺满场地
-    this.seedBank.applyInitialCooldown(2500);
+    createSeedBankBackground(this); this.seedBank = new SeedBank(this, STARTER_PLANT_ORDER); this.seedBank.applyInitialCooldown(1700);
   }
 
-  /** 把关卡的波次配置拍平成按时间排序的生成任务表 */
   private buildSpawnSchedule(): void {
     let cursor = 0;
-    for (const wave of this.level.waves) {
-      cursor += wave.delay;
-      const waveStart = cursor;
-
-      if (wave.isHuge) {
-        this.hugeWaveAlerts.push(Math.max(0, waveStart - 3500));
-      }
-
+    this.level.waves.forEach((wave, waveIndex) => {
+      cursor += wave.delay; const waveStart = cursor;
+      this.alerts.push({ time: Math.max(0, waveStart - 2500), title: wave.title ?? `第 ${waveIndex + 1} 波`, huge: Boolean(wave.isHuge), wave: waveIndex + 1 });
       for (const spawn of wave.spawns) {
-        for (let i = 0; i < spawn.count; i++) {
-          this.spawnSchedule.push({
-            time: waveStart + i * spawn.gap,
-            type: spawn.type,
-            row: spawn.row ?? Phaser.Math.Between(0, GRID.ROWS - 1),
-          });
-        }
+        for (let i = 0; i < spawn.count; i++) this.spawnSchedule.push({ time: waveStart + i * spawn.gap, type: spawn.type, row: spawn.row ?? Phaser.Math.Between(0, GRID.ROWS - 1), wave: waveIndex + 1 });
       }
-    }
+    });
     this.spawnSchedule.sort((a, b) => a.time - b.time);
   }
 
   private bindInput(): void {
-    this.input.on('pointermove', (pointer: Phaser.Input.Pointer) =>
-      this.updatePreview(pointer),
-    );
-    this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) =>
-      this.handlePointerDown(pointer),
-    );
-    this.input.keyboard?.on('keydown-ESC', () => {
-      this.seedBank.clearSelection();
-      this.preview?.setVisible(false);
-      this.previewRect.clear();
+    this.input.on('pointermove', (pointer: Phaser.Input.Pointer) => this.updatePreview(pointer));
+    this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => this.handlePointerDown(pointer));
+    this.input.keyboard?.on('keydown-ESC', () => { this.seedBank.clearSelection(); this.preview?.setVisible(false); this.previewRect.clear(); });
+    this.input.keyboard?.on('keydown-SPACE', (event: KeyboardEvent) => {
+      event.preventDefault();
+      if (event.repeat) return;
+      this.togglePause();
     });
   }
 
-  // ------------------------------------------------------------------
-  // 每帧逻辑
-  // ------------------------------------------------------------------
+  private togglePause(): void {
+    if (this.gameState !== 'playing') return;
+    this.isPaused = !this.isPaused;
+    this.pauseOverlay.setVisible(this.isPaused);
+    if (this.isPaused) {
+      this.seedBank.clearSelection();
+      this.preview?.setVisible(false);
+      this.previewRect.clear();
+      this.time.paused = true;
+      this.tweens.pauseAll();
+    } else {
+      this.time.paused = false;
+      this.tweens.resumeAll();
+    }
+  }
 
   private updateWaves(): void {
-    while (this.hugeWaveAlerts.length > 0 && this.elapsed >= this.hugeWaveAlerts[0]) {
-      this.hugeWaveAlerts.shift();
-      this.showHugeWaveAlert();
+    while (this.alerts.length && this.elapsed >= this.alerts[0].time) {
+      const alert = this.alerts.shift()!; this.currentWave = alert.wave; this.showWaveAlert(alert.title, alert.huge);
     }
-
-    while (
-      this.spawnIndex < this.spawnSchedule.length &&
-      this.elapsed >= this.spawnSchedule[this.spawnIndex].time
-    ) {
-      const task = this.spawnSchedule[this.spawnIndex++];
-      this.spawnZombie(task.type, task.row);
+    while (this.spawnIndex < this.spawnSchedule.length && this.elapsed >= this.spawnSchedule[this.spawnIndex].time) {
+      const task = this.spawnSchedule[this.spawnIndex++]; this.currentWave = task.wave; this.spawnZombie(task.type, task.row);
     }
   }
 
   private updateSkySun(delta: number): void {
     this.skySunTimer += delta;
     if (this.skySunTimer < SUN_RULES.SKY_DROP_INTERVAL) return;
-
     this.skySunTimer = 0;
-    const x = Phaser.Math.Between(SUN_RULES.DROP_MIN_X, SUN_RULES.DROP_MAX_X);
-    const targetY = Phaser.Math.Between(SUN_RULES.DROP_MIN_Y, SUN_RULES.DROP_MAX_Y);
-    const sun = new Sun(this, x, -30, SUN_RULES.SKY_DROP_AMOUNT, targetY, false);
-    this.registerSun(sun);
+    const x = Phaser.Math.Between(SUN_RULES.DROP_MIN_X, SUN_RULES.DROP_MAX_X); const y = Phaser.Math.Between(SUN_RULES.DROP_MIN_Y, SUN_RULES.DROP_MAX_Y);
+    this.registerSun(new Sun(this, x, -30, SUN_RULES.SKY_DROP_AMOUNT, y, false));
   }
 
   private updateProgressBar(): void {
-    const total = this.spawnSchedule.length || 1;
-    const ratio = Phaser.Math.Clamp(this.spawnIndex / total, 0, 1);
-    if (Math.abs(ratio - this.lastProgress) < 0.001) return;
-    this.lastProgress = ratio;
-
-    this.progressBar.clear();
-    this.progressBar.fillStyle(0x2b2b2b, 0.85);
-    this.progressBar.fillRoundedRect(BAR_X, BAR_Y, BAR_W, BAR_H, 5);
-    this.progressBar.fillStyle(0x8bc34a, 1);
-    this.progressBar.fillRoundedRect(BAR_X, BAR_Y, Math.max(4, BAR_W * ratio), BAR_H, 5);
-    this.progressBar.lineStyle(2, 0x5d4037, 1);
-    this.progressBar.strokeRoundedRect(BAR_X, BAR_Y, BAR_W, BAR_H, 5);
+    const ratio = Phaser.Math.Clamp(this.spawnIndex / Math.max(1, this.spawnSchedule.length), 0, 1);
+    if (Math.abs(ratio - this.lastProgress) > 0.001) {
+      this.lastProgress = ratio; this.progressBar.clear();
+      this.progressBar.fillStyle(0x050b17, 0.9); this.progressBar.fillRoundedRect(BAR_X, BAR_Y, BAR_W, BAR_H, 6);
+      this.progressBar.fillGradientStyle(0x50e3c2, 0x68e6ff, 0x50e3c2, 0x68e6ff, 1); this.progressBar.fillRoundedRect(BAR_X, BAR_Y, Math.max(5, BAR_W * ratio), BAR_H, 6);
+      this.progressBar.lineStyle(1, 0x9cf4ff, 0.35); this.progressBar.strokeRoundedRect(BAR_X, BAR_Y, BAR_W, BAR_H, 6);
+    }
+    this.waveText.setText(`WAVE ${this.currentWave} / ${this.level.waves.length}`);
+    this.enemyText.setText(`场上敌人 ${this.zombies.filter((z) => z.active && z.state !== 'dead').length}`);
   }
 
-  /** 清理本帧内被销毁的实体，并同步网格占用状态 */
   private cleanup(): void {
     for (let i = this.plants.length - 1; i >= 0; i--) {
-      const plant = this.plants[i];
-      if (!plant.active) {
-        if (this.grid.get(plant.row, plant.col) === plant) {
-          this.grid.remove(plant.row, plant.col);
-        }
-        this.plants.splice(i, 1);
-      }
+      const p = this.plants[i]; if (!p.active) { if (this.grid.get(p.row, p.col) === p) this.grid.remove(p.row, p.col); this.plants.splice(i, 1); }
     }
-    for (let i = this.zombies.length - 1; i >= 0; i--) {
-      if (!this.zombies[i].active) this.zombies.splice(i, 1);
-    }
-    for (let i = this.projectiles.length - 1; i >= 0; i--) {
-      if (!this.projectiles[i].active) this.projectiles.splice(i, 1);
-    }
-    for (let i = this.suns.length - 1; i >= 0; i--) {
-      if (!this.suns[i].active) this.suns.splice(i, 1);
-    }
+    for (let i = this.zombies.length - 1; i >= 0; i--) if (!this.zombies[i].active) this.zombies.splice(i, 1);
+    for (let i = this.projectiles.length - 1; i >= 0; i--) if (!this.projectiles[i].active) this.projectiles.splice(i, 1);
+    for (let i = this.suns.length - 1; i >= 0; i--) if (!this.suns[i].active) this.suns.splice(i, 1);
   }
 
   private checkWin(): void {
     if (this.gameState !== 'playing') return;
-
-    const allSpawned = this.spawnIndex >= this.spawnSchedule.length;
-    const cleared = this.zombies.every((z) => !z.active || z.state === 'dead');
-    if (allSpawned && cleared) this.gameOver(true);
+    if (this.spawnIndex >= this.spawnSchedule.length && this.zombies.every((z) => !z.active || z.state === 'dead')) this.gameOver(true);
   }
 
-  // ------------------------------------------------------------------
-  // 实体操作
-  // ------------------------------------------------------------------
-
-  private spawnZombie(type: ZombieType, row: number): void {
-    const zombie = new Zombie(this, ZOMBIE_SPAWN_X, this.grid.rowToY(row) - 4, type, row);
-    this.zombies.push(zombie);
+  private spawnZombie(type: ZombieType, row: number, x = ZOMBIE_SPAWN_X): void {
+    const zombie = new Zombie(this, x, this.grid.rowToY(row) - 4, type, row); this.zombies.push(zombie);
+    if (ZOMBIES[type].boss) this.showBossBanner(ZOMBIES[type]);
   }
 
-  private spawnPlantSun(x: number, y: number, amount: number): void {
-    const targetY = Math.min(y + 44, GAME_HEIGHT - 60);
-    this.registerSun(new Sun(this, x, y, amount, targetY, true));
+  private spawnProjectile(x: number, y: number, texture: string, damage: number, row: number, options: ProjectileOptions): void {
+    const target = this.getNearestZombie(row, x);
+    const empowered = this.plants.some((p) => p.torchActive && p.row === row && p.x >= x - 10 && (!target || p.x < target.x));
+    this.projectiles.push(new Projectile(this, x, y, texture, empowered ? damage * 1.45 : damage, row, { ...options, empowered }));
   }
 
+  private spawnPlantSun(x: number, y: number, amount: number): void { this.registerSun(new Sun(this, x, y, amount, Math.min(y + 48, GAME_HEIGHT - 55), true)); }
   private registerSun(sun: Sun): void {
     sun.onCollect.on('collect', (value: number) => {
-      this.sunAmount += value;
-      this.sunText.setText(String(this.sunAmount));
-      this.tweens.add({ targets: this.sunText, scale: 1.3, duration: 90, yoyo: true });
+      this.sunAmount += value; this.sunText.setText(String(this.sunAmount));
+      this.tweens.add({ targets: this.sunText, scale: 1.35, color: '#ffffff', duration: 100, yoyo: true });
     });
     this.suns.push(sun);
   }
 
-  /** 找到挡在僵尸啃食范围内的植物 */
-  private getBlockingPlant(row: number, zombieX: number): Plant | null {
-    for (let col = 0; col < GRID.COLS; col++) {
-      const plant = this.grid.get(row, col);
-      if (plant && plant.active && plant.x >= zombieX - 38 && plant.x <= zombieX + 10) {
-        return plant;
-      }
-    }
-    return null;
-  }
-
-  /** 子弹命中判定：取本行内最靠左的一只僵尸 */
-  private findZombieTarget(row: number, x: number): Zombie | null {
+  private getNearestZombie(row: number, fromX: number): Zombie | null {
     let best: Zombie | null = null;
-    for (const zombie of this.zombies) {
-      if (!zombie.active || zombie.state === 'dead' || zombie.row !== row) continue;
-      if (x >= zombie.x - 22 && x <= zombie.x + 24) {
-        if (!best || zombie.x < best.x) best = zombie;
-      }
+    for (const z of this.zombies) if (z.active && z.state !== 'dead' && z.row === row && z.x > fromX - 25 && (!best || z.x < best.x)) best = z;
+    return best;
+  }
+  private getBlockingPlant(row: number, zombieX: number): Plant | null {
+    let best: Plant | null = null;
+    for (let col = 0; col < GRID.COLS; col++) {
+      const p = this.grid.get(row, col);
+      if (p?.active && p.x >= zombieX - 43 && p.x <= zombieX + 12 && (!best || p.x > best.x)) best = p;
     }
     return best;
+  }
+  private findZombieTarget(row: number, x: number, ignored = new Set<Zombie>()): Zombie | null {
+    let best: Zombie | null = null;
+    for (const z of this.zombies) if (!ignored.has(z) && z.active && z.state !== 'dead' && z.row === row && x >= z.x - 28 && x <= z.x + 30 && (!best || z.x < best.x)) best = z;
+    return best;
+  }
+
+  private damageArea(x: number, y: number, radius: number, damage: number, stunMs = 0): void {
+    for (const z of this.zombies) {
+      if (!z.active || z.state === 'dead') continue;
+      if (Phaser.Math.Distance.Between(x, y, z.x, z.y) <= radius) { z.takeDamage(damage); if (stunMs) z.stunFor(stunMs); }
+    }
+    this.cameras.main.shake(180, 0.007);
+  }
+
+  private replacePlant(plant: Plant, type: PlantType | null): void {
+    const { row, col } = plant;
+    if (this.grid.get(row, col) === plant) this.grid.remove(row, col);
+    plant.destroy();
+    if (!type || this.grid.isOccupied(row, col)) return;
+    const { x, y } = this.grid.cellToWorld(row, col); const next = new Plant(this, x, y - 5, type, row, col);
+    this.grid.place(next, row, col); this.plants.push(next);
+    this.showToast(`心宜留下了${PLANTS[type].name}！`, PLANTS[type].accent);
   }
 
   private onZombieReachHouse(zombie: Zombie): void {
     if (this.gameState !== 'playing') return;
-
-    const row = zombie.row;
-    const mower = this.mowers[row];
-
-    if (mower) {
-      // 该行小推车还在：推车出动碾掉整行，此后本行再无兜底
-      this.mowers[row] = null;
-      // 推车就位的瞬间先碾掉已越过防线的僵尸，
-      // 否则同一行第二只僵尸会在推车撞到它之前抢先触发判负
-      for (const other of this.zombies) {
-        if (
-          other.active &&
-          other.state !== 'dead' &&
-          other.row === row &&
-          other.x <= LAWNMOWER_X + 60
-        ) {
-          other.die();
-        }
-      }
-      this.runMower(row, mower);
-    } else {
-      // 推车已用掉，再次被突破即判负
-      this.gameOver(false);
-    }
-  }
-
-  /** 小推车向右冲刺，碾死整行僵尸 */
-  private runMower(row: number, mower: Phaser.GameObjects.Image): void {
-    this.tweens.add({
-      targets: mower,
-      x: GAME_WIDTH + 80,
-      duration: 2000,
-      ease: 'Linear',
-      onUpdate: () => {
-        for (const zombie of this.zombies) {
-          if (
-            zombie.active &&
-            zombie.state !== 'dead' &&
-            zombie.row === row &&
-            Math.abs(zombie.x - mower.x) < 48
-          ) {
-            zombie.die();
-          }
-        }
-      },
-      onComplete: () => mower.destroy(),
-    });
+    const row = zombie.row; const mower = this.mowers[row];
+    if (!mower) { this.gameOver(false); return; }
+    this.mowers[row] = null; this.tweens.killTweensOf(mower);
+    for (const z of this.zombies) if (z.active && z.state !== 'dead' && z.row === row && z.x <= LAWNMOWER_X + 65) z.die();
+    this.tweens.add({ targets: mower, x: GAME_WIDTH + 100, angle: 720, duration: 1850, ease: 'Cubic.easeIn', onUpdate: () => {
+      for (const z of this.zombies) if (z.active && z.state !== 'dead' && z.row === row && Math.abs(z.x - mower.x) < 55) z.die();
+    }, onComplete: () => mower.destroy() });
   }
 
   private plantAt(row: number, col: number, type: PlantType): boolean {
-    if (this.grid.isOccupied(row, col)) return false;
-
-    const config = PLANTS[type];
-    if (this.sunAmount < config.cost) return false;
-
-    const { x, y } = this.grid.cellToWorld(row, col);
-    const plant = new Plant(this, x, y - 6, type, row, col);
-    this.grid.place(plant, row, col);
-    this.plants.push(plant);
-
-    this.sunAmount -= config.cost;
-    this.sunText.setText(String(this.sunAmount));
-    this.seedBank.consumeSelected();
+    if (this.grid.isOccupied(row, col) || this.sunAmount < PLANTS[type].cost) return false;
+    const { x, y } = this.grid.cellToWorld(row, col); const plant = new Plant(this, x, y - 5, type, row, col);
+    this.grid.place(plant, row, col); this.plants.push(plant);
+    this.sunAmount -= PLANTS[type].cost; this.sunText.setText(String(this.sunAmount)); this.seedBank.consumeSelected();
     return true;
   }
 
-  // ------------------------------------------------------------------
-  // 交互
-  // ------------------------------------------------------------------
-
   private updatePreview(pointer: Phaser.Input.Pointer): void {
     const type = this.seedBank.selectedType;
-
-    if (!type) {
-      this.preview?.setVisible(false);
-      this.previewRect.clear();
-      return;
-    }
-
+    if (!type) { this.preview?.setVisible(false); this.previewRect.clear(); return; }
     const cell = this.grid.worldToCell(pointer.worldX, pointer.worldY);
-    if (!cell) {
-      this.preview?.setVisible(false);
-      this.previewRect.clear();
-      return;
-    }
-
-    if (!this.preview || this.previewType !== type) {
-      this.preview?.destroy();
-      this.preview = this.add.sprite(0, 0, PLANTS[type].texture).setAlpha(0.6).setDepth(50);
-      this.previewType = type;
-    }
-
-    const { x, y } = this.grid.cellToWorld(cell.row, cell.col);
-    this.preview.setPosition(x, y - 6).setVisible(true);
-
-    const canPlant =
-      !this.grid.isOccupied(cell.row, cell.col) && this.sunAmount >= PLANTS[type].cost;
-
-    this.previewRect.clear();
-    this.previewRect.lineStyle(3, canPlant ? 0x00e676 : 0xff5252, 0.9);
-    this.previewRect.strokeRect(
-      x - GRID.CELL_W / 2 + 2,
-      y - GRID.CELL_H / 2 + 2,
-      GRID.CELL_W - 4,
-      GRID.CELL_H - 4,
-    );
+    if (!cell) { this.preview?.setVisible(false); this.previewRect.clear(); return; }
+    if (!this.preview || this.previewType !== type) { this.preview?.destroy(); this.preview = this.add.sprite(0, 0, PLANTS[type].texture).setAlpha(0.58).setDepth(61); this.previewType = type; }
+    const { x, y } = this.grid.cellToWorld(cell.row, cell.col); this.preview.setPosition(x, y - 5).setVisible(true);
+    const canPlant = !this.grid.isOccupied(cell.row, cell.col) && this.sunAmount >= PLANTS[type].cost;
+    this.previewRect.clear(); this.previewRect.fillStyle(canPlant ? 0x58f5b1 : 0xff5575, 0.12); this.previewRect.fillRoundedRect(x - GRID.CELL_W / 2 + 3, y - GRID.CELL_H / 2 + 3, GRID.CELL_W - 6, GRID.CELL_H - 6, 8);
+    this.previewRect.lineStyle(3, canPlant ? 0x65efad : 0xff5b77, 0.9); this.previewRect.strokeRoundedRect(x - GRID.CELL_W / 2 + 3, y - GRID.CELL_H / 2 + 3, GRID.CELL_W - 6, GRID.CELL_H - 6, 8);
   }
 
   private handlePointerDown(pointer: Phaser.Input.Pointer): void {
-    if (this.gameState !== 'playing') return;
-
-    // 阳光优先响应
-    for (const sun of this.suns) {
-      if (sun.containsPoint(pointer.worldX, pointer.worldY)) {
-        sun.collect();
-        return;
-      }
-    }
-
-    const type = this.seedBank.selectedType;
-    if (!type) return;
-
-    const cell = this.grid.worldToCell(pointer.worldX, pointer.worldY);
-    if (!cell) return;
-
-    if (this.plantAt(cell.row, cell.col, type)) {
-      // 种植成功后卡片进入冷却并取消选中，这里同步清掉预览
-      this.updatePreview(pointer);
-      return;
-    }
-
-    // 失败反馈
-    this.cameras.main.shake(120, 0.004);
+    if (this.gameState !== 'playing' || this.isPaused) return;
+    for (const sun of this.suns) if (sun.containsPoint(pointer.worldX, pointer.worldY)) { sun.collect(); return; }
+    const type = this.seedBank.selectedType; if (!type) return;
+    const cell = this.grid.worldToCell(pointer.worldX, pointer.worldY); if (!cell) return;
+    if (this.plantAt(cell.row, cell.col, type)) { this.updatePreview(pointer); return; }
+    this.cameras.main.shake(100, 0.0035); this.showToast('这里暂时无法部署', 0xff6585);
   }
 
-  // ------------------------------------------------------------------
-  // 结算
-  // ------------------------------------------------------------------
+  private showWaveAlert(title: string, huge: boolean): void {
+    this.alertText.setText(`${huge ? '⚠ 大型波次' : '下一波'}\n${title}`);
+    this.tweens.killTweensOf(this.alertText); this.alertText.setAlpha(0).setScale(0.6).setColor(huge ? '#ff5f83' : '#68e8ff');
+    this.tweens.add({ targets: this.alertText, alpha: 1, scale: 1, duration: 360, ease: 'Back.easeOut', yoyo: true, hold: 1200, onComplete: () => this.alertText.setAlpha(0) });
+  }
 
-  private showHugeWaveAlert(): void {
-    this.alertText.setText('一大波僵尸正在接近！');
-    this.tweens.killTweensOf(this.alertText);
-    this.alertText.setAlpha(0).setScale(0.6);
-    this.tweens.add({
-      targets: this.alertText,
-      alpha: 1,
-      scale: 1,
-      duration: 380,
-      ease: 'Back.easeOut',
-      yoyo: true,
-      hold: 1500,
-      onComplete: () => this.alertText.setAlpha(0),
-    });
+  private showBossBanner(config: (typeof ZOMBIES)[ZombieType]): void {
+    const panel = this.add.rectangle(GAME_WIDTH / 2, 155, 680, 54, 0x170d27, 0.92).setDepth(165).setStrokeStyle(2, 0xd36aff, 0.75);
+    const text = sharpenText(this.add.text(GAME_WIDTH / 2, 155, `BOSS · ${config.name}　「${config.quote}」`, { fontFamily: 'Microsoft YaHei', fontSize: '18px', color: '#f4d8ff', fontStyle: 'bold' })).setOrigin(0.5).setDepth(166);
+    panel.setAlpha(0); text.setAlpha(0); this.tweens.add({ targets: [panel, text], alpha: 1, duration: 280, yoyo: true, hold: 1800, onComplete: () => { panel.destroy(); text.destroy(); } });
+  }
+
+  private showToast(message: string, color: number): void {
+    const toast = sharpenText(this.add.text(GAME_WIDTH / 2, GAME_HEIGHT - 18, message, { fontFamily: 'Microsoft YaHei', fontSize: '14px', color: Phaser.Display.Color.IntegerToColor(color).rgba, backgroundColor: '#081221dd', padding: { x: 16, y: 8 } })).setOrigin(0.5, 1).setDepth(190);
+    this.tweens.add({ targets: toast, y: toast.y - 12, alpha: { from: 0, to: 1 }, duration: 220, yoyo: true, hold: 1100, onComplete: () => toast.destroy() });
   }
 
   private gameOver(win: boolean): void {
     if (this.gameState !== 'playing') return;
-    this.gameState = win ? 'win' : 'lose';
+    this.gameState = win ? 'win' : 'lose'; this.seedBank.clearSelection(); this.preview?.setVisible(false); this.previewRect.clear();
+    const overlay = this.add.rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2, GAME_WIDTH, GAME_HEIGHT, 0x030712, 0.84).setDepth(220).setAlpha(0);
+    const card = this.add.rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2, 620, 310, win ? 0x102f36 : 0x321327, 0.97).setDepth(221).setStrokeStyle(3, win ? 0x65efcf : 0xff648c, 0.8).setAlpha(0);
+    const kicker = sharpenText(this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 104, win ? 'STAGE SECURED' : 'STAGE LOST', { fontFamily: 'Arial', fontSize: '15px', color: win ? '#65efcf' : '#ff7598', fontStyle: 'bold', letterSpacing: 4 })).setOrigin(0.5).setDepth(222).setAlpha(0);
+    const title = sharpenText(this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 52, win ? '我们又守护了舞台！' : '哈哈哈，舞台是我们 A87 的了！', { fontFamily: 'Microsoft YaHei', fontSize: '31px', color: '#ffffff', fontStyle: 'bold', align: 'center' })).setOrigin(0.5).setDepth(222).setAlpha(0);
+    const sub = sharpenText(this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 + 2, win ? '枝江的灯光再次为大家亮起' : '重新集结应援，再夺回属于大家的舞台', { fontFamily: 'Microsoft YaHei', fontSize: '15px', color: '#a9c4d2' })).setOrigin(0.5).setDepth(222).setAlpha(0);
+    const retry = this.makeButton(GAME_WIDTH / 2 - 88, GAME_HEIGHT / 2 + 80, '再次挑战', () => this.scene.restart({ level: this.level }), 223);
+    const menu = this.makeButton(GAME_WIDTH / 2 + 88, GAME_HEIGHT / 2 + 80, '返回主界面', () => this.scene.start('MenuScene'), 223);
+    retry.setAlpha(0); menu.setAlpha(0);
+    this.tweens.add({ targets: [overlay, card, kicker, title, sub, retry, menu], alpha: 1, duration: 450, ease: 'Quad.easeOut' });
+  }
 
-    this.seedBank.clearSelection();
-    this.preview?.setVisible(false);
-    this.previewRect.clear();
-
-    const overlay = this.add
-      .rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2, GAME_WIDTH, GAME_HEIGHT, 0x000000, 0.72)
-      .setDepth(200);
-
-    const title = this.add
-      .text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 60, win ? '防守成功！' : '僵尸吃掉了你的脑子…', {
-        fontFamily: 'Arial',
-        fontSize: '38px',
-        color: win ? '#8bc34a' : '#ff5252',
-        fontStyle: 'bold',
-      })
-      .setOrigin(0.5)
-      .setDepth(201);
-
-    const button = this.add
-      .text(GAME_WIDTH / 2, GAME_HEIGHT / 2 + 40, '重新开始', {
-        fontFamily: 'Arial',
-        fontSize: '24px',
-        color: '#ffffff',
-        backgroundColor: '#6d4c41',
-        padding: { x: 24, y: 12 },
-      })
-      .setOrigin(0.5)
-      .setDepth(201)
-      .setInteractive({ useHandCursor: true });
-
-    button.on('pointerdown', () => this.scene.restart({ level: this.level }));
-
-    this.tweens.add({
-      targets: [overlay, title, button],
-      alpha: { from: 0, to: 1 },
-      duration: 380,
-    });
+  private makeButton(x: number, y: number, label: string, onClick: () => void, depth: number): Phaser.GameObjects.Text {
+    const button = sharpenText(this.add.text(x, y, label, { fontFamily: 'Microsoft YaHei', fontSize: '17px', color: '#f5fcff', backgroundColor: '#28445f', padding: { x: 22, y: 12 } })).setOrigin(0.5).setDepth(depth).setInteractive({ useHandCursor: true });
+    button.on('pointerover', () => button.setBackgroundColor('#3c6687').setScale(1.04)); button.on('pointerout', () => button.setBackgroundColor('#28445f').setScale(1)); button.on('pointerdown', onClick); return button;
   }
 }

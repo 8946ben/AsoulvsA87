@@ -13,11 +13,12 @@ const config: Phaser.Types.Core.GameConfig = {
   scale: {
     mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH,
+    autoRound: true,
   },
   render: {
-    // 保持像素清晰
+    // 对齐物理像素，同时保留立绘和矢量纹理的平滑边缘。
     antialias: true,
-    roundPixels: false,
+    roundPixels: true,
   },
   scene: [BootScene, MenuScene, GameScene],
 };
