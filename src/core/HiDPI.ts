@@ -84,12 +84,33 @@ export function applyHiDPI(game: Phaser.Game): void {
   }
 }
 
-/** 监听游戏生命周期：场景创建（相机重建）、窗口尺寸变化、启动完成时都重新套用高 DPI 缩放。 */
+/**
+ * 监听游戏生命周期：窗口尺寸变化、启动完成时统一重新套用高 DPI 缩放。
+ *
+ * 注意：Phaser 的 `CREATE` 事件只在每个场景自己的 `sys.events` 上触发（SceneManager#create，
+ * `sys.events.emit(Events.CREATE, scene)`），并不会冒泡到 `game.events`。因此在场景切换/重开时，
+ * 若监听 `game.events` 将永远收不到回调，相机也就不会重新套用高 DPI。
+ *
+ * 为什么必须重套：场景 `restart` 会走 CameraManager#shutdown -> #start，把旧相机 destroy 后
+ * 重新 `add()` 出一个逻辑尺寸（sys.scale.width=GAME_WIDTH，zoom=1）的全新相机。而渲染 buffer 已被
+ * 放大到 bufW。此时一个 1280 宽、未缩放的相机只在 buffer 左侧约 66% 区域绘制世界，画面“变小”。
+ * 因此这里逐个订阅每个场景 `sys.events` 的 `CREATE`，保证场景创建/重启/切换后相机都重新缩放。
+ */
 export function installHiDPI(game: Phaser.Game): void {
   patchInputTransform(game);
   const apply = (): void => applyHiDPI(game);
-  game.events.on(Phaser.Scenes.Events.CREATE, apply);
   game.scale.on(Phaser.Scale.Events.RESIZE, apply);
-  game.events.once(Phaser.Core.Events.READY, apply);
+
+  const subscribe = (scene: Phaser.Scene): void => {
+    const sys = scene.sys as unknown as { __hidiWatching?: boolean; events: Phaser.Events.EventEmitter };
+    if (sys.__hidiWatching) return;
+    sys.__hidiWatching = true;
+    sys.events.on(Phaser.Scenes.Events.CREATE, apply);
+  };
+  const watchAll = (): void => { for (const scene of game.scene.scenes) subscribe(scene); };
+
+  watchAll();
+  game.events.once(Phaser.Core.Events.READY, watchAll);
+
   apply();
 }
