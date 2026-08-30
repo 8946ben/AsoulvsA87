@@ -5,7 +5,8 @@ import { PLANTS, type PlantConfig, type PlantType } from '../data/plants';
 const CARD_W = 68;
 const CARD_H = 104;
 const CARD_GAP = 5;
-const CARD_START_X = 102;
+const BANK_X = 8;
+const BANK_W = 836;
 
 export class SeedCard extends Phaser.GameObjects.Container {
   readonly config: PlantConfig;
@@ -79,8 +80,10 @@ export class SeedBank {
       fontFamily: 'Microsoft YaHei, sans-serif', fontSize: '14px', color: '#effaff',
       backgroundColor: '#101a2bea', padding: { x: 12, y: 8 }, align: 'center',
     }).setOrigin(0.5, 0).setDepth(180).setVisible(false);
+    const totalWidth = types.length * CARD_W + Math.max(0, types.length - 1) * CARD_GAP;
+    const startX = BANK_X + (BANK_W - totalWidth) / 2 + CARD_W / 2;
     types.forEach((type, index) => {
-      const card = new SeedCard(scene, CARD_START_X + index * (CARD_W + CARD_GAP) + CARD_W / 2, SEEDBANK_HEIGHT / 2, PLANTS[type]);
+      const card = new SeedCard(scene, startX + index * (CARD_W + CARD_GAP), SEEDBANK_HEIGHT / 2, PLANTS[type]);
       card.parentBank = this; card.on('pointerdown', () => this.toggleSelect(card)); this.cards.push(card);
     });
   }

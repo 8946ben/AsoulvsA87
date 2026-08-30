@@ -9,6 +9,7 @@ export interface PlantContext {
   spawnProjectile(x: number, y: number, texture: string, damage: number, row: number, options?: ProjectileOptions): void;
   spawnSun(x: number, y: number, amount: number): void;
   damageArea(x: number, y: number, radius: number, damage: number, stunMs?: number): void;
+  freezeAll(durationMs: number): void;
   replacePlant(plant: Plant, type: PlantType | null): void;
 }
 
@@ -44,8 +45,6 @@ export class Plant extends Phaser.GameObjects.Sprite {
     this.setScale(this.baseScale * 0.35).setAlpha(0);
     scene.tweens.add({ targets: this, scale: this.baseScale, alpha: 1, duration: 300, ease: 'Back.easeOut' });
   }
-
-  get torchActive(): boolean { return this.active && this.config.behavior === 'torch' && !this.transformed; }
 
   update(time: number, delta: number, ctx: PlantContext): void {
     if (!this.active) return;
@@ -95,14 +94,21 @@ export class Plant extends Phaser.GameObjects.Sprite {
         if (target) {
           this.attackTimer += delta;
           const distance = Math.max(0, target.x - this.x);
-          const interval = Phaser.Math.Linear(260, this.config.attackInterval ?? 950, Phaser.Math.Clamp(distance / 720, 0, 1));
+          const baseInterval = this.config.attackInterval ?? 950;
+          const distanceRatio = Phaser.Math.Clamp((distance - GRID.CELL_W) / (GRID.CELL_W * 7), 0, 1);
+          const speedMultiplier = Phaser.Math.Linear(5, 1, distanceRatio);
+          const interval = baseInterval / speedMultiplier;
           if (this.attackTimer >= interval) { this.attackTimer = 0; this.fire(ctx, {}, false); this.recoil(); }
         }
         break;
-      case 'torch':
-        if (!this.transformed && target && target.x - this.x < 62) {
-          this.transformed = true; this.maxHp = 1750; this.hp = Math.max(this.hp, 1750);
-          this.setTint(0x8ad8ff); this.pulse(1.2, 300);
+      case 'freeze':
+        this.specialTimer += delta;
+        if (!this.resolving && this.specialTimer >= 520) {
+          this.resolving = true;
+          ctx.freezeAll(this.config.freezeDuration ?? 4000);
+          this.burst(0x8de8ff);
+          const roll = Math.random();
+          ctx.replacePlant(this, roll < 0.2 ? 'fiona' : roll < 0.4 ? 'xiaohainuo' : null);
         }
         break;
       case 'squash':
@@ -116,11 +122,11 @@ export class Plant extends Phaser.GameObjects.Sprite {
 
   private updateBella(delta: number, target: Zombie | null, ctx: PlantContext): void {
     if (!target) return;
-    const near = target.x - this.x < GRID.CELL_W * 1.25;
+    const near = target.x - this.x <= GRID.CELL_W;
     if (near && !this.transformed) { this.transformed = true; this.setTint(0xff776f); this.pulse(1.18, 220); }
     if (this.transformed) {
       this.attackTimer += delta;
-      if (target.x - this.x < 48 || this.attackTimer > 2600) {
+      if (target.x - this.x < 48) {
         ctx.damageArea(this.x, this.y, 100, 1050, 300); this.burst(0xff554f); ctx.replacePlant(this, null);
       }
       return;
@@ -133,7 +139,7 @@ export class Plant extends Phaser.GameObjects.Sprite {
 
   private updateEileen(delta: number, target: Zombie | null, ctx: PlantContext): void {
     if (!target) return;
-    const near = target.x - this.x < GRID.CELL_W * 1.25;
+    const near = target.x - this.x <= GRID.CELL_W;
     this.attackTimer += delta;
     if (near) {
       if (!this.transformed) { this.transformed = true; this.setTint(0xc59aff); this.pulse(1.16, 200); }

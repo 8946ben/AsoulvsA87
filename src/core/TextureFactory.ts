@@ -28,6 +28,15 @@ export class TextureFactory {
     }
 
     this.drawA87(g, 'basic'); this.emit(scene, g, TEX.ZOMBIE_BASIC, 74, 96);
+    this.drawA87Variant(g, 'phone'); this.emit(scene, g, TEX.ZOMBIE_PHONE, 90, 96);
+    this.drawA87Variant(g, 'flag'); this.emit(scene, g, TEX.ZOMBIE_FLAG, 118, 110);
+    this.drawA87Variant(g, 'screen'); this.emit(scene, g, TEX.ZOMBIE_SCREEN, 100, 100);
+    this.drawA87Variant(g, 'balloon'); this.emit(scene, g, TEX.ZOMBIE_BALLOON, 100, 130);
+    this.drawA87Variant(g, 'ladder'); this.emit(scene, g, TEX.ZOMBIE_LADDER, 112, 104);
+    this.drawA87(g, 'bucket'); this.emit(scene, g, TEX.ZOMBIE_CONE, 74, 96);
+    this.drawKnight(g); this.emit(scene, g, TEX.ZOMBIE_FOOTBALL, 80, 100);
+    this.drawA87(g, 'dragon'); this.emit(scene, g, TEX.ZOMBIE_SLED, 112, 118);
+    this.drawA87(g, 'bucket'); this.emit(scene, g, TEX.ZOMBIE_MINER, 74, 96);
     this.drawA87(g, 'bucket'); this.emit(scene, g, TEX.ZOMBIE_BUCKET, 74, 96);
     this.drawA87(g, 'pole'); this.emit(scene, g, TEX.ZOMBIE_POLE, 78, 98);
     this.drawKnight(g); this.emit(scene, g, TEX.ZOMBIE_KNIGHT, 80, 100);
@@ -106,6 +115,50 @@ export class TextureFactory {
     if (kind === 'dragon') {
       g.fillStyle(0xffd166, 1); g.fillTriangle(cx - 31, 28, cx - 16, 2, cx - 7, 32); g.fillTriangle(cx + 31, 28, cx + 16, 2, cx + 7, 32);
       g.lineStyle(4, 0xffd166, 1); g.beginPath(); g.arc(cx, 65, 47, -2.7, -0.45); g.strokePath();
+    }
+  }
+
+  private static drawA87Variant(g: Phaser.GameObjects.Graphics, kind: 'phone' | 'flag' | 'screen' | 'balloon' | 'ladder'): void {
+    const cx = kind === 'flag' ? 76 : kind === 'screen' ? 64 : 54;
+    const cy = kind === 'balloon' ? 94 : kind === 'flag' ? 71 : 61;
+
+    if (kind === 'balloon') {
+      g.fillStyle(0xff668f, 1); g.fillCircle(50, 25, 22);
+      g.fillStyle(0xffffff, 0.36); g.fillCircle(43, 17, 7);
+      g.fillTriangle(46, 46, 54, 46, 50, 54);
+      g.lineStyle(2, 0x8c3153, 0.9); g.beginPath(); g.moveTo(50, 52); g.lineTo(cx, cy - 27); g.strokePath();
+    }
+    if (kind === 'flag') {
+      g.lineStyle(5, 0x745041, 1); g.beginPath(); g.moveTo(24, 8); g.lineTo(24, 106); g.strokePath();
+      g.fillStyle(0xee4f68, 1); g.fillTriangle(27, 10, 102, 25, 27, 48);
+      g.lineStyle(3, 0xffb3c1, 0.7); g.beginPath(); g.moveTo(43, 27); g.lineTo(58, 20); g.lineTo(75, 31); g.lineTo(90, 24); g.strokePath();
+    }
+    if (kind === 'ladder') {
+      g.lineStyle(6, 0xb67943, 1); g.beginPath(); g.moveTo(8, 100); g.lineTo(87, 6); g.moveTo(27, 103); g.lineTo(106, 10); g.strokePath();
+      g.lineStyle(4, 0xe0a45f, 1);
+      for (let i = 0; i < 5; i++) { const x = 24 + i * 15; const y = 83 - i * 18; g.beginPath(); g.moveTo(x, y); g.lineTo(x + 19, y + 3); g.strokePath(); }
+    }
+
+    g.fillStyle(0xdfe6ef, 1); g.fillEllipse(cx, cy, 57, 65);
+    g.lineStyle(4, 0x18243a, 1); g.strokeEllipse(cx, cy, 57, 65);
+    g.fillStyle(0xffa3b8, 1);
+    for (let i = 0; i < 4; i++) g.fillEllipse(cx - 24 + i * 16, cy + 30, 12, 8);
+    g.fillStyle(0xff8b49, 1); g.fillCircle(cx - 11, cy - 8, 7); g.fillCircle(cx + 11, cy - 8, 7);
+    g.fillStyle(0x17243a, 1); g.fillCircle(cx - 9, cy - 8, 3); g.fillCircle(cx + 13, cy - 8, 3);
+    g.fillStyle(0x8b2334, 1); g.fillRoundedRect(cx - 13, cy + 7, 26, 9, 4);
+
+    if (kind === 'phone') {
+      g.fillStyle(0x25334d, 1); g.fillRoundedRect(6, 47, 27, 40, 5);
+      g.lineStyle(3, 0x74dcff, 1); g.strokeRoundedRect(6, 47, 27, 40, 5);
+      g.fillStyle(0x6ee8ff, 0.75); g.fillRoundedRect(10, 52, 19, 27, 3);
+      g.fillStyle(0xffa3b8, 1); g.fillCircle(35, 67, 6);
+    }
+    if (kind === 'screen') {
+      g.fillStyle(0x687786, 0.96); g.fillRoundedRect(2, 22, 48, 74, 6);
+      g.lineStyle(4, 0xd8e2e8, 1); g.strokeRoundedRect(2, 22, 48, 74, 6);
+      g.lineStyle(2, 0xaebbc5, 0.9);
+      for (let x = 10; x < 48; x += 9) { g.beginPath(); g.moveTo(x, 27); g.lineTo(x, 91); g.strokePath(); }
+      for (let y = 31; y < 92; y += 11) { g.beginPath(); g.moveTo(6, y); g.lineTo(47, y); g.strokePath(); }
     }
   }
 

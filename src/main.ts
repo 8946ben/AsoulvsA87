@@ -3,6 +3,8 @@ import { GAME_HEIGHT, GAME_WIDTH } from './config/GameConfig';
 import { BootScene } from './scenes/BootScene';
 import { GameScene } from './scenes/GameScene';
 import { MenuScene } from './scenes/MenuScene';
+import { CodexScene } from './scenes/CodexScene';
+import { LevelSelectScene } from './scenes/LevelSelectScene';
 
 const config: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
@@ -20,7 +22,7 @@ const config: Phaser.Types.Core.GameConfig = {
     antialias: true,
     roundPixels: true,
   },
-  scene: [BootScene, MenuScene, GameScene],
+  scene: [BootScene, MenuScene, LevelSelectScene, CodexScene, GameScene],
 };
 
 new Phaser.Game(config);

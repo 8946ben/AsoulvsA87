@@ -8,6 +8,8 @@ export interface ProjectileOptions {
   splash?: number;
   empowered?: boolean;
   lobbed?: boolean;
+  arcTargetX?: number;
+  arcTargetY?: number;
 }
 
 export interface ProjectileContext {
@@ -21,7 +23,11 @@ export class Projectile extends Phaser.GameObjects.Sprite {
   readonly speed: number;
   readonly options: ProjectileOptions;
   private readonly hit = new Set<Zombie>();
-  private flight = 0;
+  private readonly launchX: number;
+  private readonly launchY: number;
+  private readonly arcDistance: number;
+  private readonly arcTargetY: number;
+  private readonly arcHeight: number;
 
   constructor(scene: Phaser.Scene, x: number, y: number, texture: string, damage: number, row: number, options: ProjectileOptions = {}, speed = 390) {
     super(scene, x, y, texture);
@@ -29,6 +35,11 @@ export class Projectile extends Phaser.GameObjects.Sprite {
     this.row = row;
     this.options = options;
     this.speed = speed;
+    this.launchX = x;
+    this.launchY = y;
+    this.arcDistance = Math.max(1, (options.arcTargetX ?? x + 360) - x);
+    this.arcTargetY = options.arcTargetY ?? y;
+    this.arcHeight = Phaser.Math.Clamp(this.arcDistance * 0.24, 48, 112);
     scene.add.existing(this);
     this.setDepth(35 + row * 0.1);
     if (options.empowered) {
@@ -41,10 +52,11 @@ export class Projectile extends Phaser.GameObjects.Sprite {
 
   update(_time: number, delta: number, ctx: ProjectileContext): void {
     if (!this.active) return;
-    this.flight += delta;
     this.x += this.speed * delta / 1000;
     if (this.options.lobbed) {
-      this.y += Math.sin(this.flight / 130) * 0.55;
+      const progress = Phaser.Math.Clamp((this.x - this.launchX) / this.arcDistance, 0, 1);
+      const baselineY = Phaser.Math.Linear(this.launchY, this.arcTargetY, progress);
+      this.y = baselineY - 4 * this.arcHeight * progress * (1 - progress);
       this.angle += delta * 0.18;
     }
     if (this.x > GAME_WIDTH + 40) { this.destroy(); return; }

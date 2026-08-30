@@ -1,15 +1,19 @@
 import Phaser from 'phaser';
 import { GAME_HEIGHT, GAME_WIDTH, TEX } from '../config/GameConfig';
-import { sharpenSceneText } from '../core/TextQuality';
-import { LEVEL_1 } from '../data/levels';
-import { GameScene } from './GameScene';
+import { activateDeveloperMode, isDeveloperMode } from '../core/DeveloperMode';
+import { sharpenSceneText, sharpenText } from '../core/TextQuality';
+import { CodexScene } from './CodexScene';
+import { LevelSelectScene } from './LevelSelectScene';
 
 export class MenuScene extends Phaser.Scene {
   static readonly KEY = 'MenuScene';
+  private developerButton!: Phaser.GameObjects.Text;
+  private developerStatus!: Phaser.GameObjects.Text;
+
   constructor() { super(MenuScene.KEY); }
 
   create(): void {
-    this.createBackground(); this.createCast(); this.createTitle(); this.createStartButton();
+    this.createBackground(); this.createCast(); this.createTitle(); this.createStartButton(); this.createCodexButton(); this.createDeveloperButton();
     this.add.text(GAME_WIDTH / 2, GAME_HEIGHT - 38, '同人创作 · 角色与故事归原作者及社群共同记忆所有', { fontFamily: 'Microsoft YaHei', fontSize: '12px', color: '#66869d' }).setOrigin(0.5);
     sharpenSceneText(this);
   }
@@ -30,9 +34,9 @@ export class MenuScene extends Phaser.Scene {
   }
 
   private createCast(): void {
-    const left = [TEX.PLANT_JIAXINTANG, TEX.PLANT_BELLA, TEX.PLANT_DIANA, TEX.PLANT_GLADYS];
+    const left = [TEX.PLANT_JIAXINTANG, TEX.PLANT_BEIJIXING, TEX.PLANT_NAIQILIN];
     left.forEach((texture, index) => {
-      const x = 92 + index * 86; const y = 445 + Math.abs(1.5 - index) * 22;
+      const x = 106 + index * 104; const y = 445 + Math.abs(1 - index) * 22;
       const glow = this.add.circle(x, y, 47, index % 2 ? 0xff6f9f : 0x58e2ff, 0.1);
       const image = this.add.image(x, y, texture).setScale(1.05).setDepth(3);
       this.tweens.add({ targets: [image, glow], y: y - 9, duration: 1200 + index * 130, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
@@ -51,17 +55,107 @@ export class MenuScene extends Phaser.Scene {
     this.add.text(GAME_WIDTH / 2, 231, '邪恶的 A87 想夺走舞台，偶像与粉丝们必须并肩守住灯光。', { fontFamily: 'Microsoft YaHei', fontSize: '17px', color: '#a9c8d8' }).setOrigin(0.5);
 
     const feature = this.add.graphics(); feature.fillStyle(0x0c1728, 0.88); feature.fillRoundedRect(438, 278, 404, 86, 16); feature.lineStyle(1, 0x6de7ff, 0.25); feature.strokeRoundedRect(438, 278, 404, 86, 16);
-    this.add.text(GAME_WIDTH / 2, 303, '10 张基础角色卡  ·  6 类 A87 敌人', { fontFamily: 'Microsoft YaHei', fontSize: '16px', color: '#e8faff', fontStyle: 'bold' }).setOrigin(0.5);
+    this.add.text(GAME_WIDTH / 2, 303, '10 个巡演关卡  ·  10 张角色卡  ·  15 类敌人', { fontFamily: 'Microsoft YaHei', fontSize: '16px', color: '#e8faff', fontStyle: 'bold' }).setOrigin(0.5);
     this.add.text(GAME_WIDTH / 2, 339, '变形机制 / 距离攻速 / 定身投掷 / Boss 召唤', { fontFamily: 'Microsoft YaHei', fontSize: '13px', color: '#7da5ba' }).setOrigin(0.5);
   }
 
   private createStartButton(): void {
     const glow = this.add.rectangle(GAME_WIDTH / 2, 441, 244, 72, 0x5ee7ff, 0.13).setStrokeStyle(2, 0x6decff, 0.45);
-    const button = this.add.text(GAME_WIDTH / 2, 441, '开始保卫舞台', { fontFamily: 'Microsoft YaHei', fontSize: '24px', color: '#ffffff', backgroundColor: '#256487', padding: { x: 42, y: 16 }, fontStyle: 'bold' }).setOrigin(0.5).setInteractive({ useHandCursor: true }).setDepth(5);
+    const button = this.add.text(GAME_WIDTH / 2, 441, '选择巡演关卡', { fontFamily: 'Microsoft YaHei', fontSize: '24px', color: '#ffffff', backgroundColor: '#256487', padding: { x: 42, y: 16 }, fontStyle: 'bold' }).setOrigin(0.5).setInteractive({ useHandCursor: true }).setDepth(5);
     button.on('pointerover', () => { button.setBackgroundColor('#337fa3').setScale(1.035); glow.setAlpha(0.28); });
     button.on('pointerout', () => { button.setBackgroundColor('#256487').setScale(1); glow.setAlpha(1); });
-    button.on('pointerdown', () => this.scene.start(GameScene.KEY, { level: LEVEL_1 }));
+    button.on('pointerdown', () => this.scene.start(LevelSelectScene.KEY));
     this.tweens.add({ targets: glow, scaleX: 1.06, scaleY: 1.12, alpha: 0.05, duration: 950, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
     this.add.text(GAME_WIDTH / 2, 505, '点击角色卡 → 点击草坪部署　｜　点击应援球收集资源', { fontFamily: 'Microsoft YaHei', fontSize: '14px', color: '#8bacbe' }).setOrigin(0.5);
+  }
+
+  private createCodexButton(): void {
+    const button = this.add.text(GAME_WIDTH / 2, 558, '查看枝江图鉴', {
+      fontFamily: 'Microsoft YaHei', fontSize: '16px', color: '#dff9ff',
+      backgroundColor: '#172d43', padding: { x: 28, y: 11 }, fontStyle: 'bold',
+    }).setOrigin(0.5).setInteractive({ useHandCursor: true }).setDepth(5);
+    button.on('pointerover', () => button.setBackgroundColor('#28526c').setScale(1.03));
+    button.on('pointerout', () => button.setBackgroundColor('#172d43').setScale(1));
+    button.on('pointerdown', () => this.scene.start(CodexScene.KEY));
+  }
+
+  private createDeveloperButton(): void {
+    this.developerButton = this.add.text(GAME_WIDTH / 2, 616, '', {
+      fontFamily: 'Microsoft YaHei', fontSize: '13px', color: '#cce9f4',
+      padding: { x: 20, y: 8 }, fontStyle: 'bold',
+    }).setOrigin(0.5).setInteractive({ useHandCursor: true }).setDepth(5);
+    this.developerStatus = this.add.text(GAME_WIDTH / 2, 649, '', {
+      fontFamily: 'Microsoft YaHei', fontSize: '11px', color: '#718e9e',
+    }).setOrigin(0.5);
+    this.refreshDeveloperButton();
+    this.developerButton.on('pointerover', () => this.developerButton.setScale(1.03).setBackgroundColor('#31536b'));
+    this.developerButton.on('pointerout', () => { this.developerButton.setScale(1); this.refreshDeveloperButton(); });
+    this.developerButton.on('pointerdown', () => {
+      if (!isDeveloperMode()) this.openDeveloperLogin();
+    });
+  }
+
+  private refreshDeveloperButton(): void {
+    const enabled = isDeveloperMode();
+    this.developerButton
+      .setText(enabled ? '开发者模式 · 已启用' : '开发者模式')
+      .setBackgroundColor(enabled ? '#285b50' : '#172d43')
+      .setColor(enabled ? '#8ff2cf' : '#cce9f4');
+    this.developerStatus.setText(enabled ? '全部关卡可直接进入 · 不写入普通通关进度' : '开发测试入口');
+  }
+
+  private openDeveloperLogin(): void {
+    let code = '';
+    const modal = this.add.container(0, 0).setDepth(210);
+    const blocker = this.add.rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2, GAME_WIDTH, GAME_HEIGHT, 0x020610, 0.78).setInteractive();
+    const panel = this.add.rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2, 470, 260, 0x101d30, 0.99).setStrokeStyle(2, 0x65e7ff, 0.7);
+    const title = sharpenText(this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 88, '开发者身份验证', {
+      fontFamily: 'Microsoft YaHei', fontSize: '25px', color: '#f4fcff', fontStyle: 'bold',
+    })).setOrigin(0.5);
+    const subtitle = sharpenText(this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 50, '输入开发者口令后按回车', {
+      fontFamily: 'Microsoft YaHei', fontSize: '13px', color: '#83aabd',
+    })).setOrigin(0.5);
+    const inputBg = this.add.rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2 + 1, 330, 48, 0x07101e, 1).setStrokeStyle(2, 0x47748b, 0.8);
+    const inputText = sharpenText(this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 + 1, '口令：', {
+      fontFamily: 'Microsoft YaHei', fontSize: '18px', color: '#dff8ff',
+    })).setOrigin(0.5);
+    const hint = sharpenText(this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 + 39, 'ESC 取消', {
+      fontFamily: 'Microsoft YaHei', fontSize: '11px', color: '#69899a',
+    })).setOrigin(0.5);
+    const confirm = sharpenText(this.add.text(GAME_WIDTH / 2 - 62, GAME_HEIGHT / 2 + 83, '确认', {
+      fontFamily: 'Microsoft YaHei', fontSize: '14px', color: '#effcff', backgroundColor: '#256487', padding: { x: 20, y: 9 }, fontStyle: 'bold',
+    })).setOrigin(0.5).setInteractive({ useHandCursor: true });
+    const cancel = sharpenText(this.add.text(GAME_WIDTH / 2 + 62, GAME_HEIGHT / 2 + 83, '取消', {
+      fontFamily: 'Microsoft YaHei', fontSize: '14px', color: '#b8d0dc', backgroundColor: '#26394a', padding: { x: 20, y: 9 },
+    })).setOrigin(0.5).setInteractive({ useHandCursor: true });
+    modal.add([blocker, panel, title, subtitle, inputBg, inputText, hint, confirm, cancel]);
+
+    const refreshInput = (): void => { inputText.setText('口令：' + '●'.repeat(code.length)); };
+    const close = (): void => {
+      this.input.keyboard?.off('keydown', onKeyDown);
+      modal.destroy(true);
+    };
+    const submit = (): void => {
+      if (activateDeveloperMode(code)) {
+        close(); this.refreshDeveloperButton();
+        this.cameras.main.flash(180, 105, 240, 196, false);
+        return;
+      }
+      code = ''; refreshInput(); hint.setText('口令错误，请重新输入').setColor('#ff7895');
+      this.tweens.add({ targets: modal, x: { from: -7, to: 7 }, duration: 45, yoyo: true, repeat: 3, onComplete: () => modal.setX(0) });
+    };
+    const onKeyDown = (event: KeyboardEvent): void => {
+      event.preventDefault();
+      if (event.key === 'Escape') { close(); return; }
+      if (event.key === 'Enter') { submit(); return; }
+      if (event.key === 'Backspace') { code = code.slice(0, -1); refreshInput(); return; }
+      if (event.key.length === 1 && /^[a-z0-9]$/i.test(event.key) && code.length < 16) {
+        code += event.key.toLowerCase(); refreshInput(); hint.setText('ESC 取消').setColor('#69899a');
+      }
+    };
+
+    this.input.keyboard?.on('keydown', onKeyDown);
+    confirm.on('pointerdown', submit);
+    cancel.on('pointerdown', close);
   }
 }

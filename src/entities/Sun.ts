@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { SUN_RULES } from '../config/GameConfig';
 
-/** 阳光：从天空掉落，或从植物产出，点击收集 */
+/** 阳光：从天空掉落，或从植物产出，鼠标移入即可收集 */
 export class Sun extends Phaser.GameObjects.Sprite {
   readonly amount: number;
   private targetY: number;
@@ -31,7 +31,7 @@ export class Sun extends Phaser.GameObjects.Sprite {
     this.setDepth(40);
     this.setScale(0.9);
 
-    // 点击由 GameScene 统一命中判定，避免与种植操作冲突
+    // 鼠标悬停与点击由 GameScene 统一命中判定，避免与种植操作冲突
 
     // 待机旋转/呼吸
     scene.tweens.add({
@@ -90,7 +90,7 @@ export class Sun extends Phaser.GameObjects.Sprite {
     );
   }
 
-  /** 玩家点击收集 */
+  /** 玩家将鼠标移入或点击后收集 */
   collect(): void {
     if (this.collected || !this.active) return;
     this.collected = true;

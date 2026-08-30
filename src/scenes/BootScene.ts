@@ -10,7 +10,7 @@ import { MenuScene } from './MenuScene';
  * 接入自绘美术时在这里加载即可，key 与 config/GameConfig.ts 的 TEX 保持一致，
  * 加载完的同名纹理会覆盖 TextureFactory 生成的占位图，逻辑层无需任何改动：
  *
- *   this.load.image(TEX.PLANT_BEIJIXING, 'images/fans_beijixing.png');
+ *   this.load.image(TEX.PLANT_BEIJIXING, 'images/fans-beijixing-v2.png');
  *   this.load.image(TEX.ZOMBIE_BASIC, 'assets/images/zombie_basic.png');
  *   ...
  */
