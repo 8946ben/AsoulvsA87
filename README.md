@@ -1,0 +1,241 @@
+# A-SOUL vs A87
+
+一款使用 Phaser 3、TypeScript、Vite 和 Electron 制作的 A-SOUL 同人塔防游戏。
+
+游戏玩法参考《植物大战僵尸》：进入关卡前选择角色卡，在舞台格子上部署我方角色，抵挡从右侧进入的 A87。项目包含关卡、选卡、图鉴、融合角色、商店、开发者模式以及 Windows 免安装打包流程。
+
+## 直接游玩（普通玩家）
+
+从发布者处取得 `AsoulvsA87-Windows-x64.zip` 后：
+
+1. 将 ZIP **完整解压**到一个普通文件夹。
+2. 打开解压后的文件夹。
+3. 双击 `AsoulvsA87.exe`。
+
+便携版不需要安装 Node.js，也不需要运行安装程序。
+
+> 不要只把 `AsoulvsA87.exe` 单独复制出去。程序还需要同目录下的 DLL、`resources` 等文件，必须保留完整的解压目录。
+
+Windows 首次运行未知来源的程序时，可能显示安全提示。请确认文件来自可信发布者后再选择运行。
+
+### 基本操作
+
+- 鼠标：选择角色卡、部署角色、拾取阳光、操作界面按钮。
+- 铲子：点击战斗界面右上方的“铲子”，再点击需要移除的角色。
+- `空格`：暂停或继续游戏。
+- 暂停菜单：可以继续、重新开始本关或返回主界面。
+- `Esc`：取消当前角色卡或铲子选择；在选关、选卡、图鉴等页面返回上一层。
+- `Enter`：在选卡页面确认阵容并开始战斗。
+- 图鉴中使用 `Tab` 切换我方/敌方，使用左右方向键翻页。
+
+### 开发者模式
+
+在主界面点击“开发者模式”，输入口令 `ftqd` 并按回车。开发者模式只在当前程序会话内生效，可以进入任意关卡，且不会改写正常通关进度。
+
+## 开发环境
+
+以下内容面向需要修改游戏的开发者。
+
+### 环境要求
+
+- Windows 10/11 64 位。
+- [Node.js](https://nodejs.org/) 20 或更高版本，推荐使用当前 LTS 版本。
+- npm（安装 Node.js 时会一并安装）。
+- PowerShell 5.1 或更高版本。
+
+在 PowerShell 中检查环境：
+
+```powershell
+node --version
+npm --version
+```
+
+### 首次安装依赖
+
+进入项目主目录后执行：
+
+```powershell
+npm ci
+```
+
+`npm ci` 会严格按照 `package-lock.json` 安装依赖，适合刚克隆项目或重新配置环境。如果主动修改了依赖版本，请使用 `npm install` 更新依赖及锁文件。
+
+### 启动开发版
+
+浏览器开发模式（支持热更新，适合日常修改）：
+
+```powershell
+npm run dev
+```
+
+终端会显示本地访问地址，通常为 `http://localhost:5173`。保持终端运行，在浏览器中打开该地址即可。修改代码或资源后，页面通常会自动刷新。
+
+以 Electron 桌面窗口测试：
+
+```powershell
+npm run electron:start
+```
+
+该命令会先进行正式构建，再启动桌面版。它更接近最终交付给玩家的运行环境。
+
+## 项目结构与修改位置
+
+```text
+asoulVsA87/
+├─ src/                    游戏 TypeScript 源码
+│  ├─ data/               我方、敌方、关卡和科技树数据
+│  ├─ entities/           角色、敌人、弹道、阳光等战斗逻辑
+│  ├─ scenes/             主界面、选关、选卡、图鉴、战斗等页面
+│  ├─ core/               网格、进度、金币、开发者模式等通用逻辑
+│  └─ ui/                 卡槽和主题 UI
+├─ public/images/          游戏正式图片资源
+├─ electron/main.cjs       Windows 桌面程序入口
+├─ scripts/                便携版打包脚本
+├─ background.md           玩法、角色和关卡设计设定
+├─ codex.md                图鉴及数值设定文档
+├─ package.json            npm 命令和依赖配置
+└─ vite.config.ts          Web 构建配置
+```
+
+常见修改入口：
+
+- 修改我方角色数值或卡牌配置：`src/data/plants.ts`
+- 修改敌人数据：`src/data/zombies.ts`
+- 修改关卡波次、选卡数量和初始阳光：`src/data/levels.ts`
+- 修改角色战斗机制：`src/entities/Plant.ts`
+- 修改敌人行动、攻击和特殊能力：`src/entities/Zombie.ts`
+- 修改战斗流程和接触判定：`src/scenes/GameScene.ts`
+- 修改图鉴布局和展示顺序：`src/scenes/CodexScene.ts`
+- 修改正式立绘或敌人图片：`public/images/`
+
+正式图片请放在 `public/images` 中，并在加载资源的代码中使用对应文件名。不要把正式资源只放在项目根目录：根目录 PNG 默认被 `.gitignore` 视为过程截图，不会进入版本控制和发布包。
+
+修改 `background.md` 或 `codex.md` 本身不会自动改变游戏；设定最终仍需同步到 `src/data`、`src/entities` 或相关场景代码中。
+
+## 修改后的检查流程
+
+建议每次完成一组修改后依次执行：
+
+```powershell
+npm run typecheck
+npm run build
+```
+
+- `npm run typecheck`：只检查 TypeScript 类型，不生成文件。
+- `npm run build`：执行类型检查并生成正式 Web 资源到 `dist/`。
+
+随后可运行：
+
+```powershell
+npm run electron:start
+```
+
+重点试玩受修改影响的内容，例如部署、形态切换、伤害结算、暂停、重新开始、选关和图鉴翻页。构建成功只能说明代码和资源可以被打包，不能代替实际玩法测试。
+
+## 打包 Windows 免安装版
+
+### 一键生成可分享的 ZIP
+
+在项目主目录运行：
+
+```powershell
+npm run portable:win
+```
+
+脚本会依次：
+
+1. 检查 TypeScript 并构建前端到 `dist/`。
+2. 准备只包含运行所需文件的临时目录 `.portable-app/`。
+3. 生成可运行目录 `out/AsoulvsA87-win32-x64/`。
+4. 将整个运行目录压缩为：
+
+```text
+release/AsoulvsA87-Windows-x64.zip
+```
+
+将这个 ZIP 发给其他 Windows 用户即可。对方完整解压后双击 `AsoulvsA87.exe`，不需要安装 Node.js。
+
+每次重新运行 `npm run portable:win`，旧的同名输出目录和 ZIP 会被脚本安全覆盖，因此修改游戏后直接再次执行该命令即可。
+
+### 只生成未压缩的运行目录
+
+如需先检查目录版而不生成 ZIP：
+
+```powershell
+npm run package:win
+```
+
+输出位置：
+
+```text
+out/AsoulvsA87-win32-x64/AsoulvsA87.exe
+```
+
+建议先运行这里的 EXE 完成一次冒烟测试，再执行 `npm run portable:win` 生成分享包。
+
+### 打包后建议检查
+
+1. 完全退出仍在运行的旧版本游戏。
+2. 删除或移走以前解压的测试目录，避免误开旧版。
+3. 解压新生成的 `release/AsoulvsA87-Windows-x64.zip`。
+4. 双击其中的 `AsoulvsA87.exe`。
+5. 确认主界面、图鉴、选关、选卡和战斗均能进入。
+6. 实测本次修改涉及的角色或敌人机制。
+
+## npm 命令速查
+
+| 命令 | 用途 |
+| --- | --- |
+| `npm run dev` | 启动浏览器开发服务器和热更新 |
+| `npm run typecheck` | 检查 TypeScript 类型 |
+| `npm run build` | 生成正式 Web 构建到 `dist/` |
+| `npm run preview` | 在本地预览 `dist/` 构建 |
+| `npm run electron:start` | 构建并启动 Electron 桌面版 |
+| `npm run package:win` | 生成未压缩的 Windows 便携目录 |
+| `npm run portable:win` | 生成最终可分享的 Windows ZIP |
+
+## 常见问题
+
+### `npm ci` 或 Electron 下载失败
+
+首次安装依赖需要访问 npm 软件源。请检查网络、代理和 npm 源设置，然后重新运行：
+
+```powershell
+npm ci
+```
+
+若依赖目录存在，但提示缺少 Electron Windows 运行时，可执行：
+
+```powershell
+node node_modules/electron/install.js
+```
+
+完成后重新运行 `npm run portable:win`。打包脚本也会尝试使用本机 Electron 缓存中已有的 64 位 Windows 运行时。
+
+### 提示 PowerShell 禁止运行脚本
+
+项目的 npm 命令已经通过 `-ExecutionPolicy Bypass` 启动内部打包脚本。请优先执行 `npm run portable:win`，不要直接双击 `.ps1` 文件。
+
+### 打包时提示文件被占用
+
+请退出所有正在运行的 `AsoulvsA87.exe`，关闭打开在 `out` 或 `release` 目录中的压缩软件窗口，然后重新打包。
+
+### 玩家双击 EXE 后无法运行
+
+确认玩家已经完整解压 ZIP，而不是直接在压缩软件中运行，也没有只复制 EXE。建议把完整目录解压到不受权限限制的位置，例如桌面或文档目录。
+
+### 如何清理构建产物
+
+`dist/`、`.portable-app/`、`out/` 和 `release/` 都是可重新生成的构建产物。通常不需要手动删除；重新打包会更新相应输出。若确实要清理，请先确认游戏和相关终端已经退出，并只删除这些明确的目录，不要删除 `src/`、`public/`、`electron/` 或 `scripts/`。
+
+## 提交修改前建议
+
+提交 Git 版本前至少执行：
+
+```powershell
+npm run typecheck
+npm run build
+git status
+```
+
+确认正式图片位于 `public/images`，并检查 `git status` 中没有误加入过程截图、临时日志、`out` 或 `release`。大型资源会显著增加仓库和发布包体积，添加前应确认游戏确实会使用它们。

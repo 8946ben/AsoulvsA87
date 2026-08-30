@@ -6,12 +6,13 @@ import { ZOMBIES, type ZombieConfig, type ZombieType } from '../data/zombies';
 import { createFreshBackdrop, FRESH } from '../ui/FreshTheme';
 
 type CodexTab = 'allies' | 'enemies';
-const PAGE_SIZE = 10;
+const COLUMNS = 4;
+const PAGE_SIZE = COLUMNS * 2;
 
 const ENEMY_ORDER: ZombieType[] = [
   'basic', 'cone', 'phone', 'flag', 'screen',
   'balloon', 'ladder', 'football', 'sled', 'miner',
-  'bucket', 'pole', 'knight', 'dragon', 'carol',
+  'bucket', 'pole', 'dragon',
 ];
 
 /** 双方单位资料库：所有内容直接读取当前战斗数据，避免图鉴与实际数值脱节。 */
@@ -135,11 +136,11 @@ export class CodexScene extends Phaser.Scene {
   }
 
   private renderAllies(): void {
-    const cardW = 228; const cardH = 204; const gapX = 14; const gapY = 18;
-    const totalW = cardW * 5 + gapX * 4; const startX = (GAME_WIDTH - totalW) / 2;
+    const cardW = 286; const cardH = 232; const gapX = 16; const gapY = 14;
+    const totalW = cardW * COLUMNS + gapX * (COLUMNS - 1); const startX = (GAME_WIDTH - totalW) / 2;
     const offset = this.pageByTab.allies * PAGE_SIZE;
     CODEX_PLANT_ORDER.slice(offset, offset + PAGE_SIZE).forEach((type, index) => {
-      const col = index % 5; const row = Math.floor(index / 5);
+      const col = index % COLUMNS; const row = Math.floor(index / COLUMNS);
       const x = startX + col * (cardW + gapX) + cardW / 2;
       const y = 164 + row * (cardH + gapY) + cardH / 2;
       this.content.add(this.createAllyCard(x, y, PLANTS[type], offset + index + 1, cardW, cardH));
@@ -151,28 +152,29 @@ export class CodexScene extends Phaser.Scene {
     const bg = this.add.rectangle(0, 0, w, h, FRESH.PAPER, 0.97).setStrokeStyle(2, config.accent, 0.32).setInteractive({ useHandCursor: true });
     const strip = this.add.rectangle(-w / 2 + 4, 0, 7, h - 10, config.accent, 0.86);
     const number = this.add.text(-w / 2 + 18, -h / 2 + 12, String(index).padStart(2, '0'), { fontFamily: 'Arial', fontSize: '11px', color: '#71809a', fontStyle: 'bold' });
-    const imageX = -w / 2 + 47; const textX = -w / 2 + 88; const textW = w - 102;
-    const image = this.fitImage(this.add.image(imageX, 13, config.texture), 66, 90);
-    const name = this.add.text(textX, -72, config.name, { fontFamily: 'Microsoft YaHei', fontSize: '17px', color: '#42506d', fontStyle: 'bold' });
-    const role = this.add.text(textX, -43, config.role, { fontFamily: 'Microsoft YaHei', fontSize: '10px', color: Phaser.Display.Color.IntegerToColor(config.accent).rgba });
+    const imageX = -w / 2 + 61; const textX = -w / 2 + 116; const textW = w - 132;
+    const image = this.fitImage(this.add.image(imageX, 16, config.texture), 86, 112);
+    const name = this.add.text(textX, -86, config.name, { fontFamily: 'Microsoft YaHei', fontSize: '19px', color: '#42506d', fontStyle: 'bold' });
+    const role = this.add.text(textX, -56, config.role, { fontFamily: 'Microsoft YaHei', fontSize: '11px', color: Phaser.Display.Color.IntegerToColor(config.accent).rgba });
     const fusion = config.type === 'xingkongtang' || config.type === 'xilanai' || config.type === 'jiaxinnaitang' || config.type === 'yigehun';
-    const stats = this.add.text(textX, -12, fusion ? `融合单位 · 生命 ${config.hp}` : `应援 ${config.cost} · 生命 ${config.hp}`, { fontFamily: 'Microsoft YaHei', fontSize: '10px', color: '#a66b25' });
+    const stats = this.add.text(textX, -9, fusion ? `融合单位 · 生命 ${config.hp}` : `应援 ${config.cost} · 生命 ${config.hp}`, { fontFamily: 'Microsoft YaHei', fontSize: '11px', color: '#a66b25' });
     const formula = config.type === 'xingkongtang'
       ? '贝极星＋嘉心糖'
       : config.type === 'xilanai' ? '贝极星＋奶淇琳' : config.type === 'jiaxinnaitang' ? '奶淇琳＋嘉心糖' : config.type === 'yigehun' ? '三张基础卡三重融合' : '';
-    const cooldown = this.add.text(textX, 14, fusion ? formula : `冷却 ${(config.cooldown / 1000).toFixed(1)} 秒`, { fontFamily: 'Microsoft YaHei', fontSize: '10px', color: '#71809a' });
-    const desc = this.add.text(textX, 40, config.desc, { fontFamily: 'Microsoft YaHei', fontSize: '10px', color: '#5e6f84', wordWrap: { width: textW, useAdvancedWrap: true }, lineSpacing: 2 });
-    card.add([bg, strip, number, image, name, role, stats, cooldown, desc]);
+    const cooldown = this.add.text(textX, 15, fusion ? formula : `冷却 ${(config.cooldown / 1000).toFixed(1)} 秒`, { fontFamily: 'Microsoft YaHei', fontSize: '11px', color: '#71809a' });
+    const desc = this.add.text(textX, 41, config.desc, { fontFamily: 'Microsoft YaHei', fontSize: '11px', color: '#5e6f84', wordWrap: { width: textW, useAdvancedWrap: true }, lineSpacing: 3 });
+    const quote = this.add.text(textX, -34, config.quote ? `“${config.quote}”` : '', { fontFamily: 'Microsoft YaHei', fontSize: '10px', color: '#8a94a6', fontStyle: 'italic', wordWrap: { width: textW, useAdvancedWrap: true }, lineSpacing: 1 });
+    card.add([bg, strip, number, image, name, role, stats, cooldown, desc, quote]);
     this.bindCardHover(card, bg, config.accent);
     return card;
   }
 
   private renderEnemies(): void {
-    const cardW = 228; const cardH = 154; const gapX = 14; const gapY = 14;
-    const totalW = cardW * 5 + gapX * 4; const startX = (GAME_WIDTH - totalW) / 2;
+    const cardW = 286; const cardH = 200; const gapX = 16; const gapY = 16;
+    const totalW = cardW * COLUMNS + gapX * (COLUMNS - 1); const startX = (GAME_WIDTH - totalW) / 2;
     const offset = this.pageByTab.enemies * PAGE_SIZE;
     ENEMY_ORDER.slice(offset, offset + PAGE_SIZE).forEach((type, index) => {
-      const col = index % 5; const row = Math.floor(index / 5);
+      const col = index % COLUMNS; const row = Math.floor(index / COLUMNS);
       const x = startX + col * (cardW + gapX) + cardW / 2;
       const y = 164 + row * (cardH + gapY) + cardH / 2;
       this.content.add(this.createEnemyCard(x, y, ZOMBIES[type], offset + index + 1, cardW, cardH));
@@ -185,18 +187,19 @@ export class CodexScene extends Phaser.Scene {
     const bg = this.add.rectangle(0, 0, w, h, config.boss ? 0xffeef7 : 0xfff7f5, 0.97).setStrokeStyle(2, accent, config.boss ? 0.62 : 0.3).setInteractive({ useHandCursor: true });
     const strip = this.add.rectangle(-w / 2 + 4, 0, 7, h - 10, accent, 0.88);
     const number = this.add.text(-w / 2 + 18, -h / 2 + 12, `E-${String(index).padStart(2, '0')}`, { fontFamily: 'Arial', fontSize: '11px', color: '#9a6e7e', fontStyle: 'bold' });
-    const image = this.fitImage(this.add.image(-73, 8, config.texture), 72, 86);
-    const name = this.add.text(-31, -56, config.name, { fontFamily: 'Microsoft YaHei', fontSize: '14px', color: '#5a465f', fontStyle: 'bold' });
+    const imageX = -w / 2 + 61; const textX = -w / 2 + 116; const textW = w - 132;
+    const image = this.fitImage(this.add.image(imageX, 14, config.texture), 92, 118);
+    const name = this.add.text(textX, -76, config.name, { fontFamily: 'Microsoft YaHei', fontSize: '17px', color: '#5a465f', fontStyle: 'bold' });
     const tags = [
       config.boss ? 'BOSS' : '', config.flagWave ? '大型波次标志' : '', config.flying ? '飞越植物' : '',
       config.enragedSpeedMultiplier ? '掉落手机后加速' : '', config.canVault ? '越过首个阻挡' : '',
       config.accessoryBreakHp && !config.enragedSpeedMultiplier ? '防具可破坏' : '', config.charge ? '高速冲锋' : '',
       config.crushPlants ? '碾压植物' : '', config.tunneling ? '钻地绕后' : '', config.summonInterval ? '召唤骑士' : '',
     ].filter(Boolean).join(' · ') || '敌方单位';
-    const tag = this.add.text(-31, -32, tags, { fontFamily: 'Microsoft YaHei', fontSize: '8px', color: Phaser.Display.Color.IntegerToColor(accent).rgba, fontStyle: 'bold', wordWrap: { width: 128, useAdvancedWrap: true } });
-    const stats = this.add.text(-31, -7, `生命 ${config.hp} · 移速 ${config.speed}`, { fontFamily: 'Microsoft YaHei', fontSize: '9px', color: '#9b5570' });
-    const attack = this.add.text(-31, 12, `啃食 ${config.attackDps}/秒`, { fontFamily: 'Microsoft YaHei', fontSize: '9px', color: '#8c6b78' });
-    const quote = this.add.text(-31, 34, `“${config.quote}”`, { fontFamily: 'Microsoft YaHei', fontSize: '9px', color: '#745f68', fontStyle: 'italic', wordWrap: { width: 128, useAdvancedWrap: true }, lineSpacing: 1 });
+    const tag = this.add.text(textX, -48, tags, { fontFamily: 'Microsoft YaHei', fontSize: '10px', color: Phaser.Display.Color.IntegerToColor(accent).rgba, fontStyle: 'bold', wordWrap: { width: textW, useAdvancedWrap: true } });
+    const stats = this.add.text(textX, -13, `生命 ${config.hp} · 移速 ${config.speed}`, { fontFamily: 'Microsoft YaHei', fontSize: '11px', color: '#9b5570' });
+    const attack = this.add.text(textX, 12, `啃食 ${config.attackDps}/秒`, { fontFamily: 'Microsoft YaHei', fontSize: '11px', color: '#8c6b78' });
+    const quote = this.add.text(textX, 40, `“${config.quote}”`, { fontFamily: 'Microsoft YaHei', fontSize: '10px', color: '#745f68', fontStyle: 'italic', wordWrap: { width: textW, useAdvancedWrap: true }, lineSpacing: 2 });
     card.add([bg, strip, number, image, name, tag, stats, attack, quote]);
     this.bindCardHover(card, bg, accent);
     return card;

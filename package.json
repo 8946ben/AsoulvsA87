@@ -3,17 +3,23 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
+  "main": "electron/main.cjs",
+  "author": "8946ben",
   "description": "植物大战僵尸类型的同人塔防游戏（Phaser 3 + TypeScript）",
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "electron:start": "npm run build && electron .",
+    "package:win": "npm run build && powershell -NoProfile -ExecutionPolicy Bypass -File scripts/prepare-portable.ps1 && powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-portable.ps1",
+    "portable:win": "npm run package:win && powershell -NoProfile -ExecutionPolicy Bypass -File scripts/package-portable.ps1"
   },
   "dependencies": {
     "phaser": "^3.90.0"
   },
   "devDependencies": {
+    "electron": "^44.0.0",
     "typescript": "~5.6.3",
     "vite": "^6.0.7"
   }

@@ -6,6 +6,7 @@ import type { Zombie } from './Zombie';
 
 export interface PlantContext {
   getNearestZombie(row: number, fromX: number): Zombie | null;
+  getNearbyZombie(row: number, x: number, maxGap: number): Zombie | null;
   spawnProjectile(x: number, y: number, texture: string, damage: number, row: number, options?: ProjectileOptions): void;
   spawnSun(x: number, y: number, amount: number): void;
   damageArea(x: number, y: number, radius: number, damage: number, stunMs?: number): void;
@@ -145,16 +146,18 @@ export class Plant extends Phaser.GameObjects.Sprite {
   }
 
   private updateBella(delta: number, target: Zombie | null, ctx: PlantContext): void {
-    if (!target) return;
-    const near = target.x - this.x <= GRID.CELL_W;
-    if (near && !this.transformed) this.enterBellaMineForm();
+    const nearby = ctx.getNearbyZombie(this.row, this.x, GRID.CELL_W);
+    if (nearby && !this.transformed) this.enterBellaMineForm();
     if (this.transformed) {
       this.attackTimer += delta;
-      if (target.x - this.x < 48) {
+      // 与阻挡判定保持同一接敌宽度；大型虫的图片中心很远，但头部已碰到贝拉。
+      const contact = ctx.getNearbyZombie(this.row, this.x, 43);
+      if (contact) {
         ctx.damageArea(this.x, this.y, 100, 1050, 300); this.burst(0xff554f); ctx.replacePlant(this, null);
       }
       return;
     }
+    if (!target) return;
     this.attackTimer += delta;
     if (this.attackTimer >= (this.config.attackInterval ?? 2700)) {
       this.attackTimer = 0; this.fire(ctx, { lobbed: true, splash: 42 }, true); this.pulse(1.08, 150);
@@ -168,31 +171,31 @@ export class Plant extends Phaser.GameObjects.Sprite {
     this.setTexture(TEX.BELLA_MINE);
     const src = this.scene.textures.get(TEX.BELLA_MINE).getSourceImage() as HTMLImageElement;
     const scale = Math.min(PLANT_DISPLAY.MAX_W / (src?.width || 84), (GRID.CELL_H * 0.58) / (src?.height || 68));
-    this.setPosition(this.x, this.baseY + 17).setScale(scale * 0.4).clearTint();
+    // 如果角色落地第一帧就接敌，入场透明度动画会被 killTweensOf 中止；
+    // 形态切换必须主动恢复可见性，不能继承尚为 0 的 alpha。
+    this.setPosition(this.x, this.baseY + 17).setScale(scale * 0.4).setAlpha(1).setVisible(true).clearTint();
     this.shadow.setVisible(false);
     this.scene.tweens.add({ targets: this, scale, duration: 220, ease: 'Back.easeOut' });
   }
 
   private updateEileen(delta: number, target: Zombie | null, ctx: PlantContext): void {
-    if (!target) {
+    const nearby = ctx.getNearbyZombie(this.row, this.x, GRID.CELL_W);
+    if (!nearby) {
       if (this.transformed) this.exitSpikeForm();
-      return;
-    }
-    const near = target.x - this.x <= GRID.CELL_W;
-    this.attackTimer += delta;
-    if (near) {
-      if (!this.transformed) this.enterSpikeForm();
-      if (this.attackTimer >= 850) {
-        this.attackTimer = 0; target.takeDamage(26); target.stunFor(520);
-        const spike = this.scene.add.triangle(target.x, target.y + 30, 0, 28, 9, 0, 18, 28, 0xa76cff, 0.9).setDepth(33);
-        this.scene.tweens.add({ targets: spike, y: spike.y - 20, alpha: 0, duration: 350, onComplete: () => spike.destroy() });
-      }
-    } else {
-      if (this.transformed) this.exitSpikeForm();
+      if (!target) return;
+      this.attackTimer += delta;
       if (this.attackTimer >= (this.config.attackInterval ?? 1900)) {
         this.attackTimer = 0;
         this.fire(ctx, { piercing: true }, false); this.recoil();
       }
+      return;
+    }
+    this.attackTimer += delta;
+    if (!this.transformed) this.enterSpikeForm();
+    if (this.attackTimer >= 850) {
+      this.attackTimer = 0; nearby.takeDamage(26); nearby.stunFor(520);
+      const spike = this.scene.add.triangle(nearby.x, nearby.y + 30, 0, 28, 9, 0, 18, 28, 0xa76cff, 0.9).setDepth(33);
+      this.scene.tweens.add({ targets: spike, y: spike.y - 20, alpha: 0, duration: 350, onComplete: () => spike.destroy() });
     }
   }
 
@@ -203,7 +206,7 @@ export class Plant extends Phaser.GameObjects.Sprite {
     this.setTexture(TEX.EILEEN_SOUP);
     const src = this.scene.textures.get(TEX.EILEEN_SOUP).getSourceImage() as HTMLImageElement;
     const scale = Math.min(PLANT_DISPLAY.MAX_W / (src?.width || 84), (GRID.CELL_H * 0.52) / (src?.height || 58));
-    this.setPosition(this.x, this.baseY + 15).setScale(scale * 0.4).clearTint();
+    this.setPosition(this.x, this.baseY + 15).setScale(scale * 0.4).setAlpha(1).setVisible(true).clearTint();
     this.shadow.setVisible(false);
     this.scene.tweens.add({ targets: this, scale, duration: 220, ease: 'Back.easeOut' });
   }
@@ -212,7 +215,7 @@ export class Plant extends Phaser.GameObjects.Sprite {
     this.transformed = false;
     this.scene.tweens.killTweensOf(this);
     this.setTexture(this.config.texture);
-    this.setPosition(this.x, this.baseY).setScale(this.baseScale).clearTint();
+    this.setPosition(this.x, this.baseY).setScale(this.baseScale).setAlpha(1).setVisible(true).clearTint();
     this.shadow.setVisible(true);
   }
 

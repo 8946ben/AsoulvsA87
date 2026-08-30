@@ -62,6 +62,7 @@ export class GameScene extends Phaser.Scene {
 
   private readonly plantCtx: PlantContext = {
     getNearestZombie: (row, fromX) => this.getNearestZombie(row, fromX),
+    getNearbyZombie: (row, x, maxGap) => this.getNearbyZombie(row, x, maxGap),
     spawnProjectile: (x, y, texture, damage, row, options = {}) => this.spawnProjectile(x, y, texture, damage, row, options),
     spawnSun: (x, y, amount) => this.spawnPlantSun(x, y, amount),
     damageArea: (x, y, radius, damage, stunMs) => this.damageArea(x, y, radius, damage, stunMs),
@@ -380,6 +381,20 @@ export class GameScene extends Phaser.Scene {
   private getNearestZombie(row: number, fromX: number): Zombie | null {
     let best: Zombie | null = null;
     for (const z of this.zombies) if (z.targetable && z.active && z.state !== 'dead' && z.row === row && z.x > fromX - 25 && (!best || z.x < best.x)) best = z;
+    return best;
+  }
+  /** 近身形态专用：按敌人可见身体边缘计算间距，避免大型贴图中心尚远时漏判接触。 */
+  private getNearbyZombie(row: number, x: number, maxGap: number): Zombie | null {
+    let best: Zombie | null = null;
+    let bestGap = Infinity;
+    for (const zombie of this.zombies) {
+      if (!zombie.targetable || !zombie.active || zombie.state === 'dead' || zombie.row !== row) continue;
+      const halfBody = zombie.displayWidth * 0.31;
+      const left = zombie.x - halfBody;
+      const right = zombie.x + halfBody;
+      const gap = x < left ? left - x : x > right ? x - right : 0;
+      if (gap <= maxGap && gap < bestGap) { best = zombie; bestGap = gap; }
+    }
     return best;
   }
   private getBlockingPlant(row: number, zombieX: number, leadX: number, direction: -1 | 1, includeSpikeForm = false): Plant | null {

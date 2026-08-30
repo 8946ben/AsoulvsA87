@@ -136,7 +136,8 @@ export class SeedBank {
   showTooltip(card: SeedCard): void {
     const bonus = this.bonusCharges.get(card.plantType);
     const suffix = bonus === undefined ? '' : `  ·  剩余免费次数 ${bonus}`;
-    this.tooltip.setPosition(card.x, 132).setText(`${card.config.role}  ·  ${card.config.desc}${suffix}`).setVisible(true);
+    const quote = card.config.quote ? `「${card.config.quote}」\n` : '';
+    this.tooltip.setPosition(card.x, 132).setText(`${quote}${card.config.role}  ·  ${card.config.desc}${suffix}`).setVisible(true);
   }
   hideTooltip(): void { this.tooltip.setVisible(false); }
 
