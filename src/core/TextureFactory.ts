@@ -44,11 +44,15 @@ export class TextureFactory {
     this.drawA87(g, 'dragon'); this.emit(scene, g, TEX.ZOMBIE_DRAGON, 112, 118);
 
     this.drawCandy(g); this.emit(scene, g, TEX.CANDY, 24, 24);
+    this.drawStarCandy(g); this.emit(scene, g, TEX.STAR_CANDY, 28, 28);
+    this.drawCandyIceCream(g); this.emit(scene, g, TEX.CANDY_ICE_CREAM, 30, 30);
+    this.drawSoulCandy(g); this.emit(scene, g, TEX.SOUL_CANDY, 30, 30);
     this.drawChocolate(g); this.emit(scene, g, TEX.CHOCOLATE, 26, 24);
     this.drawCream(g); this.emit(scene, g, TEX.CREAM, 28, 24);
     this.drawHammer(g); this.emit(scene, g, TEX.HAMMER, 34, 30);
     this.drawBeam(g); this.emit(scene, g, TEX.BEAM, 38, 18);
     this.drawSun(g); this.emit(scene, g, TEX.SUN, 58, 58);
+    this.drawSoupBowl(g); this.emit(scene, g, TEX.EILEEN_SOUP, 84, 58);
     this.drawMower(g); this.emit(scene, g, TEX.LAWNMOWER, 62, 48);
     this.drawCard(g); this.emit(scene, g, TEX.CARD_FRAME, 68, 104);
     g.destroy();
@@ -85,6 +89,19 @@ export class TextureFactory {
     g.fillTriangle(20, 44, 58, 44, 39, 70);
     g.fillStyle(0xffffff, 0.8); g.fillCircle(30, 35, 4);
     g.lineStyle(3, 0xffffff, 0.65); g.strokeCircle(39, 46, 37);
+  }
+
+  /** 乃琳地刺形态的兜底纹理：一碗番茄牛肉汤。 */
+  private static drawSoupBowl(g: Phaser.GameObjects.Graphics): void {
+    g.fillStyle(0x8fa39b, 1); g.fillEllipse(42, 34, 78, 44);
+    g.lineStyle(3, 0x5c6f68, 1); g.strokeEllipse(42, 34, 78, 44);
+    g.fillStyle(0xb5442a, 1); g.fillEllipse(42, 28, 64, 30);
+    g.fillStyle(0xd95b30, 1); g.fillEllipse(30, 24, 18, 12); g.fillEllipse(52, 30, 16, 10);
+    g.fillStyle(0xe8833a, 1); g.fillEllipse(44, 22, 12, 9); g.fillEllipse(60, 25, 9, 7);
+    g.fillStyle(0x6e4a35, 1); g.fillEllipse(26, 31, 14, 9); g.fillEllipse(50, 35, 12, 8);
+    g.fillStyle(0xfdf3e3, 1); g.fillEllipse(38, 27, 20, 13);
+    g.fillStyle(0xffffff, 0.35); g.fillEllipse(30, 20, 22, 8);
+    g.lineStyle(4, 0xcfd8d4, 0.9); g.beginPath(); g.moveTo(58, 10); g.lineTo(80, 4); g.strokePath();
   }
 
   private static drawChibiBadge(g: Phaser.GameObjects.Graphics, color: number): void {
@@ -183,6 +200,30 @@ export class TextureFactory {
   private static drawCandy(g: Phaser.GameObjects.Graphics): void {
     g.fillStyle(0xff77ad, 1); g.fillCircle(12, 12, 7); g.fillTriangle(1, 6, 6, 12, 1, 18); g.fillTriangle(23, 6, 18, 12, 23, 18);
     g.fillStyle(0xffffff, 0.65); g.fillCircle(10, 9, 2);
+  }
+  private static drawStarCandy(g: Phaser.GameObjects.Graphics): void {
+    const points: Phaser.Geom.Point[] = [];
+    for (let i = 0; i < 10; i++) {
+      const angle = -Math.PI / 2 + i * Math.PI / 5;
+      const radius = i % 2 === 0 ? 11 : 5;
+      points.push(new Phaser.Geom.Point(14 + Math.cos(angle) * radius, 14 + Math.sin(angle) * radius));
+    }
+    g.fillStyle(0x7d4029, 1); g.fillPoints(points, true);
+    g.lineStyle(2, 0xffd56d, 1); g.strokePoints(points, true, true);
+    g.fillStyle(0xffffff, 0.65); g.fillCircle(11, 9, 2);
+  }
+  private static drawCandyIceCream(g: Phaser.GameObjects.Graphics): void {
+    g.fillStyle(0xd99055, 1); g.fillTriangle(10, 15, 24, 15, 17, 29);
+    g.lineStyle(2, 0x7b412e, 0.8); g.strokeTriangle(10, 15, 24, 15, 17, 29);
+    g.fillStyle(0xfff4d8, 1); g.fillCircle(17, 12, 10);
+    g.fillStyle(0xff8eb4, 1); g.fillCircle(11, 10, 3); g.fillCircle(22, 14, 3);
+    g.fillStyle(0xffffff, 0.72); g.fillCircle(14, 8, 3);
+  }
+  private static drawSoulCandy(g: Phaser.GameObjects.Graphics): void {
+    g.fillStyle(0xb79cff, 0.3); g.fillCircle(15, 15, 14);
+    g.lineStyle(3, 0xe7ddff, 1); g.beginPath(); g.arc(15, 15, 10, 0.1, Math.PI * 1.7); g.strokePath();
+    g.lineStyle(3, 0x8f68e8, 1); g.beginPath(); g.arc(15, 15, 6, 0.3, Math.PI * 1.8); g.strokePath();
+    g.fillStyle(0xffffff, 0.9); g.fillCircle(15, 15, 2.5);
   }
   private static drawChocolate(g: Phaser.GameObjects.Graphics): void {
     g.fillStyle(0x7a412d, 1); g.fillRoundedRect(3, 4, 20, 17, 4); g.lineStyle(2, 0xb97851, 1); g.strokeRect(8, 4, 2, 17); g.strokeRect(16, 4, 2, 17);

@@ -8,6 +8,7 @@ import { getNextLevel, LEVEL_1, type LevelConfig } from '../data/levels';
 import { PLANTS, type PlantType } from '../data/plants';
 import { ZOMBIES, type ZombieType } from '../data/zombies';
 import { Plant, type PlantContext } from '../entities/Plant';
+import { BurstProjectile, type BurstProjectileContext } from '../entities/BurstProjectile';
 import { Projectile, type ProjectileContext, type ProjectileOptions } from '../entities/Projectile';
 import { Sun } from '../entities/Sun';
 import { Zombie, type ZombieContext } from '../entities/Zombie';
@@ -25,11 +26,13 @@ const BAR_H = 13;
 export class GameScene extends Phaser.Scene {
   static readonly KEY = 'GameScene';
   private level!: LevelConfig;
+  private selectedPlants: PlantType[] = [];
   private grid!: Grid;
   private seedBank!: SeedBank;
   private plants: Plant[] = [];
   private zombies: Zombie[] = [];
   private projectiles: Projectile[] = [];
+  private burstProjectiles: BurstProjectile[] = [];
   private suns: Sun[] = [];
   private mowers: (Phaser.GameObjects.Image | null)[] = [];
   private sunAmount: number = SUN_RULES.START_SUN;
@@ -59,11 +62,16 @@ export class GameScene extends Phaser.Scene {
     spawnProjectile: (x, y, texture, damage, row, options = {}) => this.spawnProjectile(x, y, texture, damage, row, options),
     spawnSun: (x, y, amount) => this.spawnPlantSun(x, y, amount),
     damageArea: (x, y, radius, damage, stunMs) => this.damageArea(x, y, radius, damage, stunMs),
+    damageGridArea: (row, col, damage, stunMs) => this.damageGridArea(row, col, damage, stunMs),
     freezeAll: (durationMs) => this.freezeAll(durationMs),
     replacePlant: (plant, type) => this.replacePlant(plant, type),
+    getCreamChanceBonus: () => Math.min(0.45, 0.15 * this.countActivePlants('eileen')),
+    getDamageMultiplier: (type) => (type === 'jiaxintang' && this.countActivePlants('diana') > 0 ? 1.5 : 1),
+    hasActivePlant: (type) => this.countActivePlants(type) > 0,
+    spawnSpecialBeijixing: (row, worldX) => this.spawnSpecialBeijixing(row, worldX),
   };
   private readonly zombieCtx: ZombieContext = {
-    getBlockingPlant: (row, zombieX, leadX, direction) => this.getBlockingPlant(row, zombieX, leadX, direction),
+    getBlockingPlant: (row, zombieX, leadX, direction, includeSpikeForm) => this.getBlockingPlant(row, zombieX, leadX, direction, includeSpikeForm),
     onReachHouse: (zombie) => this.onZombieReachHouse(zombie),
     spawnMinion: (type, row, x) => this.spawnZombie(type, row, x),
   };
@@ -74,10 +82,20 @@ export class GameScene extends Phaser.Scene {
         if (zombie !== primary && zombie.active && zombie.state !== 'dead' && zombie.row === row && Math.abs(zombie.x - x) <= radius) zombie.takeDamage(damage);
       }
     },
+    spawnCandyBurst: (x, y, count, damage, explosive) => this.spawnCandyBurst(x, y, count, damage, explosive),
+  };
+  private readonly burstProjectileCtx: BurstProjectileContext = {
+    findZombieAt: (x, y, radius) => this.findZombieAt(x, y, radius),
+    damageArea: (x, y, radius, damage) => this.damageBurstArea(x, y, radius, damage),
   };
 
   constructor() { super(GameScene.KEY); }
-  init(data: { level?: LevelConfig }): void { this.level = data?.level ?? LEVEL_1; }
+  init(data: { level?: LevelConfig; selectedPlants?: PlantType[] }): void {
+    this.level = data?.level ?? LEVEL_1;
+    const allowed = new Set(this.level.availablePlants);
+    this.selectedPlants = [...new Set(data?.selectedPlants ?? [])].filter((type) => allowed.has(type)).slice(0, 8);
+    if (this.selectedPlants.length === 0) this.selectedPlants = this.level.availablePlants.slice(0, 8);
+  }
 
   create(): void {
     this.resetState(); this.createBackground(); this.createLawn(); this.createMowers();
@@ -92,12 +110,13 @@ export class GameScene extends Phaser.Scene {
     for (const plant of this.plants) plant.update(time, delta, this.plantCtx);
     for (const zombie of this.zombies) zombie.update(time, delta, this.zombieCtx);
     for (const projectile of this.projectiles) projectile.update(time, delta, this.projectileCtx);
+    for (const projectile of this.burstProjectiles) projectile.update(delta, this.burstProjectileCtx);
     for (const sun of this.suns) sun.update(time, delta);
-    this.cleanup(); this.seedBank.update(delta, this.sunAmount); this.updateProgressBar(); this.checkWin();
+    this.cleanup(); this.seedBank.update(delta, this.sunAmount, (type) => this.getEffectiveCost(type)); this.updateProgressBar(); this.checkWin();
   }
 
   private resetState(): void {
-    this.grid = new Grid(); this.plants = []; this.zombies = []; this.projectiles = []; this.suns = []; this.mowers = [];
+    this.grid = new Grid(); this.plants = []; this.zombies = []; this.projectiles = []; this.burstProjectiles = []; this.suns = []; this.mowers = [];
     this.sunAmount = this.level.startingSun ?? SUN_RULES.START_SUN; this.elapsed = 0; this.skySunTimer = 0; this.spawnSchedule = []; this.spawnIndex = 0;
     this.alerts = []; this.lastProgress = -1; this.gameState = 'playing'; this.preview = null; this.previewType = null; this.currentWave = 0; this.isPaused = false; this.shovelMode = false;
     this.time.paused = false;
@@ -154,6 +173,7 @@ export class GameScene extends Phaser.Scene {
     this.waveText = this.add.text(BAR_X, 18, 'WAVE 0 / ' + this.level.waves.length, { fontFamily: 'Arial', fontSize: '14px', color: '#84ecff', fontStyle: 'bold' }).setDepth(105);
     this.enemyText = this.add.text(1252, 18, '敌人 0', { fontFamily: 'Microsoft YaHei', fontSize: '13px', color: '#ff91af' }).setOrigin(1, 0).setDepth(105);
     this.progressBar = this.add.graphics().setDepth(105);
+    this.add.text(BAR_X + BAR_W, 66, '◆ 密集波次', { fontFamily: 'Microsoft YaHei', fontSize: '9px', color: '#ff7698', fontStyle: 'bold' }).setOrigin(1, 0.5).setDepth(105);
     this.add.text(BAR_X, 76, this.level.name, { fontFamily: 'Microsoft YaHei', fontSize: '16px', color: '#effbff', fontStyle: 'bold' }).setDepth(105);
     this.add.text(BAR_X, 101, '空格 暂停  ·  ESC 取消', { fontFamily: 'Microsoft YaHei', fontSize: '12px', color: '#8fb5c9' }).setDepth(105);
     this.shovelButton = sharpenText(this.add.text(1220, 96, '铲子', {
@@ -178,7 +198,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   private createSeedBank(): void {
-    createSeedBankBackground(this); this.seedBank = new SeedBank(this, this.level.availablePlants); this.seedBank.applyInitialCooldown(1700);
+    createSeedBankBackground(this); this.seedBank = new SeedBank(this, this.selectedPlants); this.seedBank.applyInitialCooldown(1700);
   }
 
   private buildSpawnSchedule(): void {
@@ -226,7 +246,7 @@ export class GameScene extends Phaser.Scene {
 
   private restartCurrentLevel(): void {
     this.time.paused = false; this.tweens.resumeAll();
-    this.scene.restart({ level: this.level });
+    this.scene.start('LoadoutScene', { level: this.level });
   }
 
   private returnToMenu(): void {
@@ -274,9 +294,25 @@ export class GameScene extends Phaser.Scene {
       this.progressBar.fillStyle(0x050b17, 0.9); this.progressBar.fillRoundedRect(BAR_X, BAR_Y, BAR_W, BAR_H, 6);
       this.progressBar.fillGradientStyle(0x50e3c2, 0x68e6ff, 0x50e3c2, 0x68e6ff, 1); this.progressBar.fillRoundedRect(BAR_X, BAR_Y, Math.max(5, BAR_W * ratio), BAR_H, 6);
       this.progressBar.lineStyle(1, 0x9cf4ff, 0.35); this.progressBar.strokeRoundedRect(BAR_X, BAR_Y, BAR_W, BAR_H, 6);
+      this.drawDenseWaveMarkers();
     }
     this.waveText.setText(`WAVE ${this.currentWave} / ${this.level.waves.length}`);
     this.enemyText.setText(`场上敌人 ${this.zombies.filter((z) => z.active && z.state !== 'dead').length}`);
+  }
+
+  private drawDenseWaveMarkers(): void {
+    const total = Math.max(1, this.spawnSchedule.length);
+    this.level.waves.forEach((wave, index) => {
+      if (!wave.isHuge) return;
+      const taskIndex = this.spawnSchedule.findIndex((task) => task.wave === index + 1);
+      if (taskIndex < 0) return;
+      const x = BAR_X + BAR_W * taskIndex / total;
+      const y = BAR_Y + BAR_H / 2;
+      this.progressBar.lineStyle(2, 0xff7698, 0.9);
+      this.progressBar.beginPath(); this.progressBar.moveTo(x, BAR_Y - 4); this.progressBar.lineTo(x, BAR_Y + BAR_H + 4); this.progressBar.strokePath();
+      this.progressBar.fillStyle(0xffd36f, 1); this.progressBar.fillCircle(x, y, 4);
+      this.progressBar.lineStyle(1, 0x4b1028, 0.95); this.progressBar.strokeCircle(x, y, 4);
+    });
   }
 
   private cleanup(): void {
@@ -285,6 +321,7 @@ export class GameScene extends Phaser.Scene {
     }
     for (let i = this.zombies.length - 1; i >= 0; i--) if (!this.zombies[i].active) this.zombies.splice(i, 1);
     for (let i = this.projectiles.length - 1; i >= 0; i--) if (!this.projectiles[i].active) this.projectiles.splice(i, 1);
+    for (let i = this.burstProjectiles.length - 1; i >= 0; i--) if (!this.burstProjectiles[i].active) this.burstProjectiles.splice(i, 1);
     for (let i = this.suns.length - 1; i >= 0; i--) if (!this.suns[i].active) this.suns.splice(i, 1);
   }
 
@@ -304,7 +341,36 @@ export class GameScene extends Phaser.Scene {
     this.projectiles.push(new Projectile(this, x, y, texture, damage, row, trajectory));
   }
 
-  private spawnPlantSun(x: number, y: number, amount: number): void { this.registerSun(new Sun(this, x, y, amount, Math.min(y + 48, GAME_HEIGHT - 55), true)); }
+  private spawnCandyBurst(x: number, y: number, count: number, damage: number, explosive: boolean): void {
+    const texture = explosive ? TEX.CANDY_ICE_CREAM : TEX.CANDY;
+    for (let i = 0; i < count; i++) {
+      const angle = i * Math.PI * 2 / count;
+      this.burstProjectiles.push(new BurstProjectile(this, x, y, texture, angle, damage, explosive));
+    }
+  }
+
+  private findZombieAt(x: number, y: number, radius: number): Zombie | null {
+    let best: Zombie | null = null;
+    let bestDistance = Infinity;
+    for (const zombie of this.zombies) {
+      if (!zombie.targetable || !zombie.active || zombie.state === 'dead') continue;
+      const distance = Phaser.Math.Distance.Between(x, y, zombie.x, zombie.y);
+      if (distance <= radius && distance < bestDistance) { best = zombie; bestDistance = distance; }
+    }
+    return best;
+  }
+
+  private damageBurstArea(x: number, y: number, radius: number, damage: number): void {
+    for (const zombie of this.zombies) {
+      if (!zombie.targetable || !zombie.active || zombie.state === 'dead') continue;
+      if (Phaser.Math.Distance.Between(x, y, zombie.x, zombie.y) <= radius) zombie.takeDamage(damage);
+    }
+  }
+
+  private spawnPlantSun(x: number, y: number, amount: number): void {
+    const boosted = this.countActivePlants('bella') > 0 ? amount * 2 : amount;
+    this.registerSun(new Sun(this, x, y, boosted, Math.min(y + 48, GAME_HEIGHT - 55), true));
+  }
   private registerSun(sun: Sun): void {
     sun.onCollect.on('collect', (value: number) => {
       this.sunAmount += value; this.sunText.setText(String(this.sunAmount));
@@ -318,11 +384,12 @@ export class GameScene extends Phaser.Scene {
     for (const z of this.zombies) if (z.targetable && z.active && z.state !== 'dead' && z.row === row && z.x > fromX - 25 && (!best || z.x < best.x)) best = z;
     return best;
   }
-  private getBlockingPlant(row: number, zombieX: number, leadX: number, direction: -1 | 1): Plant | null {
+  private getBlockingPlant(row: number, zombieX: number, leadX: number, direction: -1 | 1, includeSpikeForm = false): Plant | null {
     let best: Plant | null = null;
     for (let col = 0; col < GRID.COLS; col++) {
       const p = this.grid.get(row, col);
       if (!p?.active) continue;
+      if (p.isSpikeForm && !includeSpikeForm) continue;
       const zombieInsideCell = zombieX >= p.x - GRID.CELL_W / 2 && zombieX < p.x + GRID.CELL_W / 2;
       const touchingPlantFront = direction < 0
         ? p.x >= leadX - 43 && p.x <= leadX + 12
@@ -342,6 +409,18 @@ export class GameScene extends Phaser.Scene {
     for (const z of this.zombies) {
       if (!z.targetable || !z.active || z.state === 'dead') continue;
       if (Phaser.Math.Distance.Between(x, y, z.x, z.y) <= radius) { z.takeDamage(damage); if (stunMs) z.stunFor(stunMs); }
+    }
+    this.cameras.main.shake(180, 0.007);
+  }
+
+  /** 3×3 格范围伤害：以 (row, col) 为中心，上下各一行、左右各一列。 */
+  private damageGridArea(row: number, col: number, damage: number, stunMs = 0): void {
+    const { x: centerX } = this.grid.cellToWorld(row, col);
+    for (const z of this.zombies) {
+      if (!z.targetable || !z.active || z.state === 'dead') continue;
+      if (Math.abs(z.row - row) > 1) continue;
+      if (Math.abs(z.x - centerX) > GRID.CELL_W * 1.5) continue;
+      z.takeDamage(damage); if (stunMs) z.stunFor(stunMs);
     }
     this.cameras.main.shake(180, 0.007);
   }
@@ -378,11 +457,66 @@ export class GameScene extends Phaser.Scene {
     }, onComplete: () => mower.destroy() });
   }
 
+  private countActivePlants(type: PlantType): number {
+    return this.plants.reduce((total, plant) => total + (plant.active && plant.config.type === type ? 1 : 0), 0);
+  }
+
+  private getEffectiveCost(type: PlantType): number {
+    if (type === 'jiaxintang' && this.countActivePlants('diana') > 0) return Math.ceil(PLANTS[type].cost / 2);
+    return PLANTS[type].cost;
+  }
+
+  private getFusionResult(existing: PlantType, incoming: PlantType): PlantType | null {
+    const pair = new Set<PlantType>([existing, incoming]);
+    if (pair.size === 2 && pair.has('beijixing') && pair.has('jiaxintang')) return 'xingkongtang';
+    if (pair.size === 2 && pair.has('beijixing') && pair.has('naiqilin')) return 'xilanai';
+    if (pair.size === 2 && pair.has('naiqilin') && pair.has('jiaxintang')) return 'jiaxinnaitang';
+    if (pair.size === 2 && pair.has('xingkongtang') && pair.has('naiqilin')) return 'yigehun';
+    if (pair.size === 2 && pair.has('xilanai') && pair.has('jiaxintang')) return 'yigehun';
+    if (pair.size === 2 && pair.has('jiaxinnaitang') && pair.has('beijixing')) return 'yigehun';
+    return null;
+  }
+
+  private spawnSpecialBeijixing(row: number, worldX: number): boolean {
+    const cell = this.grid.worldToCell(worldX, this.grid.rowToY(row));
+    if (!cell || this.grid.isOccupied(cell.row, cell.col)) return false;
+    const { x, y } = this.grid.cellToWorld(cell.row, cell.col);
+    const plant = new Plant(this, x, y - 5, 'special_beijixing', cell.row, cell.col);
+    plant.setTint(0xfff0a0);
+    this.grid.place(plant, cell.row, cell.col);
+    this.plants.push(plant);
+    const ring = this.add.circle(x, y, 18, 0xffe467, 0.42).setDepth(70);
+    this.tweens.add({ targets: ring, scale: 3.2, alpha: 0, duration: 360, onComplete: () => ring.destroy() });
+    this.showToast('喜拉乃召唤了可抵挡 3 次攻击的特殊贝极星！', PLANTS.special_beijixing.accent);
+    return true;
+  }
+
   private plantAt(row: number, col: number, type: PlantType): boolean {
-    if (this.grid.isOccupied(row, col) || this.sunAmount < PLANTS[type].cost) return false;
-    const { x, y } = this.grid.cellToWorld(row, col); const plant = new Plant(this, x, y - 5, type, row, col);
+    const cost = this.getEffectiveCost(type);
+    const existing = this.grid.get(row, col);
+    const fusion = existing?.active ? this.getFusionResult(existing.config.type, type) : null;
+    if ((existing?.active && !fusion) || this.sunAmount < cost) return false;
+    const { x, y } = this.grid.cellToWorld(row, col);
+    if (existing?.active && fusion) {
+      this.grid.remove(row, col);
+      existing.destroy();
+    }
+    const resultType = fusion ?? type;
+    const plant = new Plant(this, x, y - 5, resultType, row, col);
+    if (resultType === 'jiaxintang' && this.countActivePlants('diana') > 0) { plant.hp *= 2; plant.maxHp *= 2; }
     this.grid.place(plant, row, col); this.plants.push(plant);
-    this.sunAmount -= PLANTS[type].cost; this.sunText.setText(String(this.sunAmount)); this.seedBank.consumeSelected();
+    this.sunAmount -= cost; this.sunText.setText(String(this.sunAmount)); this.seedBank.consumeSelected();
+    if (fusion) {
+      this.cameras.main.flash(180, 255, 216, 88, false);
+      const formula = fusion === 'xingkongtang'
+        ? '贝极星＋嘉心糖'
+        : fusion === 'xilanai' ? '贝极星＋奶淇琳' : fusion === 'jiaxinnaitang' ? '奶淇琳＋嘉心糖' : '贝极星＋奶淇琳＋嘉心糖';
+      this.showToast(`融合成功：${formula} → ${PLANTS[fusion].name}！`, PLANTS[fusion].accent);
+      if (fusion === 'yigehun' && this.countActivePlants('bella') > 0 && this.countActivePlants('eileen') > 0 && this.countActivePlants('diana') > 0) {
+        this.seedBank.grantBonus('yigehun');
+        this.showToast('三人应援联动：获得一个可 0 阳光部署的「一个魂」！', PLANTS.yigehun.accent);
+      }
+    }
     return true;
   }
 
@@ -406,7 +540,10 @@ export class GameScene extends Phaser.Scene {
     if (!cell) { this.preview?.setVisible(false); this.previewRect.clear(); return; }
     if (!this.preview || this.previewType !== type) { this.preview?.destroy(); this.preview = this.add.sprite(0, 0, PLANTS[type].texture).setAlpha(0.58).setDepth(61); this.previewType = type; }
     const { x, y } = this.grid.cellToWorld(cell.row, cell.col); this.preview.setPosition(x, y - 5).setVisible(true);
-    const canPlant = !this.grid.isOccupied(cell.row, cell.col) && this.sunAmount >= PLANTS[type].cost;
+    const existing = this.grid.get(cell.row, cell.col);
+    const fusion = existing?.active ? this.getFusionResult(existing.config.type, type) : null;
+    this.preview.setTexture(PLANTS[fusion ?? type].texture);
+    const canPlant = (!existing?.active || Boolean(fusion)) && this.sunAmount >= this.getEffectiveCost(type);
     this.previewRect.clear(); this.previewRect.fillStyle(canPlant ? 0x58f5b1 : 0xff5575, 0.12); this.previewRect.fillRoundedRect(x - GRID.CELL_W / 2 + 3, y - GRID.CELL_H / 2 + 3, GRID.CELL_W - 6, GRID.CELL_H - 6, 8);
     this.previewRect.lineStyle(3, canPlant ? 0x65efad : 0xff5b77, 0.9); this.previewRect.strokeRoundedRect(x - GRID.CELL_W / 2 + 3, y - GRID.CELL_H / 2 + 3, GRID.CELL_W - 6, GRID.CELL_H - 6, 8);
   }
@@ -473,12 +610,12 @@ export class GameScene extends Phaser.Scene {
     const kicker = sharpenText(this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 104, win ? 'STAGE SECURED' : 'STAGE LOST', { fontFamily: 'Arial', fontSize: '15px', color: win ? '#65efcf' : '#ff7598', fontStyle: 'bold', letterSpacing: 4 })).setOrigin(0.5).setDepth(222).setAlpha(0);
     const title = sharpenText(this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 52, win ? '我们又守护了舞台！' : '哈哈哈，舞台是我们 A87 的了！', { fontFamily: 'Microsoft YaHei', fontSize: '31px', color: '#ffffff', fontStyle: 'bold', align: 'center' })).setOrigin(0.5).setDepth(222).setAlpha(0);
     const sub = sharpenText(this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 + 2, win ? this.level.reward : '重新集结应援，再夺回属于大家的舞台', { fontFamily: 'Microsoft YaHei', fontSize: '15px', color: '#a9c4d2' })).setOrigin(0.5).setDepth(222).setAlpha(0);
-    const retry = this.makeButton(GAME_WIDTH / 2 - 88, GAME_HEIGHT / 2 + 80, '再次挑战', () => this.scene.restart({ level: this.level }), 223);
+    const retry = this.makeButton(GAME_WIDTH / 2 - 88, GAME_HEIGHT / 2 + 80, '再次挑战', () => this.scene.start('LoadoutScene', { level: this.level }), 223);
     const route = this.makeButton(
       GAME_WIDTH / 2 + 88,
       GAME_HEIGHT / 2 + 80,
       nextLevel ? '下一关' : '返回选关',
-      () => nextLevel ? this.scene.start(GameScene.KEY, { level: nextLevel }) : this.scene.start('LevelSelectScene'),
+      () => nextLevel ? this.scene.start('LoadoutScene', { level: nextLevel }) : this.scene.start('LevelSelectScene'),
       223,
     );
     retry.setAlpha(0); route.setAlpha(0);

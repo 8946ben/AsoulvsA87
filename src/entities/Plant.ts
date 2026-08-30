@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { GRID } from '../config/GameConfig';
+import { GRID, TEX } from '../config/GameConfig';
 import { PLANTS, type PlantConfig, type PlantType } from '../data/plants';
 import type { ProjectileOptions } from './Projectile';
 import type { Zombie } from './Zombie';
@@ -9,8 +9,13 @@ export interface PlantContext {
   spawnProjectile(x: number, y: number, texture: string, damage: number, row: number, options?: ProjectileOptions): void;
   spawnSun(x: number, y: number, amount: number): void;
   damageArea(x: number, y: number, radius: number, damage: number, stunMs?: number): void;
+  damageGridArea(row: number, col: number, damage: number, stunMs?: number): void;
   freezeAll(durationMs: number): void;
   replacePlant(plant: Plant, type: PlantType | null): void;
+  getCreamChanceBonus(): number;
+  getDamageMultiplier(type: PlantType): number;
+  hasActivePlant(type: PlantType): boolean;
+  spawnSpecialBeijixing(row: number, worldX: number): boolean;
 }
 
 export class Plant extends Phaser.GameObjects.Sprite {
@@ -24,6 +29,9 @@ export class Plant extends Phaser.GameObjects.Sprite {
   private specialTimer = 0;
   private transformed = false;
   private resolving = false;
+  private synergyEmpowered = false;
+  private lastCtx: PlantContext | null = null;
+  private readonly baseY: number;
   private readonly hpBar: Phaser.GameObjects.Graphics;
   private readonly shadow: Phaser.GameObjects.Ellipse;
   private readonly baseScale: number;
@@ -38,6 +46,7 @@ export class Plant extends Phaser.GameObjects.Sprite {
     this.baseScale = Math.min((GRID.CELL_W - 6) / srcW, (GRID.CELL_H - 6) / srcH);
     this.dispW = srcW * this.baseScale; this.dispH = srcH * this.baseScale;
     this.config = config; this.row = row; this.col = col; this.hp = config.hp; this.maxHp = config.hp;
+    this.baseY = y;
     this.shadow = scene.add.ellipse(x, y + 42, 57, 13, 0x071221, 0.24).setDepth(7 + row * 0.1);
     scene.add.existing(this);
     this.setDepth(14 + row * 0.1);
@@ -48,6 +57,7 @@ export class Plant extends Phaser.GameObjects.Sprite {
 
   update(time: number, delta: number, ctx: PlantContext): void {
     if (!this.active) return;
+    this.lastCtx = ctx;
     this.shadow.setPosition(this.x, this.y + 42);
     this.redrawHpBar();
     if (!this.resolving) this.angle = Math.sin(time / 360 + this.col * 0.7) * 1.4;
@@ -71,7 +81,7 @@ export class Plant extends Phaser.GameObjects.Sprite {
         this.attackTimer += delta;
         if (target && this.attackTimer >= (this.config.attackInterval ?? Infinity)) {
           this.attackTimer = 0;
-          const cream = Math.random() < (this.config.stunChance ?? 0);
+          const cream = Math.random() < (this.config.stunChance ?? 0) + ctx.getCreamChanceBonus();
           ctx.spawnProjectile(this.x + 24, this.y - 18, cream ? 'projectile_cream' : (this.config.projectile ?? 'projectile_chocolate'), this.config.attackDamage ?? 30, this.row, { lobbed: true, stunMs: cream ? this.config.stunMs : undefined, splash: 35 });
           this.pulse(1.1, 150);
         }
@@ -80,7 +90,7 @@ export class Plant extends Phaser.GameObjects.Sprite {
         this.specialTimer += delta;
         this.setScale(this.baseScale * (1 + Math.sin(time / 55) * 0.07));
         if (!this.resolving && this.specialTimer >= 520) {
-          this.resolving = true; ctx.damageArea(this.x, this.y, 142, this.config.attackDamage ?? 1500, 350);
+          this.resolving = true; ctx.damageGridArea(this.row, this.col, this.config.attackDamage ?? 1500, 350);
           this.burst(0xff5a91); ctx.replacePlant(this, null);
         }
         break;
@@ -114,6 +124,20 @@ export class Plant extends Phaser.GameObjects.Sprite {
       case 'squash':
         if (!this.resolving && target && target.x - this.x < 165) this.resolveSquash(target, ctx);
         break;
+      case 'lifesteal':
+        this.updateStarCandy(delta, target, ctx);
+        break;
+      case 'sunlobber':
+        this.updateXiLanai(delta, target, ctx);
+        break;
+      case 'burstlobber':
+        this.updateJiaXinNaiTang(delta, target, ctx);
+        break;
+      case 'soulshooter':
+        this.updateYiGeHun(delta, target, ctx);
+        break;
+      case 'specialwall':
+        break;
       case 'wall':
       default:
         break;
@@ -142,16 +166,128 @@ export class Plant extends Phaser.GameObjects.Sprite {
     const near = target.x - this.x <= GRID.CELL_W;
     this.attackTimer += delta;
     if (near) {
-      if (!this.transformed) { this.transformed = true; this.setTint(0xc59aff); this.pulse(1.16, 200); }
+      if (!this.transformed) this.enterSpikeForm();
       if (this.attackTimer >= 850) {
         this.attackTimer = 0; target.takeDamage(26); target.stunFor(520);
         const spike = this.scene.add.triangle(target.x, target.y + 30, 0, 28, 9, 0, 18, 28, 0xa76cff, 0.9).setDepth(33);
         this.scene.tweens.add({ targets: spike, y: spike.y - 20, alpha: 0, duration: 350, onComplete: () => spike.destroy() });
       }
     } else if (this.attackTimer >= (this.config.attackInterval ?? 1900)) {
-      this.transformed = false; this.clearTint(); this.attackTimer = 0;
+      if (this.transformed) this.exitSpikeForm();
+      this.attackTimer = 0;
       this.fire(ctx, { piercing: true }, false); this.recoil();
     }
+  }
+
+  /** 地刺形态：角色消失，原地替换为一碗番茄牛肉汤，普通僵尸啃不到，仅车碾致命。 */
+  private enterSpikeForm(): void {
+    this.transformed = true;
+    this.scene.tweens.killTweensOf(this);
+    this.setTexture(TEX.EILEEN_SOUP);
+    const src = this.scene.textures.get(TEX.EILEEN_SOUP).getSourceImage() as HTMLImageElement;
+    const scale = Math.min((GRID.CELL_W - 6) / (src?.width || 84), (GRID.CELL_H * 0.55) / (src?.height || 58));
+    this.setPosition(this.x, this.baseY + 15).setScale(scale * 0.4).clearTint();
+    this.scene.tweens.add({ targets: this, scale, duration: 220, ease: 'Back.easeOut' });
+  }
+
+  private exitSpikeForm(): void {
+    this.transformed = false;
+    this.scene.tweens.killTweensOf(this);
+    this.setTexture(this.config.texture);
+    this.setPosition(this.x, this.baseY).setScale(this.baseScale).clearTint();
+  }
+
+  private updateStarCandy(delta: number, target: Zombie | null, ctx: PlantContext): void {
+    const empowered = ctx.hasActivePlant('bella') && ctx.hasActivePlant('diana');
+    if (empowered !== this.synergyEmpowered) {
+      const nextMax = this.config.hp * (empowered ? 2 : 1);
+      this.hp = Math.max(1, Math.round(this.hp * nextMax / this.maxHp));
+      this.maxHp = nextMax;
+      this.synergyEmpowered = empowered;
+      this.pulse(1.16, 260);
+    }
+    if (!target) return;
+    this.attackTimer += delta;
+    const interval = empowered ? 500 : (this.config.attackInterval ?? 1000);
+    if (this.attackTimer < interval) return;
+    this.attackTimer = 0;
+    const critical = Math.random() < 0.3;
+    const damage = (this.config.attackDamage ?? 30) * (critical ? 3 : 1);
+    const lifestealRatio = empowered ? 1 : 0.5;
+    ctx.spawnProjectile(
+      this.x + this.dispW * 0.3, this.y - 12,
+      this.config.projectile ?? 'projectile_star_candy', damage, this.row,
+      { empowered: critical, onHit: (dealt) => this.heal(dealt * lifestealRatio) },
+    );
+    this.recoil();
+  }
+
+  private updateXiLanai(delta: number, target: Zombie | null, ctx: PlantContext): void {
+    this.produceTimer += delta;
+    if (this.produceTimer >= (this.config.produceInterval ?? 20000)) {
+      this.produceTimer = 0;
+      ctx.spawnSun(this.x, this.y - 14, this.config.produceAmount ?? 50);
+      this.pulse(1.16, 230);
+    }
+    if (!target) return;
+    this.attackTimer += delta;
+    if (this.attackTimer < (this.config.attackInterval ?? 2100)) return;
+    this.attackTimer = 0;
+    const specialChance = ctx.hasActivePlant('bella') && ctx.hasActivePlant('eileen') ? 0.3 : 0.15;
+    ctx.spawnProjectile(
+      this.x + this.dispW * 0.3, this.y - 16,
+      this.config.projectile ?? 'projectile_star_candy', this.config.attackDamage ?? 40, this.row,
+      { lobbed: true, onHit: (_dealt, hitTarget) => {
+        if (Math.random() < specialChance) ctx.spawnSpecialBeijixing(hitTarget.row, hitTarget.x);
+      } },
+    );
+    this.pulse(1.1, 150);
+  }
+
+  private updateJiaXinNaiTang(delta: number, target: Zombie | null, ctx: PlantContext): void {
+    if (!target) return;
+    this.attackTimer += delta;
+    if (this.attackTimer < (this.config.attackInterval ?? 2000)) return;
+    this.attackTimer = 0;
+    const synergy = ctx.hasActivePlant('eileen') && ctx.hasActivePlant('diana');
+    const critical = synergy && Math.random() < 0.3;
+    const damage = Math.round((this.config.attackDamage ?? 40) * (critical ? 1.5 : 1));
+    ctx.spawnProjectile(
+      this.x + this.dispW * 0.3, this.y - 16,
+      this.config.projectile ?? 'projectile_candy_ice_cream', damage, this.row,
+      { lobbed: true, empowered: critical, candyBurst: { count: 8, damage: 30, explosive: critical } },
+    );
+    this.pulse(critical ? 1.16 : 1.1, 170);
+  }
+
+  private updateYiGeHun(delta: number, target: Zombie | null, ctx: PlantContext): void {
+    if (!target) return;
+    this.attackTimer += delta;
+    if (this.attackTimer < (this.config.attackInterval ?? 1500)) return;
+    this.attackTimer = 0;
+    ctx.spawnProjectile(
+      this.x + this.dispW * 0.3, this.y - 14,
+      this.config.projectile ?? 'projectile_soul_candy', this.config.attackDamage ?? 20, this.row,
+      { soulDebuff: { durationMs: 3000, maxStacks: 3 } },
+    );
+    this.recoil();
+  }
+
+  private heal(amount: number): void {
+    if (!this.active || amount <= 0) return;
+    this.hp = Math.min(this.maxHp, this.hp + amount);
+  }
+
+  get isSpecialWall(): boolean { return this.config.behavior === 'specialwall'; }
+  /** 乃琳地刺形态：不被普通僵尸当作啃食目标，只有 crushPlants 的车辆能碾毁。 */
+  get isSpikeForm(): boolean { return this.config.behavior === 'eileen' && this.transformed; }
+
+  takeSpecialHit(attackPower: number): void {
+    if (!this.active || !this.isSpecialWall) return;
+    this.hp -= 1;
+    this.lastCtx?.spawnSun(this.x, this.y - 12, Math.max(1, Math.round(attackPower * 0.3)));
+    this.pulse(1.12, 140);
+    if (this.hp <= 0) this.destroy();
   }
 
   private resolveSquash(target: Zombie, ctx: PlantContext): void {
@@ -168,13 +304,15 @@ export class Plant extends Phaser.GameObjects.Sprite {
   }
 
   private fire(ctx: PlantContext, options: ProjectileOptions, lobbed: boolean): void {
-    ctx.spawnProjectile(this.x + this.dispW * 0.3, this.y - 12, this.config.projectile ?? 'projectile_candy', this.config.attackDamage ?? 20, this.row, { ...options, lobbed });
+    const damage = Math.round((this.config.attackDamage ?? 20) * ctx.getDamageMultiplier(this.config.type));
+    ctx.spawnProjectile(this.x + this.dispW * 0.3, this.y - 12, this.config.projectile ?? 'projectile_candy', damage, this.row, { ...options, lobbed });
   }
   private fireBurst(ctx: PlantContext): void {
     const count = this.config.burstCount ?? 1;
+    const damage = Math.round((this.config.attackDamage ?? 20) * ctx.getDamageMultiplier(this.config.type));
     for (let i = 0; i < count; i++) {
       const offsetX = (i - (count - 1) / 2) * 8;
-      ctx.spawnProjectile(this.x + this.dispW * 0.3 + offsetX, this.y - 12, this.config.projectile ?? 'projectile_candy', this.config.attackDamage ?? 20, this.row, {});
+      ctx.spawnProjectile(this.x + this.dispW * 0.3 + offsetX, this.y - 12, this.config.projectile ?? 'projectile_candy', damage, this.row, {});
     }
   }
   private recoil(): void { this.scene.tweens.add({ targets: this, x: this.x - 4, duration: 65, yoyo: true, ease: 'Quad.easeOut' }); }
@@ -186,6 +324,7 @@ export class Plant extends Phaser.GameObjects.Sprite {
 
   takeDamage(amount: number): void {
     if (!this.active) return;
+    if (this.isSpecialWall) return;
     this.hp -= amount;
     if (this.hp <= 0) this.destroy();
   }

@@ -20,9 +20,11 @@ export class SeedCard extends Phaser.GameObjects.Container {
   private cooldownRemaining = 0;
   private selected = false;
   private affordable = false;
+  private displayedCost: number;
+  private bonusCount: number | null = null;
 
   constructor(scene: Phaser.Scene, x: number, y: number, config: PlantConfig) {
-    super(scene, x, y); this.config = config;
+    super(scene, x, y); this.config = config; this.displayedCost = config.cost;
     const frame = scene.add.image(0, 0, TEX.CARD_FRAME).setDisplaySize(CARD_W, CARD_H);
     const name = scene.add.text(0, -43, config.name, { fontFamily: 'Microsoft YaHei, sans-serif', fontSize: '13px', color: '#f3fbff', fontStyle: 'bold' }).setOrigin(0.5);
     this.icon = scene.add.image(0, -8, config.texture).setDisplaySize(54, 61);
@@ -43,11 +45,17 @@ export class SeedCard extends Phaser.GameObjects.Container {
   get plantType(): PlantType { return this.config.type; }
   startCooldown(): void { this.cooldownRemaining = this.config.cooldown; }
   setCooldown(ms: number): void { this.cooldownRemaining = ms; }
+  setBonusCount(count: number): void {
+    this.bonusCount = count;
+    this.costText.setText(`免费×${count}`).setFontSize(11);
+  }
   setSelected(value: boolean): void { this.selected = value; this.y = SEEDBANK_HEIGHT / 2 - (value ? 5 : 0); this.drawHighlight(); }
 
-  update(delta: number, sunAmount: number): void {
+  update(delta: number, sunAmount: number, effectiveCost?: number): void {
+    const cost = effectiveCost ?? this.config.cost;
+    if (this.bonusCount === null && cost !== this.displayedCost) { this.displayedCost = cost; this.costText.setText(String(cost)); }
     this.cooldownRemaining = Math.max(0, this.cooldownRemaining - delta);
-    this.affordable = sunAmount >= this.config.cost;
+    this.affordable = sunAmount >= cost;
     const cooling = this.cooldownRemaining > 0;
     this.cooldownMask.clear();
     if (cooling) {
@@ -74,18 +82,17 @@ export class SeedBank {
   readonly cards: SeedCard[] = [];
   private selected: SeedCard | null = null;
   private readonly tooltip: Phaser.GameObjects.Text;
+  private readonly scene: Phaser.Scene;
+  private readonly bonusCharges = new Map<PlantType, number>();
 
   constructor(scene: Phaser.Scene, types: PlantType[]) {
+    this.scene = scene;
     this.tooltip = scene.add.text(0, 140, '', {
       fontFamily: 'Microsoft YaHei, sans-serif', fontSize: '14px', color: '#effaff',
       backgroundColor: '#101a2bea', padding: { x: 12, y: 8 }, align: 'center',
     }).setOrigin(0.5, 0).setDepth(180).setVisible(false);
-    const totalWidth = types.length * CARD_W + Math.max(0, types.length - 1) * CARD_GAP;
-    const startX = BANK_X + (BANK_W - totalWidth) / 2 + CARD_W / 2;
-    types.forEach((type, index) => {
-      const card = new SeedCard(scene, startX + index * (CARD_W + CARD_GAP), SEEDBANK_HEIGHT / 2, PLANTS[type]);
-      card.parentBank = this; card.on('pointerdown', () => this.toggleSelect(card)); this.cards.push(card);
-    });
+    types.forEach((type) => this.addCard(type));
+    this.layoutCards();
   }
   get selectedType(): PlantType | null { return this.selected?.isSelectable ? this.selected.plantType : null; }
   toggleSelect(card: SeedCard): void {
@@ -94,11 +101,55 @@ export class SeedBank {
     this.clearSelection(); this.selected = card; card.setSelected(true);
   }
   clearSelection(): void { if (this.selected) { this.selected.setSelected(false); this.selected = null; } }
-  consumeSelected(): void { if (!this.selected) return; this.selected.startCooldown(); this.clearSelection(); }
-  update(delta: number, sunAmount: number): void { for (const card of this.cards) card.update(delta, sunAmount); }
+  consumeSelected(): void {
+    if (!this.selected) return;
+    const card = this.selected;
+    const type = card.plantType;
+    const bonus = this.bonusCharges.get(type);
+    if (bonus !== undefined) {
+      card.setSelected(false); this.selected = null;
+      const remaining = bonus - 1;
+      if (remaining <= 0) {
+        this.bonusCharges.delete(type);
+        const index = this.cards.indexOf(card);
+        if (index >= 0) this.cards.splice(index, 1);
+        card.destroy(); this.layoutCards();
+      } else {
+        this.bonusCharges.set(type, remaining); card.setBonusCount(remaining);
+      }
+      return;
+    }
+    card.startCooldown(); this.clearSelection();
+  }
+  update(delta: number, sunAmount: number, costOf?: (type: PlantType) => number): void {
+    for (const card of this.cards) card.update(delta, sunAmount, costOf?.(card.plantType));
+  }
   applyInitialCooldown(ms: number): void { for (const card of this.cards) card.setCooldown(ms); }
-  showTooltip(card: SeedCard): void { this.tooltip.setPosition(card.x, 132).setText(`${card.config.role}  ·  ${card.config.desc}`).setVisible(true); }
+  grantBonus(type: PlantType, amount = 1): void {
+    const count = (this.bonusCharges.get(type) ?? 0) + amount;
+    this.bonusCharges.set(type, count);
+    let card = this.cards.find((candidate) => candidate.plantType === type);
+    if (!card) { card = this.addCard(type); this.layoutCards(); }
+    card.setBonusCount(count);
+  }
+  showTooltip(card: SeedCard): void {
+    const bonus = this.bonusCharges.get(card.plantType);
+    const suffix = bonus === undefined ? '' : `  ·  剩余免费次数 ${bonus}`;
+    this.tooltip.setPosition(card.x, 132).setText(`${card.config.role}  ·  ${card.config.desc}${suffix}`).setVisible(true);
+  }
   hideTooltip(): void { this.tooltip.setVisible(false); }
+
+  private addCard(type: PlantType): SeedCard {
+    const card = new SeedCard(this.scene, 0, SEEDBANK_HEIGHT / 2, PLANTS[type]);
+    card.parentBank = this; card.on('pointerdown', () => this.toggleSelect(card)); this.cards.push(card);
+    return card;
+  }
+
+  private layoutCards(): void {
+    const totalWidth = this.cards.length * CARD_W + Math.max(0, this.cards.length - 1) * CARD_GAP;
+    const startX = BANK_X + (BANK_W - totalWidth) / 2 + CARD_W / 2;
+    this.cards.forEach((card, index) => { card.x = startX + index * (CARD_W + CARD_GAP); });
+  }
 }
 
 export function createSeedBankBackground(scene: Phaser.Scene): Phaser.GameObjects.Graphics {

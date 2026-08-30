@@ -5,7 +5,7 @@ import { sharpenSceneText, sharpenText } from '../core/TextQuality';
 import { getLevelProgress } from '../core/LevelProgress';
 import { ALL_LEVELS, type LevelConfig } from '../data/levels';
 import { ZOMBIES } from '../data/zombies';
-import { GameScene } from './GameScene';
+import { LoadoutScene } from './LoadoutScene';
 
 export class LevelSelectScene extends Phaser.Scene {
   static readonly KEY = 'LevelSelectScene';
@@ -90,7 +90,7 @@ export class LevelSelectScene extends Phaser.Scene {
       return icon.setScale(scale).setAlpha(locked ? 0.25 : 0.9);
     });
 
-    const stats = this.add.text(0, -6, level.waves.length + ' 波  ·  初始应援 ' + level.startingSun + '  ·  ' + level.availablePlants.length + ' 张卡', {
+    const stats = this.add.text(0, -6, level.waves.length + ' 波  ·  初始应援 ' + level.startingSun + '  ·  可选 ' + level.availablePlants.length + ' 张', {
       fontFamily: 'Microsoft YaHei', fontSize: '11px', color: locked ? '#596975' : '#ffdc82',
     }).setOrigin(0.5);
     const desc = this.add.text(0, 25, level.description, {
@@ -117,7 +117,7 @@ export class LevelSelectScene extends Phaser.Scene {
       this.tweens.add({ targets: container, scale: 1, duration: 110, ease: 'Quad.easeOut' });
       bg.setStrokeStyle(2, level.accent, 0.55);
     });
-    bg.on('pointerdown', () => this.scene.start(GameScene.KEY, { level }));
+    bg.on('pointerdown', () => this.scene.start(LoadoutScene.KEY, { level }));
   }
 
   private createNavigation(): void {

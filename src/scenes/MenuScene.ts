@@ -14,7 +14,7 @@ export class MenuScene extends Phaser.Scene {
 
   create(): void {
     this.createBackground(); this.createCast(); this.createTitle(); this.createStartButton(); this.createCodexButton(); this.createDeveloperButton();
-    this.add.text(GAME_WIDTH / 2, GAME_HEIGHT - 38, '同人创作 · 角色与故事归原作者及社群共同记忆所有', { fontFamily: 'Microsoft YaHei', fontSize: '12px', color: '#66869d' }).setOrigin(0.5);
+    this.add.text(GAME_WIDTH / 2, GAME_HEIGHT - 38, 'ai辅助创作，版权归asoul官方及社区素材原作者所有', { fontFamily: 'Microsoft YaHei', fontSize: '12px', color: '#66869d' }).setOrigin(0.5);
     sharpenSceneText(this);
   }
 
@@ -50,27 +50,24 @@ export class MenuScene extends Phaser.Scene {
 
   private createTitle(): void {
     this.add.text(GAME_WIDTH / 2, 108, '枝江舞台保卫战', { fontFamily: 'Microsoft YaHei', fontSize: '58px', color: '#f5fdff', fontStyle: 'bold', stroke: '#113652', strokeThickness: 10 }).setOrigin(0.5);
-    this.add.text(GAME_WIDTH / 2, 171, 'A-SOUL  ×  A87', { fontFamily: 'Arial', fontSize: '22px', color: '#70e8ff', fontStyle: 'bold' }).setOrigin(0.5);
+    this.add.text(GAME_WIDTH / 2, 171, 'Asoul同人作品', { fontFamily: 'Microsoft YaHei', fontSize: '22px', color: '#70e8ff', fontStyle: 'bold' }).setOrigin(0.5);
     const rule = this.add.graphics(); rule.lineStyle(2, 0x6de7ff, 0.55); rule.beginPath(); rule.moveTo(452, 205); rule.lineTo(828, 205); rule.strokePath();
-    this.add.text(GAME_WIDTH / 2, 231, '邪恶的 A87 想夺走舞台，偶像与粉丝们必须并肩守住灯光。', { fontFamily: 'Microsoft YaHei', fontSize: '17px', color: '#a9c8d8' }).setOrigin(0.5);
-
-    const feature = this.add.graphics(); feature.fillStyle(0x0c1728, 0.88); feature.fillRoundedRect(438, 278, 404, 86, 16); feature.lineStyle(1, 0x6de7ff, 0.25); feature.strokeRoundedRect(438, 278, 404, 86, 16);
-    this.add.text(GAME_WIDTH / 2, 303, '10 个巡演关卡  ·  10 张角色卡  ·  15 类敌人', { fontFamily: 'Microsoft YaHei', fontSize: '16px', color: '#e8faff', fontStyle: 'bold' }).setOrigin(0.5);
-    this.add.text(GAME_WIDTH / 2, 339, '变形机制 / 距离攻速 / 定身投掷 / Boss 召唤', { fontFamily: 'Microsoft YaHei', fontSize: '13px', color: '#7da5ba' }).setOrigin(0.5);
+    this.add.text(GAME_WIDTH / 2, 224, '枝江出现了邪恶的白色怪物，想夺走属于asoul的舞台出道当偶像！', { fontFamily: 'Microsoft YaHei', fontSize: '17px', color: '#a9c8d8' }).setOrigin(0.5);
+    this.add.text(GAME_WIDTH / 2, 254, 'asoul与粉丝们必须并肩守住舞台！', { fontFamily: 'Microsoft YaHei', fontSize: '17px', color: '#a9c8d8' }).setOrigin(0.5);
   }
 
   private createStartButton(): void {
-    const glow = this.add.rectangle(GAME_WIDTH / 2, 441, 244, 72, 0x5ee7ff, 0.13).setStrokeStyle(2, 0x6decff, 0.45);
-    const button = this.add.text(GAME_WIDTH / 2, 441, '选择巡演关卡', { fontFamily: 'Microsoft YaHei', fontSize: '24px', color: '#ffffff', backgroundColor: '#256487', padding: { x: 42, y: 16 }, fontStyle: 'bold' }).setOrigin(0.5).setInteractive({ useHandCursor: true }).setDepth(5);
+    const glow = this.add.rectangle(GAME_WIDTH / 2, 365, 244, 72, 0x5ee7ff, 0.13).setStrokeStyle(2, 0x6decff, 0.45);
+    const button = this.add.text(GAME_WIDTH / 2, 365, '选择巡演关卡', { fontFamily: 'Microsoft YaHei', fontSize: '24px', color: '#ffffff', backgroundColor: '#256487', padding: { x: 42, y: 16 }, fontStyle: 'bold' }).setOrigin(0.5).setInteractive({ useHandCursor: true }).setDepth(5);
     button.on('pointerover', () => { button.setBackgroundColor('#337fa3').setScale(1.035); glow.setAlpha(0.28); });
     button.on('pointerout', () => { button.setBackgroundColor('#256487').setScale(1); glow.setAlpha(1); });
     button.on('pointerdown', () => this.scene.start(LevelSelectScene.KEY));
     this.tweens.add({ targets: glow, scaleX: 1.06, scaleY: 1.12, alpha: 0.05, duration: 950, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
-    this.add.text(GAME_WIDTH / 2, 505, '点击角色卡 → 点击草坪部署　｜　点击应援球收集资源', { fontFamily: 'Microsoft YaHei', fontSize: '14px', color: '#8bacbe' }).setOrigin(0.5);
+    this.add.text(GAME_WIDTH / 2, 429, '点击角色卡 → 点击草坪部署　｜　点击应援球收集资源', { fontFamily: 'Microsoft YaHei', fontSize: '14px', color: '#8bacbe' }).setOrigin(0.5);
   }
 
   private createCodexButton(): void {
-    const button = this.add.text(GAME_WIDTH / 2, 558, '查看枝江图鉴', {
+    const button = this.add.text(GAME_WIDTH / 2, 482, '查看枝江图鉴', {
       fontFamily: 'Microsoft YaHei', fontSize: '16px', color: '#dff9ff',
       backgroundColor: '#172d43', padding: { x: 28, y: 11 }, fontStyle: 'bold',
     }).setOrigin(0.5).setInteractive({ useHandCursor: true }).setDepth(5);
@@ -80,11 +77,11 @@ export class MenuScene extends Phaser.Scene {
   }
 
   private createDeveloperButton(): void {
-    this.developerButton = this.add.text(GAME_WIDTH / 2, 616, '', {
+    this.developerButton = this.add.text(GAME_WIDTH / 2, 540, '', {
       fontFamily: 'Microsoft YaHei', fontSize: '13px', color: '#cce9f4',
       padding: { x: 20, y: 8 }, fontStyle: 'bold',
     }).setOrigin(0.5).setInteractive({ useHandCursor: true }).setDepth(5);
-    this.developerStatus = this.add.text(GAME_WIDTH / 2, 649, '', {
+    this.developerStatus = this.add.text(GAME_WIDTH / 2, 573, '', {
       fontFamily: 'Microsoft YaHei', fontSize: '11px', color: '#718e9e',
     }).setOrigin(0.5);
     this.refreshDeveloperButton();

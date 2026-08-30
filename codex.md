@@ -27,6 +27,10 @@ ally_order:
   - diana
   - gladys
   - fiona
+  - xingkongtang
+  - xilanai
+  - jiaxinnaitang
+  - yigehun
 enemy_order:
   - basic
   - cone
@@ -357,6 +361,174 @@ mechanics:
     gladys: 0.20
     xinqiuyi: 0.20
     none: 0.60
+```
+
+### 11 · 星空糖（融合）
+
+<img src="public/images/plant-xingkongtang-v1.png" alt="星空糖" width="96">
+
+```yaml
+id: xingkongtang
+name: 星空糖
+role: 星糖融合射手
+fusion_materials:
+  - beijixing
+  - jiaxintang
+fusion_order_independent: true
+cost: 0
+cooldown_ms: 0
+hp: 1000
+behavior: lifesteal
+accent: "#ffd44f"
+codex_desc: 吸血星糖射击；30% 概率造成 3 倍暴击
+lore: ""
+visual:
+  texture_key: plant_xingkongtang
+  asset: images/plant-xingkongtang-v1.png
+  normalized_size: [78, 94]
+mechanics:
+  attack_interval_ms: 1000
+  damage: 30
+  projectile: projectile_star_candy
+  lifesteal_ratio: 0.50
+  critical_chance: 0.30
+  critical_damage_multiplier: 3
+  synergy_requires:
+    - bella
+    - diana
+  synergy_hp_multiplier: 2
+  synergy_attack_interval_ms: 500
+  synergy_lifesteal_ratio: 1.00
+```
+
+### 12 · 喜拉乃（融合）
+
+<img src="public/images/plant-xilanai-v1.png" alt="喜拉乃" width="96">
+
+```yaml
+id: xilanai
+name: 喜拉乃
+role: 星巧融合投手
+fusion_materials:
+  - beijixing
+  - naiqilin
+fusion_order_independent: true
+cost: 0
+cooldown_ms: 0
+hp: 1000
+behavior: sunlobber
+accent: "#f4c25e"
+codex_desc: 产阳光并投掷星形巧克力，概率召唤特殊贝极星
+lore: ""
+visual:
+  texture_key: plant_xilanai
+  asset: images/plant-xilanai-v1.png
+  normalized_size: [78, 94]
+mechanics:
+  produce_interval_ms: 20000
+  produce_amount: 50
+  attack_interval_ms: 2100
+  damage: 40
+  projectile: projectile_star_candy
+  lobbed: true
+  special_beijixing_chance: 0.15
+  synergy_requires:
+    - bella
+    - eileen
+  synergy_special_beijixing_chance: 0.30
+  special_beijixing:
+    deploy_at_hit_enemy_cell: true
+    requires_empty_deployable_cell: true
+    hits_before_destroyed: 3
+    incoming_attack_to_sun_ratio: 0.30
+```
+
+### 13 · 嘉心奶糖（融合）
+
+<img src="public/images/plant-jiaxinnaitang-v1.png" alt="嘉心奶糖" width="96">
+
+```yaml
+id: jiaxinnaitang
+name: 嘉心奶糖
+role: 八向爆糖投手
+fusion_materials:
+  - naiqilin
+  - jiaxintang
+fusion_order_independent: true
+cost: 0
+cooldown_ms: 0
+hp: 300
+behavior: burstlobber
+accent: "#ffa6bc"
+codex_desc: 冰淇淋主弹炸开后发射 8 枚八向糖果子弹
+lore: ""
+visual:
+  texture_key: plant_jiaxinnaitang
+  asset: images/plant-jiaxinnaitang-v1.png
+  normalized_size: [78, 94]
+mechanics:
+  attack_interval_ms: 2000
+  damage: 40
+  projectile: projectile_candy_ice_cream
+  lobbed: true
+  burst_projectile_count: 8
+  burst_projectile_damage: 30
+  burst_directions_evenly_spaced_degrees: 45
+  synergy_requires:
+    - eileen
+    - diana
+  synergy_critical_chance: 0.30
+  synergy_critical_damage_multiplier: 1.50
+  critical_replaces_burst_with_ice_cream_projectiles: true
+  critical_burst_secondary_explosion_radius_px: 58
+  critical_burst_secondary_explosion_damage: 30
+```
+
+### 14 · 一个魂（三重融合）
+
+<img src="public/images/plant-yigehun-v1.png" alt="一个魂" width="96">
+
+```yaml
+id: yigehun
+name: 一个魂
+role: 三重削弱射手
+fusion_materials:
+  - beijixing
+  - naiqilin
+  - jiaxintang
+fusion_paths:
+  - [xingkongtang, naiqilin]
+  - [xilanai, jiaxintang]
+  - [jiaxinnaitang, beijixing]
+cost: 0
+cooldown_ms: 0
+hp: 1500
+behavior: soulshooter
+accent: "#b594ff"
+codex_desc: 灵魂弹叠加减速与攻击下降，最多 3 层
+lore: ""
+visual:
+  texture_key: plant_yigehun
+  asset: images/plant-yigehun-v1.png
+  normalized_size: [82, 98]
+mechanics:
+  attack_interval_ms: 1500
+  damage: 20
+  projectile: projectile_soul_candy
+  debuff_duration_ms: 3000
+  debuff_max_stacks: 3
+  speed_multiplier_per_stack: 0.50
+  attack_multiplier_per_stack: 0.70
+  stacking_mode: multiplicative
+  three_stack_speed_multiplier: 0.125
+  three_stack_attack_multiplier: 0.343
+  bonus_copy_synergy_requires:
+    - bella
+    - eileen
+    - diana
+  bonus_copy_on_each_fusion: 1
+  bonus_copy_cost: 0
+  bonus_copy_is_directly_deployable: true
 ```
 
 ## 敌方档案

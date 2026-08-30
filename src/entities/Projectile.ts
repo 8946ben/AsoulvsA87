@@ -10,11 +10,15 @@ export interface ProjectileOptions {
   lobbed?: boolean;
   arcTargetX?: number;
   arcTargetY?: number;
+  onHit?: (damageDealt: number, target: Zombie) => void;
+  candyBurst?: { count: number; damage: number; explosive: boolean };
+  soulDebuff?: { durationMs: number; maxStacks: number };
 }
 
 export interface ProjectileContext {
   findTarget(row: number, x: number, ignored?: Set<Zombie>): Zombie | null;
   damageSplash(row: number, x: number, radius: number, damage: number, primary: Zombie): void;
+  spawnCandyBurst(x: number, y: number, count: number, damage: number, explosive: boolean): void;
 }
 
 export class Projectile extends Phaser.GameObjects.Sprite {
@@ -64,9 +68,16 @@ export class Projectile extends Phaser.GameObjects.Sprite {
     const target = ctx.findTarget(this.row, this.x, this.hit);
     if (!target) return;
     this.hit.add(target);
+    const hpBefore = target.hp;
     target.takeDamage(this.damage);
+    this.options.onHit?.(Math.min(this.damage, Math.max(0, hpBefore)), target);
     if (this.options.stunMs) target.stunFor(this.options.stunMs);
+    if (this.options.soulDebuff) target.applySoulDebuff(this.options.soulDebuff.durationMs, this.options.soulDebuff.maxStacks);
     if (this.options.splash) ctx.damageSplash(this.row, target.x, this.options.splash, this.damage * 0.45, target);
+    if (this.options.candyBurst) {
+      const burst = this.options.candyBurst;
+      ctx.spawnCandyBurst(target.x, target.y, burst.count, burst.damage, burst.explosive);
+    }
     this.spawnHitEffect(this.options.empowered ? 0xff9b42 : this.options.stunMs ? 0xfff2cf : 0xff87bd);
     if (!this.options.piercing) this.destroy();
   }

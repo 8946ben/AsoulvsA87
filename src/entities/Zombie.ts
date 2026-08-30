@@ -5,7 +5,7 @@ import type { Plant } from './Plant';
 
 export type ZombieState = 'walking' | 'eating' | 'dead';
 export interface ZombieContext {
-  getBlockingPlant(row: number, zombieX: number, leadX: number, direction: -1 | 1): Plant | null;
+  getBlockingPlant(row: number, zombieX: number, leadX: number, direction: -1 | 1, includeSpikeForm: boolean): Plant | null;
   onReachHouse(zombie: Zombie): void;
   spawnMinion(type: ZombieType, row: number, x: number): void;
 }
@@ -26,9 +26,12 @@ export class Zombie extends Phaser.GameObjects.Sprite {
   private charging: boolean;
   private stunRemaining = 0;
   private slowRemaining = 0;
+  private soulDebuffRemaining = 0;
+  private soulDebuffStacks = 0;
   private summonTimer = 0;
   private readonly baseY: number;
   private crawlPhase: number;
+  private biteTimer = 0;
   private direction: -1 | 1 = -1;
   private surfaced = false;
 
@@ -56,6 +59,11 @@ export class Zombie extends Phaser.GameObjects.Sprite {
     this.shadow.setPosition(this.x + this.displayWidth * 0.08, this.baseY + shadowOffset);
     this.redrawHpBar();
 
+    if (this.soulDebuffRemaining > 0) {
+      this.soulDebuffRemaining -= delta;
+      if (this.soulDebuffRemaining <= 0) this.soulDebuffStacks = 0;
+    }
+
     if (this.stunRemaining > 0) {
       this.stunRemaining -= delta;
       this.setTint(0xb8ecff);
@@ -76,17 +84,26 @@ export class Zombie extends Phaser.GameObjects.Sprite {
     const dt = delta / 1000;
     if (this.state === 'eating') {
       if (this.target?.active && this.target.hp > 0) {
-        this.target.takeDamage(this.config.attackDps * dt);
+        if (this.target.isSpecialWall) {
+          this.biteTimer += delta;
+          if (this.biteTimer >= 1000) {
+            this.biteTimer -= 1000;
+            this.target.takeSpecialHit(this.config.attackDps * Math.pow(0.7, this.soulDebuffStacks));
+          }
+          return;
+        }
+        this.biteTimer = 0;
+        this.target.takeDamage(this.config.attackDps * Math.pow(0.7, this.soulDebuffStacks) * dt);
         return;
       }
-      this.target = null; this.state = 'walking'; this.setScale(this.config.scale ?? 1);
+      this.target = null; this.biteTimer = 0; this.state = 'walking'; this.setScale(this.config.scale ?? 1);
     }
 
     if (this.vaulting) return;
     // 素材头部位于画面左侧，用头部前缘而非图片中心做接敌判定。
     const leadX = this.x + this.direction * this.displayWidth * 0.31;
     const underground = Boolean(this.config.tunneling && !this.surfaced);
-    const blocker = (this.config.flying || underground) ? null : ctx.getBlockingPlant(this.row, this.x, leadX, this.direction);
+    const blocker = (this.config.flying || underground) ? null : ctx.getBlockingPlant(this.row, this.x, leadX, this.direction, Boolean(this.config.crushPlants));
     if (blocker) {
       if (this.config.crushPlants) {
         blocker.takeDamage(blocker.hp + 1);
@@ -113,13 +130,14 @@ export class Zombie extends Phaser.GameObjects.Sprite {
         return;
       }
       this.charging = false;
-      this.target = blocker; this.state = 'eating';
+      this.target = blocker; this.biteTimer = 0; this.state = 'eating';
       return;
     }
 
     const rageModifier = this.accessoryBroken ? (this.config.enragedSpeedMultiplier ?? 1) : 1;
     const postVaultModifier = this.hasVaulted ? (this.config.postVaultSpeedMultiplier ?? 1) : 1;
-    const modifier = (this.charging ? 1.45 : 1) * rageModifier * postVaultModifier * (this.slowRemaining > 0 ? 0.48 : 1);
+    const soulSpeedModifier = Math.pow(0.5, this.soulDebuffStacks);
+    const modifier = (this.charging ? 1.45 : 1) * rageModifier * postVaultModifier * (this.slowRemaining > 0 ? 0.48 : 1) * soulSpeedModifier;
     // 蠕动时交替“收缩蓄力—伸展滑行”，不再保持匀速平移。
     const stride = 0.68 + 0.58 * (0.5 + 0.5 * Math.cos(this.crawlPhase));
     this.x += this.direction * this.config.speed * modifier * stride * dt;
@@ -152,6 +170,10 @@ export class Zombie extends Phaser.GameObjects.Sprite {
 
   stunFor(ms: number): void { this.stunRemaining = Math.max(this.stunRemaining, ms); }
   slowFor(ms: number): void { this.slowRemaining = Math.max(this.slowRemaining, ms); }
+  applySoulDebuff(ms: number, maxStacks = 3): void {
+    this.soulDebuffStacks = Math.min(maxStacks, this.soulDebuffStacks + 1);
+    this.soulDebuffRemaining = ms;
+  }
 
   get targetable(): boolean { return !this.config.tunneling || this.surfaced; }
 
@@ -196,12 +218,20 @@ export class Zombie extends Phaser.GameObjects.Sprite {
 
   private redrawHpBar(): void {
     this.hpBar.clear();
-    if (this.hp >= this.maxHp || this.state === 'dead') return;
-    const ratio = Phaser.Math.Clamp(this.hp / this.maxHp, 0, 1);
+    if (this.state === 'dead') return;
     const w = this.config.boss ? 78 : 48;
     const y = this.y - (this.config.boss ? 62 : 49);
-    this.hpBar.fillStyle(0x07101d, 0.85); this.hpBar.fillRoundedRect(this.x - w / 2 - 2, y - 2, w + 4, 8, 3);
-    this.hpBar.fillStyle(this.config.boss ? 0xc451ff : 0xff5578, 1); this.hpBar.fillRoundedRect(this.x - w / 2, y, w * ratio, 4, 2);
+    if (this.hp < this.maxHp) {
+      const ratio = Phaser.Math.Clamp(this.hp / this.maxHp, 0, 1);
+      this.hpBar.fillStyle(0x07101d, 0.85); this.hpBar.fillRoundedRect(this.x - w / 2 - 2, y - 2, w + 4, 8, 3);
+      this.hpBar.fillStyle(this.config.boss ? 0xc451ff : 0xff5578, 1); this.hpBar.fillRoundedRect(this.x - w / 2, y, w * ratio, 4, 2);
+    }
+    if (this.soulDebuffStacks > 0) {
+      for (let i = 0; i < 3; i++) {
+        this.hpBar.fillStyle(i < this.soulDebuffStacks ? 0xb594ff : 0x322a4a, i < this.soulDebuffStacks ? 1 : 0.65);
+        this.hpBar.fillCircle(this.x - 10 + i * 10, y - 8, 3.2);
+      }
+    }
   }
 
   destroy(fromScene?: boolean): void {
