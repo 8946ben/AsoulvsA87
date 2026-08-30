@@ -39,6 +39,7 @@ export interface PlantConfig {
   produceAmount?: number;
   attackInterval?: number;
   attackDamage?: number;
+  burstCount?: number;
   projectile?: string;
   stunChance?: number;
   stunMs?: number;
@@ -48,7 +49,7 @@ export interface PlantConfig {
 /** background.md 中十张基础卡的完整落地。 */
 export const PLANTS: Record<PlantType, PlantConfig> = {
   beijixing: {
-    type: 'beijixing', name: '贝极星', role: '应援补给', cost: 50, cooldown: 6500,
+    type: 'beijixing', name: '贝极星', role: '应援补给', cost: 50, cooldown: 5000,
     hp: 1000, behavior: 'producer', texture: TEX.PLANT_BEIJIXING,
     desc: '每 9 秒产生 25 点应援', accent: 0x63d9ff,
     produceInterval: 9000, produceAmount: 25,
@@ -78,31 +79,31 @@ export const PLANTS: Record<PlantType, PlantConfig> = {
     attackDamage: 1500,
   },
   bella: {
-    type: 'bella', name: '贝拉', role: '锤击变阵', cost: 150, cooldown: 12000,
+    type: 'bella', name: '贝拉', role: '锤击变阵', cost: 150, cooldown: 10000,
     hp: 1000, behavior: 'bella', texture: TEX.PLANT_BELLA,
     desc: '远投锤子；近敌时化为地雷', accent: 0xe54955,
-    attackInterval: 2700, attackDamage: 92, projectile: TEX.HAMMER,
+    attackInterval: 2700, attackDamage: 102, projectile: TEX.HAMMER,
   },
   eileen: {
-    type: 'eileen', name: '乃琳', role: '穿透变阵', cost: 150, cooldown: 11000,
+    type: 'eileen', name: '乃琳', role: '穿透变阵', cost: 150, cooldown: 10000,
     hp: 300, behavior: 'eileen', texture: TEX.PLANT_EILEEN,
     desc: '远程穿透；近敌时化为地刺', accent: 0x9b72e8,
-    attackInterval: 1900, attackDamage: 32, projectile: TEX.BEAM,
+    attackInterval: 1500, attackDamage: 32, projectile: TEX.BEAM,
   },
   diana: {
-    type: 'diana', name: '嘉然', role: '距离机枪', cost: 200, cooldown: 12000,
+    type: 'diana', name: '嘉然', role: '距离机枪', cost: 200, cooldown: 10000,
     hp: 300, behavior: 'rapid', texture: TEX.PLANT_DIANA,
-    desc: '敌人越近攻速越快，一格内提升至 5 倍', accent: 0xff9b55,
-    attackInterval: 950, attackDamage: 16, projectile: TEX.CANDY,
+    desc: '一次连发3发糖果；敌人越近攻速越快，一格内提升至 5 倍', accent: 0xff9b55,
+    attackInterval: 950, attackDamage: 16, burstCount: 3, projectile: TEX.CANDY,
   },
   gladys: {
-    type: 'gladys', name: '思诺', role: '全场冰冻', cost: 250, cooldown: 13000,
+    type: 'gladys', name: '思诺', role: '全场冰冻', cost: 250, cooldown: 20000,
     hp: 300, behavior: 'freeze', texture: TEX.PLANT_GLADYS,
     desc: '冰冻全场；概率留下心宜或小海诺', accent: 0x54c8ff,
     freezeDuration: 4000,
   },
   fiona: {
-    type: 'fiona', name: '心宜', role: '概率支援', cost: 250, cooldown: 22000,
+    type: 'fiona', name: '心宜', role: '概率支援', cost: 250, cooldown: 20000,
     hp: 300, behavior: 'squash', texture: TEX.PLANT_FIONA,
     desc: '压扁敌人；概率留下思诺或心球仪', accent: 0xff6fba,
     attackDamage: 1200,

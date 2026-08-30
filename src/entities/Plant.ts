@@ -98,7 +98,7 @@ export class Plant extends Phaser.GameObjects.Sprite {
           const distanceRatio = Phaser.Math.Clamp((distance - GRID.CELL_W) / (GRID.CELL_W * 7), 0, 1);
           const speedMultiplier = Phaser.Math.Linear(5, 1, distanceRatio);
           const interval = baseInterval / speedMultiplier;
-          if (this.attackTimer >= interval) { this.attackTimer = 0; this.fire(ctx, {}, false); this.recoil(); }
+          if (this.attackTimer >= interval) { this.attackTimer = 0; this.fireBurst(ctx); this.recoil(); }
         }
         break;
       case 'freeze':
@@ -169,6 +169,13 @@ export class Plant extends Phaser.GameObjects.Sprite {
 
   private fire(ctx: PlantContext, options: ProjectileOptions, lobbed: boolean): void {
     ctx.spawnProjectile(this.x + this.dispW * 0.3, this.y - 12, this.config.projectile ?? 'projectile_candy', this.config.attackDamage ?? 20, this.row, { ...options, lobbed });
+  }
+  private fireBurst(ctx: PlantContext): void {
+    const count = this.config.burstCount ?? 1;
+    for (let i = 0; i < count; i++) {
+      const offsetX = (i - (count - 1) / 2) * 8;
+      ctx.spawnProjectile(this.x + this.dispW * 0.3 + offsetX, this.y - 12, this.config.projectile ?? 'projectile_candy', this.config.attackDamage ?? 20, this.row, {});
+    }
   }
   private recoil(): void { this.scene.tweens.add({ targets: this, x: this.x - 4, duration: 65, yoyo: true, ease: 'Quad.easeOut' }); }
   private pulse(scale: number, duration: number): void { this.scene.tweens.add({ targets: this, scale: this.baseScale * scale, duration, yoyo: true, ease: 'Sine.easeInOut' }); }

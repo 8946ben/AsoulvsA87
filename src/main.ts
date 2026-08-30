@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { GAME_HEIGHT, GAME_WIDTH } from './config/GameConfig';
+import { installHiDPI } from './core/HiDPI';
 import { BootScene } from './scenes/BootScene';
 import { GameScene } from './scenes/GameScene';
 import { MenuScene } from './scenes/MenuScene';
@@ -25,4 +26,8 @@ const config: Phaser.Types.Core.GameConfig = {
   scene: [BootScene, MenuScene, LevelSelectScene, CodexScene, GameScene],
 };
 
-new Phaser.Game(config);
+const game = new Phaser.Game(config);
+
+// Phaser 3.60+ 已移除 resolution 配置，画布背板固定为逻辑尺寸，大窗口下会被浏览器放大而变糊。
+// 这里按窗口/DPI 抬高背板分辨率并同步相机缩放，让画面在超大窗口中依旧清晰锐利。
+installHiDPI(game);
