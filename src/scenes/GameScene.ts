@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { GAME_HEIGHT, GAME_WIDTH, GRID, LAWNMOWER_X, PLANT_DISPLAY, SUN_RULES, TEX, ZOMBIE_SPAWN_X } from '../config/GameConfig';
+import { GAME_HEIGHT, GAME_WIDTH, GRID, HOUSE_LINE_X, LAWNMOWER_X, PLANT_DISPLAY, SUN_RULES, TEX, ZOMBIE_SPAWN_X } from '../config/GameConfig';
 import { Grid } from '../core/Grid';
 import { addCoins, isTechUnlocked } from '../core/Coins';
 import { isDeveloperMode } from '../core/DeveloperMode';
@@ -77,6 +77,8 @@ export class GameScene extends Phaser.Scene {
     getBlockingPlant: (row, zombieX, leadX, direction, includeSpikeForm) => this.getBlockingPlant(row, zombieX, leadX, direction, includeSpikeForm),
     onReachHouse: (zombie) => this.onZombieReachHouse(zombie),
     spawnMinion: (type, row, x) => this.spawnZombie(type, row, x),
+    damagePlantsInRow: (row, fromX, damage) => this.damagePlantsInRow(row, fromX, damage),
+    damagePlantsAround: (x, y, radius, damage) => this.damagePlantsAround(x, y, radius, damage),
   };
   private readonly projectileCtx: ProjectileContext = {
     findTarget: (row, x, ignored) => this.findZombieTarget(row, x, ignored),
@@ -419,6 +421,33 @@ export class GameScene extends Phaser.Scene {
       z.takeDamage(damage); if (stunMs) z.stunFor(stunMs);
     }
     this.cameras.main.shake(180, 0.007);
+  }
+
+  /** 化龙换道时发射的穿透射线：命中该行位于其身前的所有植物。 */
+  private damagePlantsInRow(row: number, fromX: number, damage: number): void {
+    const y = this.grid.rowToY(row);
+    for (const plant of this.plants) {
+      if (plant.active && plant.row === row && plant.x <= fromX) plant.takeDamage(damage);
+    }
+    const width = Math.max(10, fromX - HOUSE_LINE_X);
+    const beam = this.add.rectangle(HOUSE_LINE_X + width / 2, y - 6, width, 10, 0xffd76a, 0.8).setDepth(69);
+    this.tweens.add({ targets: beam, alpha: 0, scaleY: 2.4, duration: 340, ease: 'Quad.easeOut', onComplete: () => beam.destroy() });
+    this.cameras.main.shake(100, 0.003);
+  }
+
+  /** 黑化珈乐的穿透法术：紫色法球向四周扩散，范围内的植物受到伤害。 */
+  private damagePlantsAround(x: number, y: number, radius: number, damage: number): void {
+    for (const plant of this.plants) {
+      if (plant.active && Phaser.Math.Distance.Between(x, y, plant.x, plant.y) <= radius) plant.takeDamage(damage);
+    }
+    const ring = this.add.circle(x, y, 22, 0xc06aff, 0.42).setDepth(70);
+    this.tweens.add({ targets: ring, scale: radius / 22, alpha: 0, duration: 430, ease: 'Quad.easeOut', onComplete: () => ring.destroy() });
+    for (let i = 0; i < 8; i++) {
+      const angle = (Math.PI * 2 * i) / 8;
+      const bolt = this.add.circle(x + Math.cos(angle) * 30, y + Math.sin(angle) * 30, 5, 0xd9a6ff, 0.95).setDepth(70);
+      this.tweens.add({ targets: bolt, x: x + Math.cos(angle) * radius, y: y + Math.sin(angle) * radius, alpha: 0, duration: 380, onComplete: () => bolt.destroy() });
+    }
+    this.cameras.main.shake(110, 0.0035);
   }
 
   private freezeAll(durationMs: number): void {

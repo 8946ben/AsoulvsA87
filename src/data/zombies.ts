@@ -39,6 +39,9 @@ export interface ZombieConfig {
   crushPlants?: boolean;
   tunneling?: boolean;
   summonInterval?: number;
+  summonType?: ZombieType;
+  laneChangeInterval?: number;
+  roaming?: boolean;
   boss?: boolean;
 }
 
@@ -98,14 +101,15 @@ export const ZOMBIES: Record<ZombieType, ZombieConfig> = {
   dragon: {
     type: 'dragon', name: '神区化龙 A87', quote: '白虫化龙，妄图夺走枝江舞台',
     hp: 3200, speed: 6.5, attackDps: 85, texture: TEX.ZOMBIE_DRAGON, scale: 1.06, boss: true,
+    summonInterval: 5000, summonType: 'phone', laneChangeInterval: 20000,
   },
   knight: {
-    type: 'knight', name: '皇家骑士（黑化）', quote: '它们什么也不懂，只懂得冲锋',
-    hp: 980, speed: 17, attackDps: 90, texture: TEX.ZOMBIE_KNIGHT, charge: true,
+    type: 'knight', name: '黑化的骑士', quote: '它们什么也不懂，只懂得冲锋',
+    hp: 980, speed: 20, attackDps: 90, texture: TEX.ZOMBIE_KNIGHT, charge: true,
   },
   carol: {
     type: 'carol', name: '珈乐（黑化）', quote: '往日种种，你难道都忘了吗',
     hp: 4200, speed: 5.5, attackDps: 78, texture: TEX.ZOMBIE_CAROL,
-    summonInterval: 11000, boss: true,
+    roaming: true, boss: true,
   },
 };

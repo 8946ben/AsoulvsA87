@@ -116,7 +116,7 @@ export const PLANTS: Record<PlantType, PlantConfig> = {
     type: 'fiona', name: '心宜', role: '概率支援', cost: 250, cooldown: 20000,
     hp: 300, behavior: 'squash', texture: TEX.PLANT_FIONA,
     desc: '压扁敌人；概率留下思诺或心球仪', accent: 0xff6fba,
-    attackDamage: 1200,
+    attackDamage: 999,
   },
   xingkongtang: {
     type: 'xingkongtang', name: '星空糖', role: '星糖融合射手', cost: 0, cooldown: 0,

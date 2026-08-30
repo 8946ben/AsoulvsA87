@@ -8,11 +8,14 @@ export interface ZombieContext {
   getBlockingPlant(row: number, zombieX: number, leadX: number, direction: -1 | 1, includeSpikeForm: boolean): Plant | null;
   onReachHouse(zombie: Zombie): void;
   spawnMinion(type: ZombieType, row: number, x: number): void;
+  damagePlantsInRow(row: number, fromX: number, damage: number): void;
+  damagePlantsAround(x: number, y: number, radius: number, damage: number): void;
 }
 
 export class Zombie extends Phaser.GameObjects.Sprite {
   readonly config: ZombieConfig;
-  readonly row: number;
+  /** 化龙会换道、珈乐会游走，行号可变。 */
+  row: number;
   hp: number;
   readonly maxHp: number;
   state: ZombieState = 'walking';
@@ -29,7 +32,11 @@ export class Zombie extends Phaser.GameObjects.Sprite {
   private soulDebuffRemaining = 0;
   private soulDebuffStacks = 0;
   private summonTimer = 0;
-  private readonly baseY: number;
+  private laneTimer = 0;
+  private spellTimer = 0;
+  private roamTarget: { x: number; y: number } | null = null;
+  private roamPause = 0;
+  private baseY: number;
   private crawlPhase: number;
   private biteTimer = 0;
   private direction: -1 | 1 = -1;
@@ -56,7 +63,7 @@ export class Zombie extends Phaser.GameObjects.Sprite {
     if (this.state === 'dead' || !this.active) return;
     this.animateBody(time, delta);
     const shadowOffset = this.config.flying ? 77 : this.config.boss ? 52 : 43;
-    this.shadow.setPosition(this.x + this.displayWidth * 0.08, this.baseY + shadowOffset);
+    this.shadow.setPosition(this.x + this.displayWidth * 0.08, (this.config.roaming ? this.y + 4 : this.baseY) + shadowOffset);
     this.redrawHpBar();
 
     if (this.soulDebuffRemaining > 0) {
@@ -76,9 +83,22 @@ export class Zombie extends Phaser.GameObjects.Sprite {
       this.summonTimer += delta;
       if (this.summonTimer >= this.config.summonInterval) {
         this.summonTimer = 0;
-        ctx.spawnMinion('knight', this.row, this.x + 36);
+        ctx.spawnMinion(this.config.summonType ?? 'knight', this.row, this.x + 36);
         this.scene.cameras.main.flash(180, 112, 35, 140, false);
       }
+    }
+
+    if (this.config.laneChangeInterval) {
+      this.laneTimer += delta;
+      if (this.laneTimer >= this.config.laneChangeInterval) {
+        this.laneTimer = 0;
+        this.changeLane(ctx);
+      }
+    }
+
+    if (this.config.roaming) {
+      this.updateRoaming(delta, ctx);
+      return;
     }
 
     const dt = delta / 1000;
@@ -197,6 +217,14 @@ export class Zombie extends Phaser.GameObjects.Sprite {
       this.shadow.setScale(0.75 + wave * 0.06, 0.72).setAlpha(0.1 + Math.max(0, wave) * 0.05);
       return;
     }
+    if (this.config.roaming) {
+      // 游走 Boss 的位置由游走逻辑控制，这里只做呼吸式浮动。
+      this.setScale(baseScale * (1 + wave * 0.02), baseScale * (1 - wave * 0.03));
+      this.angle = Math.sin(time / 300) * 1.6;
+      if (this.alpha < 1 && this.stunRemaining <= 0) { this.setAlpha(1); this.clearTint(); }
+      this.shadow.setScale(1 + wave * 0.05, 1 - wave * 0.06).setAlpha(0.22);
+      return;
+    }
     const stretchX = 1 + wave * (moving ? 0.065 : 0.018);
     const squashY = 1 - wave * (moving ? 0.085 : 0.025);
     this.setScale(baseScale * stretchX, baseScale * squashY);
@@ -211,6 +239,62 @@ export class Zombie extends Phaser.GameObjects.Sprite {
     }
     this.angle = moving ? ripple * 2.4 : Math.sin(time / 220) * 0.8;
     this.shadow.setScale(1 + wave * 0.09, 1 - wave * 0.12).setAlpha(0.2 + (1 - squashY) * 0.7);
+  }
+
+  /** 化龙【不走寻常路】：先向当前行前方发射穿透射线，再随机换到另一行。 */
+  private changeLane(ctx: ZombieContext): void {
+    ctx.damagePlantsInRow(this.row, this.x, 100);
+    const rows: number[] = [];
+    for (let r = 0; r < GRID.ROWS; r++) if (r !== this.row) rows.push(r);
+    this.row = rows[Phaser.Math.Between(0, rows.length - 1)];
+    this.baseY = GRID.OFFSET_Y + this.row * GRID.CELL_H + GRID.CELL_H / 2 - 4;
+    this.setDepth(24 + this.row * 0.1);
+    this.shadow.setDepth(15 + this.row * 0.1);
+    this.hpBar.setDepth(this.depth + 0.1);
+  }
+
+  /** 黑化珈乐：不进防御点，在场地右侧游走；停驻片刻后召唤 3 名黑化的骑士冲锋。 */
+  private updateRoaming(delta: number, ctx: ZombieContext): void {
+    this.spellTimer += delta;
+    if (this.spellTimer >= 5000) {
+      this.spellTimer = 0;
+      ctx.damagePlantsAround(this.x, this.y, 195, 200);
+    }
+    if (this.roamPause > 0) {
+      this.roamPause -= delta;
+      if (this.roamPause <= 0) {
+        for (let r = this.row - 1; r <= this.row + 1; r++) {
+          if (r >= 0 && r < GRID.ROWS) ctx.spawnMinion('knight', r, this.x + 30);
+        }
+        this.scene.cameras.main.flash(180, 112, 35, 140, false);
+        this.roamTarget = null;
+      }
+      return;
+    }
+    if (!this.roamTarget) {
+      const row = Phaser.Math.Between(0, GRID.ROWS - 1);
+      this.roamTarget = {
+        x: Phaser.Math.Between(GRID.OFFSET_X + GRID.CELL_W * 4, GAME_WIDTH - 90),
+        y: GRID.OFFSET_Y + row * GRID.CELL_H + GRID.CELL_H / 2 - 4,
+      };
+    }
+    const dt = delta / 1000;
+    const dx = this.roamTarget.x - this.x;
+    const dy = this.roamTarget.y - this.y;
+    const dist = Math.hypot(dx, dy);
+    if (dist < 8) { this.roamPause = 1600; return; }
+    // 游走时使用 8 倍基础移速（5.5 是设计文档中接近防线的速度，游走需要更快的巡航）。
+    const step = this.config.speed * 8 * dt * (this.slowRemaining > 0 ? 0.48 : 1) * Math.pow(0.5, this.soulDebuffStacks);
+    this.x += (dx / dist) * step;
+    this.y += (dy / dist) * step;
+    const row = Phaser.Math.Clamp(Math.floor((this.y + 4 - GRID.OFFSET_Y) / GRID.CELL_H), 0, GRID.ROWS - 1);
+    if (row !== this.row) {
+      this.row = row;
+      this.setDepth(24 + row * 0.1);
+      this.shadow.setDepth(15 + row * 0.1);
+      this.hpBar.setDepth(this.depth + 0.1);
+    }
+    this.setFlipX(dx > 0);
   }
 
   die(): void {
