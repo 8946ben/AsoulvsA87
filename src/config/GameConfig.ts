@@ -2,6 +2,14 @@
 export const GAME_WIDTH = 1280;
 export const GAME_HEIGHT = 720;
 
+/**
+ * 固定 2 倍渲染背板：游戏世界仍使用 1280×720 逻辑坐标，画布从启动时即为 2560×1440。
+ * ScaleManager 因此能够同时正确管理清晰度、窗口 FIT 和输入坐标，无需运行时改写画布。
+ */
+export const RENDER_SCALE = 2;
+export const RENDER_WIDTH = GAME_WIDTH * RENDER_SCALE;
+export const RENDER_HEIGHT = GAME_HEIGHT * RENDER_SCALE;
+
 export const GRID = {
   COLS: 9,
   ROWS: 5,

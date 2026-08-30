@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
+import { RENDER_SCALE } from '../config/GameConfig';
 
-const TEXT_RESOLUTION = Math.min(window.devicePixelRatio || 1, 2);
+const TEXT_RESOLUTION = RENDER_SCALE;
 
 /** 提高 Text 内部 Canvas 纹理分辨率；同时递归处理 Container 内的卡片文字。 */
 export function sharpenText<T extends Phaser.GameObjects.Text>(text: T): T {
