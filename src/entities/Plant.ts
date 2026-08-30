@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { GRID, TEX } from '../config/GameConfig';
+import { GRID, PLANT_DISPLAY, TEX } from '../config/GameConfig';
 import { PLANTS, type PlantConfig, type PlantType } from '../data/plants';
 import type { ProjectileOptions } from './Projectile';
 import type { Zombie } from './Zombie';
@@ -43,11 +43,11 @@ export class Plant extends Phaser.GameObjects.Sprite {
     super(scene, x, y, config.texture);
     const src = scene.textures.get(config.texture).getSourceImage() as HTMLImageElement;
     const srcW = src?.width || 78; const srcH = src?.height || 94;
-    this.baseScale = Math.min((GRID.CELL_W - 6) / srcW, (GRID.CELL_H - 6) / srcH);
+    this.baseScale = Math.min(PLANT_DISPLAY.MAX_W / srcW, PLANT_DISPLAY.MAX_H / srcH);
     this.dispW = srcW * this.baseScale; this.dispH = srcH * this.baseScale;
     this.config = config; this.row = row; this.col = col; this.hp = config.hp; this.maxHp = config.hp;
     this.baseY = y;
-    this.shadow = scene.add.ellipse(x, y + 42, 57, 13, 0x071221, 0.24).setDepth(7 + row * 0.1);
+    this.shadow = scene.add.ellipse(x, y + PLANT_DISPLAY.SHADOW_Y, 48, 10, 0x071221, 0.22).setDepth(7 + row * 0.1);
     scene.add.existing(this);
     this.setDepth(14 + row * 0.1);
     this.hpBar = scene.add.graphics().setDepth(this.depth + 0.1);
@@ -58,7 +58,7 @@ export class Plant extends Phaser.GameObjects.Sprite {
   update(time: number, delta: number, ctx: PlantContext): void {
     if (!this.active) return;
     this.lastCtx = ctx;
-    this.shadow.setPosition(this.x, this.y + 42);
+    this.shadow.setPosition(this.x, this.y + PLANT_DISPLAY.SHADOW_Y);
     this.redrawHpBar();
     if (!this.resolving) this.angle = Math.sin(time / 360 + this.col * 0.7) * 1.4;
     const target = ctx.getNearestZombie(this.row, this.x);
@@ -147,7 +147,7 @@ export class Plant extends Phaser.GameObjects.Sprite {
   private updateBella(delta: number, target: Zombie | null, ctx: PlantContext): void {
     if (!target) return;
     const near = target.x - this.x <= GRID.CELL_W;
-    if (near && !this.transformed) { this.transformed = true; this.setTint(0xff776f); this.pulse(1.18, 220); }
+    if (near && !this.transformed) this.enterBellaMineForm();
     if (this.transformed) {
       this.attackTimer += delta;
       if (target.x - this.x < 48) {
@@ -161,8 +161,23 @@ export class Plant extends Phaser.GameObjects.Sprite {
     }
   }
 
+  /** 土豆雷形态：贝拉下沉，只露出紫发、眼睛和兔耳等待近身引爆。 */
+  private enterBellaMineForm(): void {
+    this.transformed = true;
+    this.scene.tweens.killTweensOf(this);
+    this.setTexture(TEX.BELLA_MINE);
+    const src = this.scene.textures.get(TEX.BELLA_MINE).getSourceImage() as HTMLImageElement;
+    const scale = Math.min(PLANT_DISPLAY.MAX_W / (src?.width || 84), (GRID.CELL_H * 0.58) / (src?.height || 68));
+    this.setPosition(this.x, this.baseY + 17).setScale(scale * 0.4).clearTint();
+    this.shadow.setVisible(false);
+    this.scene.tweens.add({ targets: this, scale, duration: 220, ease: 'Back.easeOut' });
+  }
+
   private updateEileen(delta: number, target: Zombie | null, ctx: PlantContext): void {
-    if (!target) return;
+    if (!target) {
+      if (this.transformed) this.exitSpikeForm();
+      return;
+    }
     const near = target.x - this.x <= GRID.CELL_W;
     this.attackTimer += delta;
     if (near) {
@@ -172,10 +187,12 @@ export class Plant extends Phaser.GameObjects.Sprite {
         const spike = this.scene.add.triangle(target.x, target.y + 30, 0, 28, 9, 0, 18, 28, 0xa76cff, 0.9).setDepth(33);
         this.scene.tweens.add({ targets: spike, y: spike.y - 20, alpha: 0, duration: 350, onComplete: () => spike.destroy() });
       }
-    } else if (this.attackTimer >= (this.config.attackInterval ?? 1900)) {
+    } else {
       if (this.transformed) this.exitSpikeForm();
-      this.attackTimer = 0;
-      this.fire(ctx, { piercing: true }, false); this.recoil();
+      if (this.attackTimer >= (this.config.attackInterval ?? 1900)) {
+        this.attackTimer = 0;
+        this.fire(ctx, { piercing: true }, false); this.recoil();
+      }
     }
   }
 
@@ -185,8 +202,9 @@ export class Plant extends Phaser.GameObjects.Sprite {
     this.scene.tweens.killTweensOf(this);
     this.setTexture(TEX.EILEEN_SOUP);
     const src = this.scene.textures.get(TEX.EILEEN_SOUP).getSourceImage() as HTMLImageElement;
-    const scale = Math.min((GRID.CELL_W - 6) / (src?.width || 84), (GRID.CELL_H * 0.55) / (src?.height || 58));
+    const scale = Math.min(PLANT_DISPLAY.MAX_W / (src?.width || 84), (GRID.CELL_H * 0.52) / (src?.height || 58));
     this.setPosition(this.x, this.baseY + 15).setScale(scale * 0.4).clearTint();
+    this.shadow.setVisible(false);
     this.scene.tweens.add({ targets: this, scale, duration: 220, ease: 'Back.easeOut' });
   }
 
@@ -195,6 +213,7 @@ export class Plant extends Phaser.GameObjects.Sprite {
     this.scene.tweens.killTweensOf(this);
     this.setTexture(this.config.texture);
     this.setPosition(this.x, this.baseY).setScale(this.baseScale).clearTint();
+    this.shadow.setVisible(true);
   }
 
   private updateStarCandy(delta: number, target: Zombie | null, ctx: PlantContext): void {

@@ -11,6 +11,13 @@ export const GRID = {
   OFFSET_Y: 166,
 } as const;
 
+/** 战场角色在单个格子中的最大显示范围。 */
+export const PLANT_DISPLAY = {
+  MAX_W: GRID.CELL_W - 24,
+  MAX_H: GRID.CELL_H - 22,
+  SHADOW_Y: 34,
+} as const;
+
 export const SEEDBANK_HEIGHT = 132;
 export const HOUSE_LINE_X = 196;
 export const LAWNMOWER_X = 218;
@@ -33,6 +40,7 @@ export const TEX = {
   PLANT_XILANAI: 'plant_xilanai',
   PLANT_JIAXINNAITANG: 'plant_jiaxinnaitang',
   PLANT_YIGEHUN: 'plant_yigehun',
+  BELLA_MINE: 'plant_bella_mine',
   EILEEN_SOUP: 'plant_eileen_soup',
   ZOMBIE_BASIC: 'zombie_basic',
   ZOMBIE_PHONE: 'zombie_phone',
@@ -78,7 +86,8 @@ export const ASSETS: Record<string, string> = {
   [TEX.PLANT_XILANAI]: 'images/plant-xilanai-v1.png',
   [TEX.PLANT_JIAXINNAITANG]: 'images/plant-jiaxinnaitang-v1.png',
   [TEX.PLANT_YIGEHUN]: 'images/plant-yigehun-v1.png',
-  [TEX.EILEEN_SOUP]: 'images/eileen-soup.png',
+  [TEX.BELLA_MINE]: 'images/bella-potato-mine-v1.png',
+  [TEX.EILEEN_SOUP]: 'images/eileen-soup-v2.png',
   [TEX.ZOMBIE_BASIC]: 'images/a87-base-v2.png',
   [TEX.ZOMBIE_PHONE]: 'images/a87-phone-v3.png',
   [TEX.ZOMBIE_FLAG]: 'images/a87-flag-v3.png',
@@ -113,6 +122,7 @@ export const ASSET_SPECS: Record<string, { w: number; h: number }> = {
   [TEX.PLANT_XILANAI]: { w: 156, h: 188 },
   [TEX.PLANT_JIAXINNAITANG]: { w: 156, h: 188 },
   [TEX.PLANT_YIGEHUN]: { w: 164, h: 196 },
+  [TEX.BELLA_MINE]: { w: 168, h: 136 },
   [TEX.EILEEN_SOUP]: { w: 168, h: 116 },
   [TEX.ZOMBIE_BASIC]: { w: 120, h: 86 },
   [TEX.ZOMBIE_PHONE]: { w: 126, h: 96 },
@@ -133,12 +143,12 @@ export const ASSET_SPECS: Record<string, { w: number; h: number }> = {
 } as const;
 
 export const PALETTE = {
-  LAWN_LIGHT: 0x4faa78,
-  LAWN_DARK: 0x40966b,
+  LAWN_LIGHT: 0x73d78f,
+  LAWN_DARK: 0x62c982,
   SUN: 0xffd75e,
-  CARD_BG: 0x18243a,
-  CARD_BORDER: 0x6fe4ff,
-  TEXT_LIGHT: 0xf4fbff,
+  CARD_BG: 0xfffaed,
+  CARD_BORDER: 0x79cfe2,
+  TEXT_LIGHT: 0x42506d,
 } as const;
 
 export const SUN_RULES = {

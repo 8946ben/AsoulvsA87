@@ -83,6 +83,10 @@ export class Zombie extends Phaser.GameObjects.Sprite {
 
     const dt = delta / 1000;
     if (this.state === 'eating') {
+      // 乃琳在被接敌后会下沉成地刺；已经锁定她的普通敌人也必须立刻解除啃食。
+      if (this.target?.isSpikeForm && !this.config.crushPlants) {
+        this.target = null; this.biteTimer = 0; this.state = 'walking'; this.setScale(this.config.scale ?? 1);
+      }
       if (this.target?.active && this.target.hp > 0) {
         if (this.target.isSpecialWall) {
           this.biteTimer += delta;

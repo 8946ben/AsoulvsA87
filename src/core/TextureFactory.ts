@@ -52,6 +52,7 @@ export class TextureFactory {
     this.drawHammer(g); this.emit(scene, g, TEX.HAMMER, 34, 30);
     this.drawBeam(g); this.emit(scene, g, TEX.BEAM, 38, 18);
     this.drawSun(g); this.emit(scene, g, TEX.SUN, 58, 58);
+    this.drawBellaMine(g); this.emit(scene, g, TEX.BELLA_MINE, 84, 68);
     this.drawSoupBowl(g); this.emit(scene, g, TEX.EILEEN_SOUP, 84, 58);
     this.drawMower(g); this.emit(scene, g, TEX.LAWNMOWER, 62, 48);
     this.drawCard(g); this.emit(scene, g, TEX.CARD_FRAME, 68, 104);
@@ -102,6 +103,20 @@ export class TextureFactory {
     g.fillStyle(0xfdf3e3, 1); g.fillEllipse(38, 27, 20, 13);
     g.fillStyle(0xffffff, 0.35); g.fillEllipse(30, 20, 22, 8);
     g.lineStyle(4, 0xcfd8d4, 0.9); g.beginPath(); g.moveTo(58, 10); g.lineTo(80, 4); g.strokePath();
+  }
+
+  /** 贝拉土豆雷形态的兜底纹理：紫发兔耳从土里警觉探头。 */
+  private static drawBellaMine(g: Phaser.GameObjects.Graphics): void {
+    g.fillStyle(0x813b28, 1); g.fillTriangle(20, 34, 25, 2, 36, 35); g.fillTriangle(48, 35, 60, 2, 65, 35);
+    g.fillStyle(0xfff0d9, 1); g.fillTriangle(24, 30, 27, 9, 33, 31); g.fillTriangle(52, 31, 58, 9, 61, 30);
+    g.fillStyle(0x4a247b, 1); g.fillEllipse(42, 43, 51, 38);
+    g.fillStyle(0xffffff, 1); g.fillEllipse(32, 47, 15, 11); g.fillEllipse(52, 47, 15, 11);
+    g.fillStyle(0x8f6cff, 1); g.fillCircle(33, 47, 5); g.fillCircle(51, 47, 5);
+    g.fillStyle(0x261744, 1); g.fillCircle(33, 48, 2); g.fillCircle(51, 48, 2);
+    g.fillStyle(0xffffff, 0.9); g.fillCircle(31, 45, 2); g.fillCircle(49, 45, 2);
+    g.fillStyle(0x8a5432, 1); g.fillEllipse(42, 61, 82, 24);
+    g.fillStyle(0xb97545, 1); g.fillCircle(18, 57, 10); g.fillCircle(38, 60, 12); g.fillCircle(62, 57, 11);
+    g.fillStyle(0x70bd58, 1); g.fillTriangle(12, 54, 8, 42, 17, 53); g.fillTriangle(70, 54, 76, 41, 75, 56);
   }
 
   private static drawChibiBadge(g: Phaser.GameObjects.Graphics, color: number): void {
@@ -248,6 +263,7 @@ export class TextureFactory {
   private static drawCard(g: Phaser.GameObjects.Graphics): void {
     g.fillStyle(PALETTE.CARD_BG, 0.98); g.fillRoundedRect(0, 0, 68, 104, 9);
     g.lineStyle(2, PALETTE.CARD_BORDER, 0.65); g.strokeRoundedRect(1, 1, 66, 102, 9);
-    g.fillStyle(0x0b1425, 0.5); g.fillRoundedRect(5, 20, 58, 57, 6);
+    g.fillStyle(0xeaf8f3, 0.92); g.fillRoundedRect(5, 20, 58, 57, 6);
+    g.fillStyle(0xffffff, 0.6); g.fillRoundedRect(8, 23, 52, 15, 5);
   }
 }
