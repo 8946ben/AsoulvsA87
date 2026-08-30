@@ -1,11 +1,13 @@
 import Phaser from 'phaser';
 import { GAME_HEIGHT, GAME_WIDTH } from '../config/GameConfig';
+import { getCoins } from '../core/Coins';
 import { isDeveloperMode } from '../core/DeveloperMode';
 import { sharpenSceneText, sharpenText } from '../core/TextQuality';
 import { getLevelProgress } from '../core/LevelProgress';
 import { ALL_LEVELS, type LevelConfig } from '../data/levels';
 import { ZOMBIES } from '../data/zombies';
 import { LoadoutScene } from './LoadoutScene';
+import { ShopScene } from './ShopScene';
 
 export class LevelSelectScene extends Phaser.Scene {
   static readonly KEY = 'LevelSelectScene';
@@ -37,7 +39,7 @@ export class LevelSelectScene extends Phaser.Scene {
     this.add.text(42, 26, '舞台巡演 · 关卡选择', {
       fontFamily: 'Microsoft YaHei', fontSize: '34px', color: '#f4fcff', fontStyle: 'bold',
     });
-    this.add.text(43, 72, 'ADVENTURE TOUR · 10 STAGES', {
+    this.add.text(43, 72, `ADVENTURE TOUR · ${ALL_LEVELS.length} STAGES`, {
       fontFamily: 'Arial', fontSize: '13px', color: '#6be6ff', fontStyle: 'bold', letterSpacing: 2,
     });
     const progress = getLevelProgress();
@@ -52,12 +54,13 @@ export class LevelSelectScene extends Phaser.Scene {
   private createLevelCards(): void {
     const progress = getLevelProgress();
     const developerMode = isDeveloperMode();
-    const cardW = 228; const cardH = 238; const gapX = 18; const gapY = 18;
-    const totalW = cardW * 5 + gapX * 4;
+    const cols = 6;
+    const cardW = 196; const cardH = 238; const gapX = 14; const gapY = 18;
+    const totalW = cardW * cols + gapX * (cols - 1);
     const startX = (GAME_WIDTH - totalW) / 2;
 
     ALL_LEVELS.forEach((level, index) => {
-      const col = index % 5; const row = Math.floor(index / 5);
+      const col = index % cols; const row = Math.floor(index / cols);
       const x = startX + col * (cardW + gapX) + cardW / 2;
       const y = 126 + row * (cardH + gapY) + cardH / 2;
       const locked = !developerMode && level.id > progress.unlocked;
@@ -79,7 +82,7 @@ export class LevelSelectScene extends Phaser.Scene {
       fontFamily: 'Microsoft YaHei', fontSize: '10px', color: completed ? '#67efc3' : locked ? '#61717e' : '#ffd86f',
     }).setOrigin(1, 0);
     const name = this.add.text(0, -77, level.name.replace(/^第.+?幕 · /, ''), {
-      fontFamily: 'Microsoft YaHei', fontSize: '19px', color: locked ? '#6d7b86' : '#f4fbff', fontStyle: 'bold',
+      fontFamily: 'Microsoft YaHei', fontSize: '18px', color: locked ? '#6d7b86' : '#f4fbff', fontStyle: 'bold',
     }).setOrigin(0.5);
 
     const enemyStart = -(level.featuredEnemies.length - 1) * 16;
@@ -91,7 +94,7 @@ export class LevelSelectScene extends Phaser.Scene {
     });
 
     const stats = this.add.text(0, -6, level.waves.length + ' 波  ·  初始应援 ' + level.startingSun + '  ·  可选 ' + level.availablePlants.length + ' 张', {
-      fontFamily: 'Microsoft YaHei', fontSize: '11px', color: locked ? '#596975' : '#ffdc82',
+      fontFamily: 'Microsoft YaHei', fontSize: '10px', color: locked ? '#596975' : '#ffdc82',
     }).setOrigin(0.5);
     const desc = this.add.text(0, 25, level.description, {
       fontFamily: 'Microsoft YaHei', fontSize: '11px', color: locked ? '#5b6872' : '#b9d2de',
@@ -128,5 +131,13 @@ export class LevelSelectScene extends Phaser.Scene {
     back.on('pointerover', () => back.setBackgroundColor('#285c76'));
     back.on('pointerout', () => back.setBackgroundColor('#17344a'));
     back.on('pointerdown', () => this.scene.start('MenuScene'));
+
+    const tech = sharpenText(this.add.text(GAME_WIDTH - 42, GAME_HEIGHT - 23, `枝江商店  ·  金币 ${getCoins()}`, {
+      fontFamily: 'Microsoft YaHei', fontSize: '14px', color: '#ffe6a3',
+      backgroundColor: '#3a2f14', padding: { x: 16, y: 9 }, fontStyle: 'bold',
+    })).setOrigin(1, 1).setInteractive({ useHandCursor: true });
+    tech.on('pointerover', () => tech.setBackgroundColor('#5c4a1e'));
+    tech.on('pointerout', () => tech.setBackgroundColor('#3a2f14'));
+    tech.on('pointerdown', () => this.scene.start(ShopScene.KEY));
   }
 }

@@ -6,6 +6,7 @@ import { GameScene } from './scenes/GameScene';
 import { MenuScene } from './scenes/MenuScene';
 import { CodexScene } from './scenes/CodexScene';
 import { LevelSelectScene } from './scenes/LevelSelectScene';
+import { ShopScene } from './scenes/ShopScene';
 import { LoadoutScene } from './scenes/LoadoutScene';
 
 const config: Phaser.Types.Core.GameConfig = {
@@ -24,7 +25,7 @@ const config: Phaser.Types.Core.GameConfig = {
     antialias: true,
     roundPixels: true,
   },
-  scene: [BootScene, MenuScene, LevelSelectScene, LoadoutScene, CodexScene, GameScene],
+  scene: [BootScene, MenuScene, LevelSelectScene, LoadoutScene, CodexScene, ShopScene, GameScene],
 };
 
 const game = new Phaser.Game(config);

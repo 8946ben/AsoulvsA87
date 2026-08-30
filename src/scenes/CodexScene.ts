@@ -167,7 +167,7 @@ export class CodexScene extends Phaser.Scene {
       ? '贝极星＋嘉心糖'
       : config.type === 'xilanai' ? '贝极星＋奶淇琳' : config.type === 'jiaxinnaitang' ? '奶淇琳＋嘉心糖' : config.type === 'yigehun' ? '三张基础卡三重融合' : '';
     const cooldown = this.add.text(textX, 14, fusion ? formula : `冷却 ${(config.cooldown / 1000).toFixed(1)} 秒`, { fontFamily: 'Microsoft YaHei', fontSize: '10px', color: '#7e9eb0' });
-    const desc = this.add.text(textX, 43, config.desc, { fontFamily: 'Microsoft YaHei', fontSize: '10px', color: '#c6dce6', wordWrap: { width: textW }, lineSpacing: 3 });
+    const desc = this.add.text(textX, 40, config.desc, { fontFamily: 'Microsoft YaHei', fontSize: '10px', color: '#c6dce6', wordWrap: { width: textW, useAdvancedWrap: true }, lineSpacing: 2 });
     card.add([bg, strip, number, image, name, role, stats, cooldown, desc]);
     this.bindCardHover(card, bg, config.accent);
     return card;
@@ -199,10 +199,10 @@ export class CodexScene extends Phaser.Scene {
       config.accessoryBreakHp && !config.enragedSpeedMultiplier ? '防具可破坏' : '', config.charge ? '高速冲锋' : '',
       config.crushPlants ? '碾压植物' : '', config.tunneling ? '钻地绕后' : '', config.summonInterval ? '召唤骑士' : '',
     ].filter(Boolean).join(' · ') || '敌方单位';
-    const tag = this.add.text(-31, -32, tags, { fontFamily: 'Microsoft YaHei', fontSize: '8px', color: Phaser.Display.Color.IntegerToColor(accent).rgba, fontStyle: 'bold', wordWrap: { width: 128 } });
+    const tag = this.add.text(-31, -32, tags, { fontFamily: 'Microsoft YaHei', fontSize: '8px', color: Phaser.Display.Color.IntegerToColor(accent).rgba, fontStyle: 'bold', wordWrap: { width: 128, useAdvancedWrap: true } });
     const stats = this.add.text(-31, -7, `生命 ${config.hp} · 移速 ${config.speed}`, { fontFamily: 'Microsoft YaHei', fontSize: '9px', color: '#ffd1dc' });
     const attack = this.add.text(-31, 12, `啃食 ${config.attackDps}/秒`, { fontFamily: 'Microsoft YaHei', fontSize: '9px', color: '#c49aa8' });
-    const quote = this.add.text(-31, 34, `“${config.quote}”`, { fontFamily: 'Microsoft YaHei', fontSize: '9px', color: '#c7b7c0', fontStyle: 'italic', wordWrap: { width: 128 }, lineSpacing: 1 });
+    const quote = this.add.text(-31, 34, `“${config.quote}”`, { fontFamily: 'Microsoft YaHei', fontSize: '9px', color: '#c7b7c0', fontStyle: 'italic', wordWrap: { width: 128, useAdvancedWrap: true }, lineSpacing: 1 });
     card.add([bg, strip, number, image, name, tag, stats, attack, quote]);
     this.bindCardHover(card, bg, accent);
     return card;

@@ -130,7 +130,7 @@ export const ALL_LEVELS: LevelConfig[] = [
   },
   {
     id: 10, name: '第十幕 · 舞台决战', description: '黑化珈乐率领全部 A87，守住最后的灯光。',
-    startingSun: 325, availablePlants: P9, featuredEnemies: ['basic', 'screen', 'balloon', 'dragon', 'carol'], reward: '冒险模式通关', accent: 0xd76aff,
+    startingSun: 325, availablePlants: P9, featuredEnemies: ['basic', 'screen', 'balloon', 'dragon', 'carol'], reward: '解锁番外篇 · 夜色降临', accent: 0xd76aff,
     waves: [
       wave(4500, '终局前奏', [spawn('basic', 6, 1800)]),
       wave(6500, '铁门与梯子', [spawn('screen', 4, 2500), spawn('ladder', 2, 2600)]),
@@ -139,6 +139,33 @@ export const ALL_LEVELS: LevelConfig[] = [
       wave(9500, '全线压境', [spawn('phone', 4, 2200), spawn('ladder', 4, 2100), spawn('football', 2, 3100), spawn('miner', 2, 3300)], true),
       wave(11500, '龙骑终演', [spawn('basic', 8, 1200), spawn('balloon', 3, 2500), spawn('dragon', 1, 0)]),
       wave(14000, '往日种种', [spawn('basic', 8, 1200), spawn('screen', 3, 2100), spawn('balloon', 2, 2300), spawn('sled', 1, 0), spawn('miner', 2, 3000), spawn('dragon', 1, 0), spawn('carol', 1, 0)], true),
+    ],
+  },
+  {
+    id: 11, name: '第十一幕 · 夜色降临', description: '番外篇开幕：夜幕降临，A87 残部发起三面旗帜的总攻。',
+    startingSun: 350, availablePlants: P9, featuredEnemies: ['screen', 'miner', 'sled', 'football', 'dragon'], reward: '解锁最终幕 · 星光安可', accent: 0x5d8cff,
+    waves: [
+      wave(4500, '夜幕先锋', [spawn('basic', 6, 1700)]),
+      wave(7000, '铁门夜巡', [spawn('basic', 4, 1600), spawn('screen', 4, 2600)], true),
+      wave(8000, '地下暗流', [spawn('basic', 4, 1500), spawn('miner', 3, 3200)]),
+      wave(9000, '空中应援', [spawn('balloon', 3, 2300), spawn('ladder', 3, 2400)]),
+      wave(10000, '车流涌动', [spawn('basic', 5, 1400), spawn('sled', 2, 3800), spawn('football', 1, 0)], true),
+      wave(11500, '混编彩排', [spawn('phone', 3, 2200), spawn('knight', 2, 3300), spawn('miner', 2, 3100)]),
+      wave(13500, '夜幕总攻', [spawn('basic', 8, 1200), spawn('screen', 3, 2200), spawn('balloon', 3, 2100), spawn('sled', 1, 0), spawn('dragon', 1, 0)], true),
+    ],
+  },
+  {
+    id: 12, name: '第十二幕 · 星光安可', description: '黑化珈乐携全部阵容返场安可，这是枝江舞台的最后一场演出。',
+    startingSun: 350, availablePlants: P9, featuredEnemies: ['sled', 'knight', 'miner', 'dragon', 'carol'], reward: '全篇章通关 · 枝江星光奖杯', accent: 0xffd76a,
+    waves: [
+      wave(4500, '安可前奏', [spawn('basic', 6, 1600)]),
+      wave(6500, '盾墙再临', [spawn('screen', 4, 2400), spawn('ladder', 2, 2500)]),
+      wave(7500, '骑士团返场', [spawn('basic', 5, 1400), spawn('knight', 3, 3200)], true),
+      wave(8500, '矿工会师', [spawn('basic', 5, 1400), spawn('miner', 4, 3000)]),
+      wave(9500, '全械压境', [spawn('phone', 4, 2100), spawn('sled', 2, 3600), spawn('football', 2, 3000)], true),
+      wave(10500, '空陆连击', [spawn('balloon', 4, 2200), spawn('ladder', 4, 2000), spawn('screen', 2, 2600)]),
+      wave(12000, '化龙双吟', [spawn('basic', 6, 1300), spawn('miner', 2, 2900), spawn('dragon', 1, 0)]),
+      wave(14000, '星光安可', [spawn('basic', 9, 1100), spawn('screen', 4, 2000), spawn('balloon', 3, 2000), spawn('knight', 2, 3000), spawn('sled', 1, 0), spawn('dragon', 1, 0), spawn('carol', 1, 0)], true),
     ],
   },
 ];

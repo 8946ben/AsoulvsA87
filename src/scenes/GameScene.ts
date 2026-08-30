@@ -1,8 +1,10 @@
 import Phaser from 'phaser';
 import { GAME_HEIGHT, GAME_WIDTH, GRID, LAWNMOWER_X, SUN_RULES, TEX, ZOMBIE_SPAWN_X } from '../config/GameConfig';
 import { Grid } from '../core/Grid';
+import { addCoins, isTechUnlocked } from '../core/Coins';
 import { isDeveloperMode } from '../core/DeveloperMode';
 import { completeLevel } from '../core/LevelProgress';
+import { COIN_PER_CLEAR, COIN_PER_INTACT_MOWER } from '../data/techTree';
 import { sharpenSceneText, sharpenText } from '../core/TextQuality';
 import { getNextLevel, LEVEL_1, type LevelConfig } from '../data/levels';
 import { PLANTS, type PlantType } from '../data/plants';
@@ -495,6 +497,10 @@ export class GameScene extends Phaser.Scene {
     const cost = this.getEffectiveCost(type);
     const existing = this.grid.get(row, col);
     const fusion = existing?.active ? this.getFusionResult(existing.config.type, type) : null;
+    if (fusion && !isTechUnlocked(fusion)) {
+      this.showToast(`尚未解锁「${PLANTS[fusion].name}」的融合配方，请前往枝江商店购买`, 0xffd46f);
+      return false;
+    }
     if ((existing?.active && !fusion) || this.sunAmount < cost) return false;
     const { x, y } = this.grid.cellToWorld(row, col);
     if (existing?.active && fusion) {
@@ -541,7 +547,8 @@ export class GameScene extends Phaser.Scene {
     if (!this.preview || this.previewType !== type) { this.preview?.destroy(); this.preview = this.add.sprite(0, 0, PLANTS[type].texture).setAlpha(0.58).setDepth(61); this.previewType = type; }
     const { x, y } = this.grid.cellToWorld(cell.row, cell.col); this.preview.setPosition(x, y - 5).setVisible(true);
     const existing = this.grid.get(cell.row, cell.col);
-    const fusion = existing?.active ? this.getFusionResult(existing.config.type, type) : null;
+    const recipe = existing?.active ? this.getFusionResult(existing.config.type, type) : null;
+    const fusion = recipe && isTechUnlocked(recipe) ? recipe : null;
     this.preview.setTexture(PLANTS[fusion ?? type].texture);
     const canPlant = (!existing?.active || Boolean(fusion)) && this.sunAmount >= this.getEffectiveCost(type);
     this.previewRect.clear(); this.previewRect.fillStyle(canPlant ? 0x58f5b1 : 0xff5575, 0.12); this.previewRect.fillRoundedRect(x - GRID.CELL_W / 2 + 3, y - GRID.CELL_H / 2 + 3, GRID.CELL_W - 6, GRID.CELL_H - 6, 8);
@@ -603,23 +610,31 @@ export class GameScene extends Phaser.Scene {
   private gameOver(win: boolean): void {
     if (this.gameState !== 'playing') return;
     const nextLevel = win ? getNextLevel(this.level) : null;
-    if (win && !isDeveloperMode()) completeLevel(this.level.id);
+    let coinSummary = '';
+    if (win && !isDeveloperMode()) {
+      completeLevel(this.level.id);
+      const intactMowers = this.mowers.filter(Boolean).length;
+      const coinTotal = COIN_PER_CLEAR + COIN_PER_INTACT_MOWER * intactMowers;
+      addCoins(coinTotal);
+      coinSummary = `金币 +${coinTotal}（通关 ${COIN_PER_CLEAR} ＋ 完整小车 ${intactMowers}×${COIN_PER_INTACT_MOWER}）`;
+    }
     this.gameState = win ? 'win' : 'lose'; this.seedBank.clearSelection(); this.preview?.setVisible(false); this.previewRect.clear();
     const overlay = this.add.rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2, GAME_WIDTH, GAME_HEIGHT, 0x030712, 0.84).setDepth(220).setAlpha(0);
     const card = this.add.rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2, 620, 310, win ? 0x102f36 : 0x321327, 0.97).setDepth(221).setStrokeStyle(3, win ? 0x65efcf : 0xff648c, 0.8).setAlpha(0);
     const kicker = sharpenText(this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 104, win ? 'STAGE SECURED' : 'STAGE LOST', { fontFamily: 'Arial', fontSize: '15px', color: win ? '#65efcf' : '#ff7598', fontStyle: 'bold', letterSpacing: 4 })).setOrigin(0.5).setDepth(222).setAlpha(0);
     const title = sharpenText(this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 52, win ? '我们又守护了舞台！' : '哈哈哈，舞台是我们 A87 的了！', { fontFamily: 'Microsoft YaHei', fontSize: '31px', color: '#ffffff', fontStyle: 'bold', align: 'center' })).setOrigin(0.5).setDepth(222).setAlpha(0);
     const sub = sharpenText(this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 + 2, win ? this.level.reward : '重新集结应援，再夺回属于大家的舞台', { fontFamily: 'Microsoft YaHei', fontSize: '15px', color: '#a9c4d2' })).setOrigin(0.5).setDepth(222).setAlpha(0);
-    const retry = this.makeButton(GAME_WIDTH / 2 - 88, GAME_HEIGHT / 2 + 80, '再次挑战', () => this.scene.start('LoadoutScene', { level: this.level }), 223);
+    const coins = sharpenText(this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 + 40, coinSummary, { fontFamily: 'Microsoft YaHei', fontSize: '14px', color: '#ffd76a', fontStyle: 'bold' })).setOrigin(0.5).setDepth(222).setAlpha(0);
+    const retry = this.makeButton(GAME_WIDTH / 2 - 88, GAME_HEIGHT / 2 + 92, '再次挑战', () => this.scene.start('LoadoutScene', { level: this.level }), 223);
     const route = this.makeButton(
       GAME_WIDTH / 2 + 88,
-      GAME_HEIGHT / 2 + 80,
+      GAME_HEIGHT / 2 + 92,
       nextLevel ? '下一关' : '返回选关',
       () => nextLevel ? this.scene.start('LoadoutScene', { level: nextLevel }) : this.scene.start('LevelSelectScene'),
       223,
     );
     retry.setAlpha(0); route.setAlpha(0);
-    this.tweens.add({ targets: [overlay, card, kicker, title, sub, retry, route], alpha: 1, duration: 450, ease: 'Quad.easeOut' });
+    this.tweens.add({ targets: [overlay, card, kicker, title, sub, coins, retry, route], alpha: 1, duration: 450, ease: 'Quad.easeOut' });
   }
 
   private makeButton(x: number, y: number, label: string, onClick: () => void, depth: number): Phaser.GameObjects.Text {
