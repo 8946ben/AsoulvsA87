@@ -36,6 +36,7 @@ export class Plant extends Phaser.GameObjects.Sprite {
   private readonly baseY: number;
   private readonly hpBar: Phaser.GameObjects.Graphics;
   private readonly shadow: Phaser.GameObjects.Ellipse;
+  private readonly injuryOverlay?: Phaser.GameObjects.Image;
   private readonly baseScale: number;
   private readonly dispW: number;
   private readonly dispH: number;
@@ -53,6 +54,11 @@ export class Plant extends Phaser.GameObjects.Sprite {
     scene.add.existing(this);
     this.setDepth(14 + row * 0.1);
     this.hpBar = scene.add.graphics().setDepth(this.depth + 0.1);
+    if (config.injuryOverlay) {
+      this.injuryOverlay = scene.add.image(x, y, TEX.INJURY_BANDAGE)
+        .setDepth(this.depth + 0.05)
+        .setVisible(false);
+    }
     this.setScale(this.baseScale * 0.35).setAlpha(0);
     scene.tweens.add({ targets: this, scale: this.baseScale, alpha: 1, duration: 300, ease: 'Back.easeOut' });
   }
@@ -63,6 +69,7 @@ export class Plant extends Phaser.GameObjects.Sprite {
     this.shadow.setPosition(this.x, this.y + PLANT_DISPLAY.SHADOW_Y);
     this.redrawHpBar();
     if (!this.resolving) this.angle = Math.sin(time / 360 + this.col * 0.7) * 1.4;
+    this.updateInjuryOverlay();
     const target = ctx.getNearestZombie(this.row, this.x);
 
     switch (this.config.behavior) {
@@ -302,6 +309,35 @@ export class Plant extends Phaser.GameObjects.Sprite {
     this.hp = Math.min(this.maxHp, this.hp + amount);
   }
 
+  /**
+   * Shows the configured bandage below 30% health and keeps it aligned with
+   * the plant's position, scale, and idle sway.
+   */
+  private updateInjuryOverlay(): void {
+    const overlay = this.injuryOverlay;
+    const config = this.config.injuryOverlay;
+    if (!overlay || !config) return;
+
+    const visible = this.active && this.hp > 0 && this.hp / this.maxHp <= 0.3;
+    overlay.setVisible(visible);
+    if (!visible) return;
+
+    const width = this.displayWidth * config.scale;
+    const source = overlay.texture.getSourceImage() as { width?: number; height?: number };
+    const height = width * ((source?.height || 1) / (source?.width || 1));
+    const localX = (config.x - 0.5) * this.displayWidth;
+    const localY = (config.y - 0.5) * this.displayHeight;
+    const radians = Phaser.Math.DegToRad(this.angle);
+    const worldX = this.x + localX * Math.cos(radians) - localY * Math.sin(radians);
+    const worldY = this.y + localX * Math.sin(radians) + localY * Math.cos(radians);
+
+    overlay
+      .setPosition(worldX, worldY)
+      .setDisplaySize(width, height)
+      .setRotation(this.rotation)
+      .setAlpha(this.alpha)
+      .setDepth(this.depth + 0.05);
+  }
   get isSpecialWall(): boolean { return this.config.behavior === 'specialwall'; }
   /** 乃琳地刺形态：不被普通僵尸当作啃食目标，只有 crushPlants 的车辆能碾毁。 */
   get isSpikeForm(): boolean { return this.config.behavior === 'eileen' && this.transformed; }
@@ -362,7 +398,7 @@ export class Plant extends Phaser.GameObjects.Sprite {
   }
 
   destroy(fromScene?: boolean): void {
-    this.scene?.tweens.killTweensOf(this); this.hpBar?.destroy(); this.shadow?.destroy();
+    this.scene?.tweens.killTweensOf(this); this.injuryOverlay?.destroy(); this.hpBar?.destroy(); this.shadow?.destroy();
     super.destroy(fromScene);
   }
 }

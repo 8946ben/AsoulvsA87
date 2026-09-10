@@ -34,6 +34,14 @@ export type PlantBehavior =
   | 'soulshooter'
   | 'specialwall';
 
+/** Low-health overlay placement in normalized character coordinates. */
+export interface InjuryOverlayConfig {
+  x: number;
+  y: number;
+  /** Bandage width as a fraction of the visible character width. */
+  scale: number;
+}
+
 export interface PlantConfig {
   type: PlantType;
   name: string;
@@ -56,6 +64,7 @@ export interface PlantConfig {
   stunChance?: number;
   stunMs?: number;
   freezeDuration?: number;
+  injuryOverlay?: InjuryOverlayConfig;
 }
 
 /** background.md 中十张基础卡的完整落地。 */
@@ -65,12 +74,14 @@ export const PLANTS: Record<PlantType, PlantConfig> = {
     hp: 1000, behavior: 'producer', texture: TEX.PLANT_BEIJIXING,
     desc: '每 9 秒产生 25 点应援', quote: '需要浇水', accent: 0x63d9ff,
     produceInterval: 9000, produceAmount: 25,
+    injuryOverlay: { x: 0.5, y: 0.3, scale: 0.16 },
   },
   jiaxintang: {
     type: 'jiaxintang', name: '嘉心糖', role: '糖果射手', cost: 100, cooldown: 6500,
     hp: 300, behavior: 'shooter', texture: TEX.PLANT_JIAXINTANG,
     desc: '发射糖果炮弹攻击本行', quote: '好多糖', accent: 0xff7fab,
     attackInterval: 1350, attackDamage: 22, projectile: TEX.CANDY,
+    injuryOverlay: { x: 0.605, y: 0.8, scale: 0.11 },
   },
   naiqilin: {
     type: 'naiqilin', name: '奶淇琳', role: '甜点投手', cost: 125, cooldown: 8500,
@@ -78,6 +89,7 @@ export const PLANTS: Record<PlantType, PlantConfig> = {
     desc: '投巧克力；25% 奶油定身', quote: '不能吃，会变成国家保护动物哦', accent: 0xd8b3ff,
     attackInterval: 2100, attackDamage: 34, projectile: TEX.CHOCOLATE,
     stunChance: 0.25, stunMs: 1200,
+    injuryOverlay: { x: 0.5, y: 0.2, scale: 0.14 },
   },
   xiaohainuo: {
     type: 'xiaohainuo', name: '小海诺', role: '舞台屏障', cost: 75, cooldown: 15000,

@@ -59,6 +59,11 @@ export class GameScene extends Phaser.Scene {
   private currentWave = 0;
   private isPaused = false;
   private pauseOverlay!: Phaser.GameObjects.Container;
+  private pauseShowcase!: Phaser.GameObjects.Image;
+  private pauseShowcaseName!: Phaser.GameObjects.Text;
+  private pauseShowcaseRole!: Phaser.GameObjects.Text;
+  private pauseShowcaseBaseY = 0;
+  private pauseShowcaseBaseScale = 1;
   private shovelMode = false;
   private shovelButton!: Phaser.GameObjects.Text;
   private battleSession: BattleSession = CAMPAIGN_BATTLE;
@@ -121,7 +126,11 @@ export class GameScene extends Phaser.Scene {
   }
 
   update(time: number, delta: number): void {
-    if (this.gameState !== 'playing' || this.isPaused) return;
+    if (this.gameState !== 'playing') return;
+    if (this.isPaused) {
+      this.updatePauseShowcase(time);
+      return;
+    }
     this.elapsed += delta; this.updateWaves(); this.updateSkySun(delta);
     for (const plant of this.plants) plant.update(time, delta, this.plantCtx);
     for (const zombie of this.zombies) zombie.update(time, delta, this.zombieCtx);
@@ -196,14 +205,19 @@ export class GameScene extends Phaser.Scene {
     this.alertText = this.add.text(GAME_WIDTH / 2, 295, '', { fontFamily: 'Microsoft YaHei', fontSize: '39px', color: '#e85f91', fontStyle: 'bold', stroke: '#fffaf1', strokeThickness: 9, align: 'center' }).setOrigin(0.5).setDepth(170).setAlpha(0);
     this.previewRect = this.add.graphics().setDepth(62);
 
-    const pauseShade = this.add.rectangle(0, 0, GAME_WIDTH, GAME_HEIGHT, FRESH.INK, 0.38).setOrigin(0).setInteractive();
-    const pauseCard = this.add.rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2, 540, 310, FRESH.CREAM, 0.99).setStrokeStyle(3, FRESH.BLUE, 0.72);
-    const pauseTitle = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 105, '舞台暂时休息', { fontFamily: 'Microsoft YaHei', fontSize: '31px', color: '#42506d', fontStyle: 'bold' }).setOrigin(0.5);
-    const pauseHint = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 57, '按空格键或点击按钮继续', { fontFamily: 'Microsoft YaHei', fontSize: '15px', color: '#3d8ea5' }).setOrigin(0.5);
-    const resumeButton = this.makeButton(GAME_WIDTH / 2, GAME_HEIGHT / 2 + 2, '继续游戏', () => this.togglePause(), 211);
-    const retryButton = this.makeButton(GAME_WIDTH / 2 - 112, GAME_HEIGHT / 2 + 76, '重新开始本关', () => this.restartCurrentLevel(), 211);
-    const menuButton = this.makeButton(GAME_WIDTH / 2 + 112, GAME_HEIGHT / 2 + 76, '返回主页面', () => this.returnToMenu(), 211);
-    this.pauseOverlay = this.add.container(0, 0, [pauseShade, pauseCard, pauseTitle, pauseHint, resumeButton, retryButton, menuButton]).setDepth(210).setVisible(false);
+    const pauseShade = this.add.rectangle(0, 0, GAME_WIDTH, GAME_HEIGHT, FRESH.INK, 0.46).setOrigin(0).setInteractive();
+    const pauseCard = this.add.rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2, 560, 430, FRESH.CREAM, 0.99).setStrokeStyle(3, FRESH.BLUE, 0.72);
+    const pauseTitle = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 182, '舞台暂歇', { fontFamily: 'Microsoft YaHei', fontSize: '31px', color: '#42506d', fontStyle: 'bold' }).setOrigin(0.5);
+    const pauseHint = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 142, '角色正在为下一波积蓄舞台能量', { fontFamily: 'Microsoft YaHei', fontSize: '15px', color: '#3d8ea5' }).setOrigin(0.5);
+    const showcaseHalo = this.add.ellipse(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 18, 235, 245, 0xdff5ee, 0.92).setStrokeStyle(2, FRESH.BLUE, 0.36);
+    this.pauseShowcase = this.add.image(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 24, TEX.PLANT_BEIJIXING).setOrigin(0.5);
+    this.pauseShowcaseBaseY = GAME_HEIGHT / 2 - 24;
+    this.pauseShowcaseName = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 + 104, '', { fontFamily: 'Microsoft YaHei', fontSize: '22px', color: '#42506d', fontStyle: 'bold' }).setOrigin(0.5);
+    this.pauseShowcaseRole = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 + 133, '', { fontFamily: 'Microsoft YaHei', fontSize: '13px', color: '#3d8ea5' }).setOrigin(0.5);
+    const resumeButton = this.makeButton(GAME_WIDTH / 2, GAME_HEIGHT / 2 + 168, '继续游戏', () => this.togglePause(), 211);
+    const retryButton = this.makeButton(GAME_WIDTH / 2 - 112, GAME_HEIGHT / 2 + 220, '重新开始本关', () => this.restartCurrentLevel(), 211);
+    const menuButton = this.makeButton(GAME_WIDTH / 2 + 112, GAME_HEIGHT / 2 + 220, '返回主页面', () => this.returnToMenu(), 211);
+    this.pauseOverlay = this.add.container(0, 0, [pauseShade, pauseCard, pauseTitle, pauseHint, showcaseHalo, this.pauseShowcase, this.pauseShowcaseName, this.pauseShowcaseRole, resumeButton, retryButton, menuButton]).setDepth(210).setVisible(false);
   }
 
   private createSeedBank(): void {
@@ -228,7 +242,10 @@ export class GameScene extends Phaser.Scene {
   private bindInput(): void {
     this.input.on('pointermove', (pointer: Phaser.Input.Pointer) => this.handlePointerMove(pointer));
     this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => this.handlePointerDown(pointer));
-    this.input.keyboard?.on('keydown-ESC', () => { this.seedBank.clearSelection(); this.setShovelMode(false); this.preview?.setVisible(false); this.previewRect.clear(); });
+    this.input.keyboard?.on('keydown-ESC', () => {
+      if (this.isPaused) { this.togglePause(); return; }
+      this.seedBank.clearSelection(); this.setShovelMode(false); this.preview?.setVisible(false); this.previewRect.clear();
+    });
     this.input.keyboard?.on('keydown-SPACE', (event: KeyboardEvent) => {
       event.preventDefault();
       if (event.repeat) return;
@@ -241,6 +258,7 @@ export class GameScene extends Phaser.Scene {
     this.isPaused = !this.isPaused;
     this.pauseOverlay.setVisible(this.isPaused);
     if (this.isPaused) {
+      this.refreshPauseShowcase();
       this.seedBank.clearSelection();
       this.setShovelMode(false);
       this.preview?.setVisible(false);
@@ -253,6 +271,29 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
+  private refreshPauseShowcase(): void {
+    const candidates = this.selectedPlants.length ? this.selectedPlants : this.level.availablePlants;
+    const type = Phaser.Utils.Array.GetRandom(candidates) ?? 'beijixing';
+    const config = PLANTS[type];
+    const source = this.textures.get(config.texture).getSourceImage() as { width?: number; height?: number };
+    const width = source.width ?? 1;
+    const height = source.height ?? 1;
+
+    this.pauseShowcase.setTexture(config.texture).setPosition(GAME_WIDTH / 2, this.pauseShowcaseBaseY).setAngle(0);
+    this.pauseShowcaseBaseScale = Math.min(154 / width, 178 / height);
+    this.pauseShowcase.setScale(this.pauseShowcaseBaseScale);
+    this.pauseShowcaseName.setText(config.name);
+    this.pauseShowcaseRole.setText(`${config.role} · 点击“继续游戏”返回战场`);
+  }
+
+  private updatePauseShowcase(time: number): void {
+    const phase = time / 520;
+    const breath = 1 + Math.sin(phase * 1.4) * 0.035;
+    this.pauseShowcase
+      .setY(this.pauseShowcaseBaseY + Math.sin(phase) * 7)
+      .setScale(this.pauseShowcaseBaseScale * breath)
+      .setAngle(Math.sin(phase * 0.85) * 2.4);
+  }
   private restartCurrentLevel(): void {
     this.time.paused = false; this.tweens.resumeAll();
     this.scene.start('LoadoutScene', { level: this.level, battleSession: this.battleSession });

@@ -73,6 +73,7 @@ export const TEX = {
   CREAM: 'projectile_cream',
   HAMMER: 'projectile_hammer',
   BEAM: 'projectile_beam',
+  INJURY_BANDAGE: 'injury_bandage',
   SUN: 'sun',
   LAWNMOWER: 'lawnmower',
   CARD_FRAME: 'card_frame',
@@ -110,6 +111,7 @@ export const ASSETS: Record<string, string> = {
   [TEX.ZOMBIE_POLE]: 'images/a87-pole-v2.png',
   [TEX.ZOMBIE_DRAGON]: 'images/a87-dragon-v2.png',
   [TEX.ZOMBIE_CAROL]: 'images/carol-corrupted-v2.png',
+  [TEX.INJURY_BANDAGE]: 'images/injury-bandage.png',
   [TEX.SUN]: 'images/sun.png',
 } as const;
 
@@ -147,6 +149,7 @@ export const ASSET_SPECS: Record<string, { w: number; h: number }> = {
   [TEX.ZOMBIE_DRAGON]: { w: 178, h: 124 },
   [TEX.ZOMBIE_KNIGHT]: { w: 80, h: 100 },
   [TEX.ZOMBIE_CAROL]: { w: 104, h: 118 },
+  [TEX.INJURY_BANDAGE]: { w: 128, h: 64 },
   [TEX.SUN]: { w: 58, h: 58 },
 } as const;
 
