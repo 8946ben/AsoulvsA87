@@ -16,6 +16,8 @@ import { Sun } from '../entities/Sun';
 import { Zombie, type ZombieContext } from '../entities/Zombie';
 import { createSeedBankBackground, SeedBank } from '../ui/SeedBank';
 import { createFreshBackdrop, FRESH } from '../ui/FreshTheme';
+import { CAMPAIGN_BATTLE, getUnitRank, type BattleSession } from '../core/BattleSession';
+import { getRogueCombatModifiers, loadRogueRun, resolveRogueBattle, type RogueCombatModifiers } from '../core/RogueRun';
 
 interface SpawnTask { time: number; type: ZombieType; row: number; wave: number; }
 interface WaveAlert { time: number; title: string; huge: boolean; wave: number; }
@@ -59,6 +61,8 @@ export class GameScene extends Phaser.Scene {
   private pauseOverlay!: Phaser.GameObjects.Container;
   private shovelMode = false;
   private shovelButton!: Phaser.GameObjects.Text;
+  private battleSession: BattleSession = CAMPAIGN_BATTLE;
+  private combatModifiers: RogueCombatModifiers = { startingSunBonus: 0, plantHpMultiplier: 1 };
 
   private readonly plantCtx: PlantContext = {
     getNearestZombie: (row, fromX) => this.getNearestZombie(row, fromX),
@@ -69,8 +73,8 @@ export class GameScene extends Phaser.Scene {
     damageGridArea: (row, col, damage, stunMs) => this.damageGridArea(row, col, damage, stunMs),
     freezeAll: (durationMs) => this.freezeAll(durationMs),
     replacePlant: (plant, type) => this.replacePlant(plant, type),
-    getCreamChanceBonus: () => Math.min(0.45, 0.15 * this.countActivePlants('eileen')),
-    getDamageMultiplier: (type) => (type === 'jiaxintang' && this.countActivePlants('diana') > 0 ? 1.5 : 1),
+    getCreamChanceBonus: () => Math.min(0.45, 0.15 * this.countActivePlants('eileen', 2)),
+    getDamageMultiplier: (type) => (type === 'jiaxintang' && this.countActivePlants('diana', 2) > 0 ? 1.5 : 1),
     hasActivePlant: (type) => this.countActivePlants(type) > 0,
     spawnSpecialBeijixing: (row, worldX) => this.spawnSpecialBeijixing(row, worldX),
   };
@@ -96,8 +100,14 @@ export class GameScene extends Phaser.Scene {
   };
 
   constructor() { super(GameScene.KEY); }
-  init(data: { level?: LevelConfig; selectedPlants?: PlantType[] }): void {
+  init(data: { level?: LevelConfig; selectedPlants?: PlantType[]; battleSession?: BattleSession }): void {
     this.level = data?.level ?? LEVEL_1;
+    this.battleSession = data?.battleSession ?? CAMPAIGN_BATTLE;
+    const rogueRun = this.battleSession.mode === 'rogue' ? loadRogueRun() : null;
+    if (rogueRun) {
+      this.battleSession = { ...this.battleSession, unitRanks: rogueRun.unitRanks };
+      this.combatModifiers = getRogueCombatModifiers(rogueRun);
+    } else this.combatModifiers = { startingSunBonus: 0, plantHpMultiplier: 1 };
     const allowed = new Set(this.level.availablePlants);
     this.selectedPlants = [...new Set(data?.selectedPlants ?? [])].filter((type) => allowed.has(type)).slice(0, 8);
     if (this.selectedPlants.length === 0) this.selectedPlants = this.level.availablePlants.slice(0, 8);
@@ -123,7 +133,7 @@ export class GameScene extends Phaser.Scene {
 
   private resetState(): void {
     this.grid = new Grid(); this.plants = []; this.zombies = []; this.projectiles = []; this.burstProjectiles = []; this.suns = []; this.mowers = [];
-    this.sunAmount = this.level.startingSun ?? SUN_RULES.START_SUN; this.elapsed = 0; this.skySunTimer = 0; this.spawnSchedule = []; this.spawnIndex = 0;
+    this.sunAmount = (this.level.startingSun ?? SUN_RULES.START_SUN) + this.combatModifiers.startingSunBonus; this.elapsed = 0; this.skySunTimer = 0; this.spawnSchedule = []; this.spawnIndex = 0;
     this.alerts = []; this.lastProgress = -1; this.gameState = 'playing'; this.preview = null; this.previewType = null; this.currentWave = 0; this.isPaused = false; this.shovelMode = false;
     this.time.paused = false;
   }
@@ -197,7 +207,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   private createSeedBank(): void {
-    createSeedBankBackground(this); this.seedBank = new SeedBank(this, this.selectedPlants); this.seedBank.applyInitialCooldown(1700);
+    createSeedBankBackground(this); this.seedBank = new SeedBank(this, this.selectedPlants, this.battleSession.unitRanks); this.seedBank.applyInitialCooldown(1700);
   }
 
   private buildSpawnSchedule(): void {
@@ -245,7 +255,7 @@ export class GameScene extends Phaser.Scene {
 
   private restartCurrentLevel(): void {
     this.time.paused = false; this.tweens.resumeAll();
-    this.scene.start('LoadoutScene', { level: this.level });
+    this.scene.start('LoadoutScene', { level: this.level, battleSession: this.battleSession });
   }
 
   private returnToMenu(): void {
@@ -367,7 +377,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   private spawnPlantSun(x: number, y: number, amount: number): void {
-    const boosted = this.countActivePlants('bella') > 0 ? amount * 2 : amount;
+    const boosted = this.countActivePlants('bella', 2) > 0 ? amount * 2 : amount;
     this.registerSun(new Sun(this, x, y, boosted, Math.min(y + 48, GAME_HEIGHT - 55), true));
   }
   private registerSun(sun: Sun): void {
@@ -481,7 +491,8 @@ export class GameScene extends Phaser.Scene {
     if (this.grid.get(row, col) === plant) this.grid.remove(row, col);
     plant.destroy();
     if (!type || this.grid.isOccupied(row, col)) return;
-    const { x, y } = this.grid.cellToWorld(row, col); const next = new Plant(this, x, y - 5, type, row, col);
+    const { x, y } = this.grid.cellToWorld(row, col); const next = new Plant(this, x, y - 5, type, row, col, this.getPlantRank(type, true));
+    this.applyPlantHpModifier(next);
     this.grid.place(next, row, col); this.plants.push(next);
     this.showToast(`${sourceName}留下了${PLANTS[type].name}！`, PLANTS[type].accent);
   }
@@ -497,13 +508,29 @@ export class GameScene extends Phaser.Scene {
     }, onComplete: () => mower.destroy() });
   }
 
-  private countActivePlants(type: PlantType): number {
-    return this.plants.reduce((total, plant) => total + (plant.active && plant.config.type === type ? 1 : 0), 0);
+  private countActivePlants(type: PlantType, minimumRank: 1 | 2 = 1): number {
+    return this.plants.reduce((total, plant) => total + (plant.active && plant.config.type === type && plant.rank >= minimumRank ? 1 : 0), 0);
   }
 
   private getEffectiveCost(type: PlantType): number {
-    if (type === 'jiaxintang' && this.countActivePlants('diana') > 0) return Math.ceil(PLANTS[type].cost / 2);
+    if (type === 'jiaxintang' && this.countActivePlants('diana', 2) > 0) return Math.ceil(PLANTS[type].cost / 2);
     return PLANTS[type].cost;
+  }
+
+  private getPlantRank(type: PlantType, summoned = false): 1 | 2 {
+    const rank = getUnitRank(this.battleSession, type);
+    return rank >= 2 ? 2 : rank === 1 || summoned ? 1 : 1;
+  }
+
+  private applyPlantHpModifier(plant: Plant): void {
+    if (this.combatModifiers.plantHpMultiplier === 1) return;
+    plant.hp = Math.round(plant.hp * this.combatModifiers.plantHpMultiplier);
+    plant.maxHp = Math.round(plant.maxHp * this.combatModifiers.plantHpMultiplier);
+  }
+
+  private isFusionAvailable(type: PlantType): boolean {
+    if (this.battleSession.mode === 'campaign') return isTechUnlocked(type);
+    return getUnitRank(this.battleSession, type) > 0;
   }
 
   private getFusionResult(existing: PlantType, incoming: PlantType): PlantType | null {
@@ -521,7 +548,7 @@ export class GameScene extends Phaser.Scene {
     const cell = this.grid.worldToCell(worldX, this.grid.rowToY(row));
     if (!cell || this.grid.isOccupied(cell.row, cell.col)) return false;
     const { x, y } = this.grid.cellToWorld(cell.row, cell.col);
-    const plant = new Plant(this, x, y - 5, 'special_beijixing', cell.row, cell.col);
+    const plant = new Plant(this, x, y - 5, 'special_beijixing', cell.row, cell.col, 1);
     plant.setTint(0xfff0a0);
     this.grid.place(plant, cell.row, cell.col);
     this.plants.push(plant);
@@ -535,8 +562,9 @@ export class GameScene extends Phaser.Scene {
     const cost = this.getEffectiveCost(type);
     const existing = this.grid.get(row, col);
     const fusion = existing?.active ? this.getFusionResult(existing.config.type, type) : null;
-    if (fusion && !isTechUnlocked(fusion)) {
-      this.showToast(`尚未解锁「${PLANTS[fusion].name}」的融合配方，请前往枝江商店购买`, 0xffd46f);
+    if (fusion && !this.isFusionAvailable(fusion)) {
+      const hint = this.battleSession.mode === 'rogue' ? '需要先在本局招募该融合角色' : '请前往枝江商店购买配方';
+      this.showToast(`尚未解锁「${PLANTS[fusion].name}」：${hint}`, 0xffd46f);
       return false;
     }
     if ((existing?.active && !fusion) || this.sunAmount < cost) return false;
@@ -546,8 +574,9 @@ export class GameScene extends Phaser.Scene {
       existing.destroy();
     }
     const resultType = fusion ?? type;
-    const plant = new Plant(this, x, y - 5, resultType, row, col);
-    if (resultType === 'jiaxintang' && this.countActivePlants('diana') > 0) { plant.hp *= 2; plant.maxHp *= 2; }
+    const plant = new Plant(this, x, y - 5, resultType, row, col, this.getPlantRank(resultType));
+    this.applyPlantHpModifier(plant);
+    if (resultType === 'jiaxintang' && this.countActivePlants('diana', 2) > 0) { plant.hp *= 2; plant.maxHp *= 2; }
     this.grid.place(plant, row, col); this.plants.push(plant);
     this.sunAmount -= cost; this.sunText.setText(String(this.sunAmount)); this.seedBank.consumeSelected();
     if (fusion) {
@@ -556,7 +585,7 @@ export class GameScene extends Phaser.Scene {
         ? '贝极星＋嘉心糖'
         : fusion === 'xilanai' ? '贝极星＋奶淇琳' : fusion === 'jiaxinnaitang' ? '奶淇琳＋嘉心糖' : '贝极星＋奶淇琳＋嘉心糖';
       this.showToast(`融合成功：${formula} → ${PLANTS[fusion].name}！`, PLANTS[fusion].accent);
-      if (fusion === 'yigehun' && this.countActivePlants('bella') > 0 && this.countActivePlants('eileen') > 0 && this.countActivePlants('diana') > 0) {
+      if (fusion === 'yigehun' && plant.rank >= 2 && this.countActivePlants('bella') > 0 && this.countActivePlants('eileen') > 0 && this.countActivePlants('diana') > 0) {
         this.seedBank.grantBonus('yigehun');
         this.showToast('三人应援联动：获得一个可 0 阳光部署的「一个魂」！', PLANTS.yigehun.accent);
       }
@@ -586,7 +615,7 @@ export class GameScene extends Phaser.Scene {
     const { x, y } = this.grid.cellToWorld(cell.row, cell.col); this.preview.setPosition(x, y - 5).setVisible(true);
     const existing = this.grid.get(cell.row, cell.col);
     const recipe = existing?.active ? this.getFusionResult(existing.config.type, type) : null;
-    const fusion = recipe && isTechUnlocked(recipe) ? recipe : null;
+    const fusion = recipe && this.isFusionAvailable(recipe) ? recipe : null;
     const previewTexture = PLANTS[fusion ?? type].texture;
     this.preview.setTexture(previewTexture);
     const previewSource = this.textures.get(previewTexture).getSourceImage() as HTMLImageElement;
@@ -653,9 +682,18 @@ export class GameScene extends Phaser.Scene {
 
   private gameOver(win: boolean): void {
     if (this.gameState !== 'playing') return;
-    const nextLevel = win ? getNextLevel(this.level) : null;
+    const rogueMode = this.battleSession.mode === 'rogue';
+    const nextLevel = !rogueMode && win ? getNextLevel(this.level) : null;
     let coinSummary = '';
-    if (win && !isDeveloperMode()) {
+    let rogueRoute = 'RogueMapScene';
+    if (rogueMode) {
+      const run = loadRogueRun();
+      if (run) {
+        resolveRogueBattle(run, win);
+        rogueRoute = run.status === 'active' ? (win ? 'RogueRewardScene' : 'RogueMapScene') : 'RogueSummaryScene';
+        coinSummary = win ? '已获得门票、应援值与探索经验' : `生命值降至 ${run.stageHp} / ${run.maxStageHp}`;
+      }
+    } else if (win && !isDeveloperMode()) {
       completeLevel(this.level.id);
       const intactMowers = this.mowers.filter(Boolean).length;
       const coinTotal = COIN_PER_CLEAR + COIN_PER_INTACT_MOWER * intactMowers;
@@ -667,14 +705,23 @@ export class GameScene extends Phaser.Scene {
     const card = this.add.rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2, 620, 310, win ? 0xe8f8ef : 0xffeef3, 0.99).setDepth(221).setStrokeStyle(3, win ? FRESH.MINT : FRESH.PINK, 0.82).setAlpha(0);
     const kicker = sharpenText(this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 104, win ? 'STAGE SECURED' : 'STAGE LOST', { fontFamily: 'Arial', fontSize: '15px', color: win ? '#2f9a75' : '#d7557d', fontStyle: 'bold', letterSpacing: 4 })).setOrigin(0.5).setDepth(222).setAlpha(0);
     const title = sharpenText(this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 52, win ? '我们又守护了舞台！' : '哈哈哈，舞台是我们 A87 的了！', { fontFamily: 'Microsoft YaHei', fontSize: '31px', color: '#42506d', fontStyle: 'bold', align: 'center' })).setOrigin(0.5).setDepth(222).setAlpha(0);
-    const sub = sharpenText(this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 + 2, win ? this.level.reward : '重新集结应援，再夺回属于大家的舞台', { fontFamily: 'Microsoft YaHei', fontSize: '15px', color: '#60758a' })).setOrigin(0.5).setDepth(222).setAlpha(0);
+    const resultSubtitle = rogueMode
+      ? (win ? '路线节点已完成，领取本场全部战后奖励' : '本次节点已经结算；只要生命值未归零，巡演就能继续')
+      : (win ? this.level.reward : '重新集结应援，再夺回属于大家的舞台');
+    const sub = sharpenText(this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 + 2, resultSubtitle, { fontFamily: 'Microsoft YaHei', fontSize: '15px', color: '#60758a' })).setOrigin(0.5).setDepth(222).setAlpha(0);
     const coins = sharpenText(this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 + 40, coinSummary, { fontFamily: 'Microsoft YaHei', fontSize: '14px', color: '#9b6b22', fontStyle: 'bold' })).setOrigin(0.5).setDepth(222).setAlpha(0);
-    const retry = this.makeButton(GAME_WIDTH / 2 - 88, GAME_HEIGHT / 2 + 92, '再次挑战', () => this.scene.start('LoadoutScene', { level: this.level }), 223);
+    const retry = this.makeButton(
+      GAME_WIDTH / 2 - 88,
+      GAME_HEIGHT / 2 + 92,
+      rogueMode ? (win ? '领取奖励' : '返回探索') : '再次挑战',
+      () => rogueMode ? this.scene.start(rogueRoute) : this.scene.start('LoadoutScene', { level: this.level, battleSession: this.battleSession }),
+      223,
+    );
     const route = this.makeButton(
       GAME_WIDTH / 2 + 88,
       GAME_HEIGHT / 2 + 92,
-      nextLevel ? '下一关' : '返回选关',
-      () => nextLevel ? this.scene.start('LoadoutScene', { level: nextLevel }) : this.scene.start('LevelSelectScene'),
+      rogueMode ? '返回主界面' : nextLevel ? '下一关' : '返回选关',
+      () => rogueMode ? this.scene.start('MenuScene') : nextLevel ? this.scene.start('LoadoutScene', { level: nextLevel, battleSession: CAMPAIGN_BATTLE }) : this.scene.start('LevelSelectScene'),
       223,
     );
     retry.setAlpha(0); route.setAlpha(0);

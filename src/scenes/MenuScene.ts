@@ -4,7 +4,6 @@ import { activateDeveloperMode, isDeveloperMode } from '../core/DeveloperMode';
 import { sharpenSceneText, sharpenText } from '../core/TextQuality';
 import { createFreshBackdrop, FRESH } from '../ui/FreshTheme';
 import { CodexScene } from './CodexScene';
-import { LevelSelectScene } from './LevelSelectScene';
 
 export class MenuScene extends Phaser.Scene {
   static readonly KEY = 'MenuScene';
@@ -55,10 +54,10 @@ export class MenuScene extends Phaser.Scene {
 
   private createStartButton(): void {
     const glow = this.add.rectangle(GAME_WIDTH / 2, 365, 250, 76, FRESH.PINK, 0.15).setStrokeStyle(2, 0xffffff, 0.7);
-    const button = this.add.text(GAME_WIDTH / 2, 365, '选择巡演关卡', { fontFamily: 'Microsoft YaHei', fontSize: '24px', color: '#ffffff', backgroundColor: '#e85f91', padding: { x: 42, y: 16 }, fontStyle: 'bold' }).setOrigin(0.5).setInteractive({ useHandCursor: true }).setDepth(5);
+    const button = this.add.text(GAME_WIDTH / 2, 365, '开始舞台巡演', { fontFamily: 'Microsoft YaHei', fontSize: '24px', color: '#ffffff', backgroundColor: '#e85f91', padding: { x: 42, y: 16 }, fontStyle: 'bold' }).setOrigin(0.5).setInteractive({ useHandCursor: true }).setDepth(5);
     button.on('pointerover', () => { button.setBackgroundColor('#f176a3').setScale(1.035); glow.setAlpha(0.3); });
     button.on('pointerout', () => { button.setBackgroundColor('#e85f91').setScale(1); glow.setAlpha(1); });
-    button.on('pointerdown', () => this.scene.start(LevelSelectScene.KEY));
+    button.on('pointerdown', () => this.scene.start('ModeSelectScene'));
     this.tweens.add({ targets: glow, scaleX: 1.06, scaleY: 1.12, alpha: 0.05, duration: 950, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
     this.add.text(GAME_WIDTH / 2, 429, '点击角色卡 → 点击草坪部署　｜　移动鼠标收集应援球', { fontFamily: 'Microsoft YaHei', fontSize: '14px', color: '#687991' }).setOrigin(0.5);
   }

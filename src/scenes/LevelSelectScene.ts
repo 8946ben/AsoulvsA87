@@ -20,7 +20,7 @@ export class LevelSelectScene extends Phaser.Scene {
     this.createHeader();
     this.createLevelCards();
     this.createNavigation();
-    this.input.keyboard?.on('keydown-ESC', () => this.scene.start('MenuScene'));
+    this.input.keyboard?.on('keydown-ESC', () => this.scene.start('ChapterSelectScene'));
     sharpenSceneText(this);
   }
 
@@ -115,13 +115,13 @@ export class LevelSelectScene extends Phaser.Scene {
   }
 
   private createNavigation(): void {
-    const back = sharpenText(this.add.text(42, GAME_HEIGHT - 23, '← 返回主界面  ESC', {
+    const back = sharpenText(this.add.text(42, GAME_HEIGHT - 23, '← 返回章节  ESC', {
       fontFamily: 'Microsoft YaHei', fontSize: '14px', color: '#42506d',
       backgroundColor: '#e6f5f4', padding: { x: 16, y: 9 },
     })).setOrigin(0, 1).setInteractive({ useHandCursor: true });
     back.on('pointerover', () => back.setBackgroundColor('#d1eeee'));
     back.on('pointerout', () => back.setBackgroundColor('#e6f5f4'));
-    back.on('pointerdown', () => this.scene.start('MenuScene'));
+    back.on('pointerdown', () => this.scene.start('ChapterSelectScene'));
 
     const tech = sharpenText(this.add.text(GAME_WIDTH - 42, GAME_HEIGHT - 23, `枝江商店  ·  金币 ${getCoins()}`, {
       fontFamily: 'Microsoft YaHei', fontSize: '14px', color: '#8d6221',

@@ -6,6 +6,7 @@ import { PLANTS, type PlantType } from '../data/plants';
 import { ZOMBIES } from '../data/zombies';
 import { GameScene } from './GameScene';
 import { createFreshBackdrop, FRESH } from '../ui/FreshTheme';
+import { CAMPAIGN_BATTLE, getUnitRank, type BattleSession } from '../core/BattleSession';
 
 const MAX_LOADOUT = 8;
 
@@ -18,17 +19,19 @@ export class LoadoutScene extends Phaser.Scene {
   private cardLayer!: Phaser.GameObjects.Container;
   private statusText!: Phaser.GameObjects.Text;
   private startButton!: Phaser.GameObjects.Text;
+  private battleSession: BattleSession = CAMPAIGN_BATTLE;
 
   constructor() { super(LoadoutScene.KEY); }
 
-  init(data: { level?: LevelConfig }): void {
+  init(data: { level?: LevelConfig; battleSession?: BattleSession }): void {
     this.level = data?.level ?? LEVEL_1;
+    this.battleSession = data?.battleSession ?? CAMPAIGN_BATTLE;
     this.selected = [];
   }
 
   create(): void {
     this.createBackground(); this.createHeader(); this.createPanels(); this.createControls(); this.refresh();
-    this.input.keyboard?.on('keydown-ESC', () => this.scene.start('LevelSelectScene'));
+    this.input.keyboard?.on('keydown-ESC', () => this.goBack());
     this.input.keyboard?.on('keydown-ENTER', () => this.startBattle());
     sharpenSceneText(this);
   }
@@ -59,7 +62,7 @@ export class LoadoutScene extends Phaser.Scene {
   }
 
   private createControls(): void {
-    this.makeButton(105, 675, '← 返回选关', () => this.scene.start('LevelSelectScene'), '#62cae8').setFontSize(14);
+    this.makeButton(105, 675, this.battleSession.mode === 'rogue' ? '← 返回路线' : '← 返回选关', () => this.goBack(), '#62cae8').setFontSize(14);
     this.statusText = this.add.text(GAME_WIDTH / 2, 617, '', { fontFamily: 'Microsoft YaHei', fontSize: '13px', color: '#52667d' }).setOrigin(0.5);
     this.startButton = this.makeButton(GAME_WIDTH / 2, 667, '开始演出  ENTER', () => this.startBattle(), '#e85f91');
     this.makeButton(1035, 667, '清空', () => { this.selected = []; this.refresh(); }, '#a997e8').setFontSize(14);
@@ -107,13 +110,15 @@ export class LoadoutScene extends Phaser.Scene {
         .setStrokeStyle(2, config.accent, selectedIndex >= 0 ? 0.9 : 0.32).setInteractive({ useHandCursor: true });
       const icon = this.fitImage(this.add.image(x - 72, y, config.texture), 68, 82);
       const name = this.add.text(x - 25, y - 42, config.name, { fontFamily: 'Microsoft YaHei', fontSize: '17px', color: '#42506d', fontStyle: 'bold' });
+      const unitRank = getUnitRank(this.battleSession, type);
+      const rank = this.add.text(x + 96, y - 47, unitRank >= 2 ? 'Ⅱ' : 'Ⅰ', { fontFamily: 'Arial', fontSize: '11px', color: '#ffffff', backgroundColor: unitRank >= 2 ? '#e85f91' : '#58bd92', padding: { x: 6, y: 4 }, fontStyle: 'bold' }).setOrigin(1, 0);
       const role = this.add.text(x - 25, y - 14, config.role, { fontFamily: 'Microsoft YaHei', fontSize: '10px', color: Phaser.Display.Color.IntegerToColor(config.accent).rgba });
       const stats = this.add.text(x - 25, y + 10, `应援 ${config.cost} · 生命 ${config.hp}`, { fontFamily: 'Microsoft YaHei', fontSize: '10px', color: '#a66b25' });
       const hint = this.add.text(x - 25, y + 34, selectedIndex >= 0 ? `已选择 · 第 ${selectedIndex + 1} 位` : '点击加入阵容', { fontFamily: 'Microsoft YaHei', fontSize: '10px', color: selectedIndex >= 0 ? '#348c72' : '#71809a', fontStyle: 'bold' });
       bg.on('pointerover', () => bg.setFillStyle(0xeaf8f3, 1).setStrokeStyle(2, config.accent, 0.86));
       bg.on('pointerout', () => bg.setFillStyle(selectedIndex >= 0 ? 0xfff0f5 : FRESH.PAPER, 0.96).setStrokeStyle(2, config.accent, selectedIndex >= 0 ? 0.9 : 0.32));
       bg.on('pointerdown', () => this.toggleCard(type));
-      this.cardLayer.add([bg, icon, name, role, stats, hint]);
+      this.cardLayer.add([bg, icon, name, rank, role, stats, hint]);
     });
   }
 
@@ -131,8 +136,10 @@ export class LoadoutScene extends Phaser.Scene {
 
   private startBattle(): void {
     if (this.selected.length === 0) return;
-    this.scene.start(GameScene.KEY, { level: this.level, selectedPlants: [...this.selected] });
+    this.scene.start(GameScene.KEY, { level: this.level, selectedPlants: [...this.selected], battleSession: this.battleSession });
   }
+
+  private goBack(): void { this.scene.start(this.battleSession.mode === 'rogue' ? 'RogueMapScene' : 'LevelSelectScene'); }
 
   private fitImage(image: Phaser.GameObjects.Image, maxW: number, maxH: number): Phaser.GameObjects.Image {
     const source = image.texture.getSourceImage() as HTMLImageElement | HTMLCanvasElement;

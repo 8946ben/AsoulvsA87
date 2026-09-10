@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { PALETTE, SEEDBANK_HEIGHT, TEX } from '../config/GameConfig';
 import { PLANTS, type PlantConfig, type PlantType } from '../data/plants';
 import { FRESH } from './FreshTheme';
+import type { UnitRank } from '../core/BattleSession';
 
 const CARD_W = 68;
 const CARD_H = 104;
@@ -11,6 +12,7 @@ const BANK_W = 836;
 
 export class SeedCard extends Phaser.GameObjects.Container {
   readonly config: PlantConfig;
+  readonly unitRank: 1 | 2;
   parentBank: SeedBank | null = null;
   private readonly icon: Phaser.GameObjects.Image;
   private readonly costText: Phaser.GameObjects.Text;
@@ -24,17 +26,18 @@ export class SeedCard extends Phaser.GameObjects.Container {
   private displayedCost: number;
   private bonusCount: number | null = null;
 
-  constructor(scene: Phaser.Scene, x: number, y: number, config: PlantConfig) {
-    super(scene, x, y); this.config = config; this.displayedCost = config.cost;
+  constructor(scene: Phaser.Scene, x: number, y: number, config: PlantConfig, unitRank: 1 | 2) {
+    super(scene, x, y); this.config = config; this.unitRank = unitRank; this.displayedCost = config.cost;
     const frame = scene.add.image(0, 0, TEX.CARD_FRAME).setDisplaySize(CARD_W, CARD_H);
     const name = scene.add.text(0, -43, config.name, { fontFamily: 'Microsoft YaHei, sans-serif', fontSize: '13px', color: '#42506d', fontStyle: 'bold' }).setOrigin(0.5);
+    const rank = scene.add.text(28, -48, unitRank >= 2 ? 'Ⅱ' : 'Ⅰ', { fontFamily: 'Arial', fontSize: '9px', color: '#ffffff', backgroundColor: unitRank >= 2 ? '#e85f91' : '#58bd92', padding: { x: 3, y: 2 }, fontStyle: 'bold' }).setOrigin(1, 0);
     this.icon = scene.add.image(0, -8, config.texture).setDisplaySize(54, 61);
     this.costText = scene.add.text(0, 41, String(config.cost), { fontFamily: 'Arial', fontSize: '15px', color: '#b47724', fontStyle: 'bold' }).setOrigin(0.5);
     this.statusDot = scene.add.circle(-24, 41, 3, config.accent, 1);
     this.cooldownMask = scene.add.graphics();
     this.cooldownText = scene.add.text(0, 4, '', { fontFamily: 'Arial', fontSize: '22px', color: '#fff', fontStyle: 'bold', stroke: '#101827', strokeThickness: 5 }).setOrigin(0.5).setVisible(false);
     this.highlight = scene.add.graphics();
-    this.add([frame, name, this.icon, this.costText, this.statusDot, this.cooldownMask, this.cooldownText, this.highlight]);
+    this.add([frame, name, rank, this.icon, this.costText, this.statusDot, this.cooldownMask, this.cooldownText, this.highlight]);
     this.setSize(CARD_W, CARD_H).setInteractive({ useHandCursor: true }).setDepth(102);
     scene.add.existing(this);
     this.on('pointerover', () => { this.setScale(1.04); this.parentBank?.showTooltip(this); });
@@ -85,9 +88,11 @@ export class SeedBank {
   private readonly tooltip: Phaser.GameObjects.Text;
   private readonly scene: Phaser.Scene;
   private readonly bonusCharges = new Map<PlantType, number>();
+  private readonly ranks: Partial<Record<PlantType, UnitRank>>;
 
-  constructor(scene: Phaser.Scene, types: PlantType[]) {
+  constructor(scene: Phaser.Scene, types: PlantType[], ranks: Partial<Record<PlantType, UnitRank>> = {}) {
     this.scene = scene;
+    this.ranks = ranks;
     this.tooltip = scene.add.text(0, 140, '', {
       fontFamily: 'Microsoft YaHei, sans-serif', fontSize: '14px', color: '#effaff',
       backgroundColor: '#fffaf1ee', padding: { x: 12, y: 8 }, align: 'center',
@@ -137,12 +142,12 @@ export class SeedBank {
     const bonus = this.bonusCharges.get(card.plantType);
     const suffix = bonus === undefined ? '' : `  ·  剩余免费次数 ${bonus}`;
     const quote = card.config.quote ? `「${card.config.quote}」\n` : '';
-    this.tooltip.setPosition(card.x, 132).setText(`${quote}${card.config.role}  ·  ${card.config.desc}${suffix}`).setVisible(true);
+    this.tooltip.setPosition(card.x, 132).setText(`Rank ${card.unitRank >= 2 ? 'II' : 'I'}  ·  ${quote}${card.config.role}  ·  ${card.config.desc}${suffix}`).setVisible(true);
   }
   hideTooltip(): void { this.tooltip.setVisible(false); }
 
   private addCard(type: PlantType): SeedCard {
-    const card = new SeedCard(this.scene, 0, SEEDBANK_HEIGHT / 2, PLANTS[type]);
+    const card = new SeedCard(this.scene, 0, SEEDBANK_HEIGHT / 2, PLANTS[type], (this.ranks[type] ?? 2) >= 2 ? 2 : 1);
     card.parentBank = this; card.on('pointerdown', () => this.toggleSelect(card)); this.cards.push(card);
     return card;
   }

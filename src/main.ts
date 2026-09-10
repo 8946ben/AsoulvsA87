@@ -8,6 +8,15 @@ import { CodexScene } from './scenes/CodexScene';
 import { LevelSelectScene } from './scenes/LevelSelectScene';
 import { ShopScene } from './scenes/ShopScene';
 import { LoadoutScene } from './scenes/LoadoutScene';
+import { ModeSelectScene } from './scenes/ModeSelectScene';
+import { ChapterSelectScene } from './scenes/ChapterSelectScene';
+import { RogueHubScene } from './scenes/RogueHubScene';
+import { RogueSetupScene } from './scenes/RogueSetupScene';
+import { RogueMapScene } from './scenes/RogueMapScene';
+import { RogueRecruitScene } from './scenes/RogueRecruitScene';
+import { RogueEventScene } from './scenes/RogueEventScene';
+import { RogueRewardScene } from './scenes/RogueRewardScene';
+import { RogueSummaryScene } from './scenes/RogueSummaryScene';
 
 const config: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
@@ -25,7 +34,11 @@ const config: Phaser.Types.Core.GameConfig = {
     antialias: true,
     roundPixels: true,
   },
-  scene: [BootScene, MenuScene, LevelSelectScene, LoadoutScene, CodexScene, ShopScene, GameScene],
+  scene: [
+    BootScene, MenuScene, ModeSelectScene, ChapterSelectScene, LevelSelectScene, LoadoutScene,
+    CodexScene, ShopScene, RogueHubScene, RogueSetupScene, RogueMapScene, RogueRecruitScene,
+    RogueEventScene, RogueRewardScene, RogueSummaryScene, GameScene,
+  ],
 };
 
 // 只由 Phaser ScaleManager 管理画布显示尺寸和输入坐标。

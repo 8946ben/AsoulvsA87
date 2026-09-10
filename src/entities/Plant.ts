@@ -21,6 +21,7 @@ export interface PlantContext {
 
 export class Plant extends Phaser.GameObjects.Sprite {
   readonly config: PlantConfig;
+  readonly rank: 1 | 2;
   readonly row: number;
   readonly col: number;
   hp: number;
@@ -39,14 +40,14 @@ export class Plant extends Phaser.GameObjects.Sprite {
   private readonly dispW: number;
   private readonly dispH: number;
 
-  constructor(scene: Phaser.Scene, x: number, y: number, type: PlantType, row: number, col: number) {
+  constructor(scene: Phaser.Scene, x: number, y: number, type: PlantType, row: number, col: number, rank: 1 | 2 = 2) {
     const config = PLANTS[type];
     super(scene, x, y, config.texture);
     const src = scene.textures.get(config.texture).getSourceImage() as HTMLImageElement;
     const srcW = src?.width || 78; const srcH = src?.height || 94;
     this.baseScale = Math.min(PLANT_DISPLAY.MAX_W / srcW, PLANT_DISPLAY.MAX_H / srcH);
     this.dispW = srcW * this.baseScale; this.dispH = srcH * this.baseScale;
-    this.config = config; this.row = row; this.col = col; this.hp = config.hp; this.maxHp = config.hp;
+    this.config = config; this.rank = rank; this.row = row; this.col = col; this.hp = config.hp; this.maxHp = config.hp;
     this.baseY = y;
     this.shadow = scene.add.ellipse(x, y + PLANT_DISPLAY.SHADOW_Y, 48, 10, 0x071221, 0.22).setDepth(7 + row * 0.1);
     scene.add.existing(this);
@@ -119,7 +120,7 @@ export class Plant extends Phaser.GameObjects.Sprite {
           ctx.freezeAll(this.config.freezeDuration ?? 4000);
           this.burst(0x8de8ff);
           const roll = Math.random();
-          ctx.replacePlant(this, roll < 0.2 ? 'fiona' : roll < 0.4 ? 'xiaohainuo' : null);
+          ctx.replacePlant(this, this.rank >= 2 ? (roll < 0.2 ? 'fiona' : roll < 0.4 ? 'xiaohainuo' : null) : null);
         }
         break;
       case 'squash':
@@ -220,7 +221,8 @@ export class Plant extends Phaser.GameObjects.Sprite {
   }
 
   private updateStarCandy(delta: number, target: Zombie | null, ctx: PlantContext): void {
-    const empowered = ctx.hasActivePlant('bella') && ctx.hasActivePlant('diana');
+    const advanced = this.rank >= 2;
+    const empowered = advanced && ctx.hasActivePlant('bella') && ctx.hasActivePlant('diana');
     if (empowered !== this.synergyEmpowered) {
       const nextMax = this.config.hp * (empowered ? 2 : 1);
       this.hp = Math.max(1, Math.round(this.hp * nextMax / this.maxHp));
@@ -233,7 +235,7 @@ export class Plant extends Phaser.GameObjects.Sprite {
     const interval = empowered ? 500 : (this.config.attackInterval ?? 1000);
     if (this.attackTimer < interval) return;
     this.attackTimer = 0;
-    const critical = Math.random() < 0.3;
+    const critical = advanced && Math.random() < 0.3;
     const damage = (this.config.attackDamage ?? 30) * (critical ? 3 : 1);
     const lifestealRatio = empowered ? 1 : 0.5;
     ctx.spawnProjectile(
@@ -255,7 +257,7 @@ export class Plant extends Phaser.GameObjects.Sprite {
     this.attackTimer += delta;
     if (this.attackTimer < (this.config.attackInterval ?? 2100)) return;
     this.attackTimer = 0;
-    const specialChance = ctx.hasActivePlant('bella') && ctx.hasActivePlant('eileen') ? 0.3 : 0.15;
+    const specialChance = this.rank >= 2 ? (ctx.hasActivePlant('bella') && ctx.hasActivePlant('eileen') ? 0.3 : 0.15) : 0;
     ctx.spawnProjectile(
       this.x + this.dispW * 0.3, this.y - 16,
       this.config.projectile ?? 'projectile_star_candy', this.config.attackDamage ?? 40, this.row,
@@ -271,7 +273,7 @@ export class Plant extends Phaser.GameObjects.Sprite {
     this.attackTimer += delta;
     if (this.attackTimer < (this.config.attackInterval ?? 2000)) return;
     this.attackTimer = 0;
-    const synergy = ctx.hasActivePlant('eileen') && ctx.hasActivePlant('diana');
+    const synergy = this.rank >= 2 && ctx.hasActivePlant('eileen') && ctx.hasActivePlant('diana');
     const critical = synergy && Math.random() < 0.3;
     const damage = Math.round((this.config.attackDamage ?? 40) * (critical ? 1.5 : 1));
     ctx.spawnProjectile(
@@ -290,7 +292,7 @@ export class Plant extends Phaser.GameObjects.Sprite {
     ctx.spawnProjectile(
       this.x + this.dispW * 0.3, this.y - 14,
       this.config.projectile ?? 'projectile_soul_candy', this.config.attackDamage ?? 20, this.row,
-      { soulDebuff: { durationMs: 3000, maxStacks: 3 } },
+      { soulDebuff: { durationMs: 3000, maxStacks: this.rank >= 2 ? 3 : 1 } },
     );
     this.recoil();
   }
@@ -320,7 +322,7 @@ export class Plant extends Phaser.GameObjects.Sprite {
       onComplete: () => {
         target.takeDamage(this.config.attackDamage ?? 1200); this.burst(0xff7fbd);
         const roll = Math.random();
-        ctx.replacePlant(this, roll < 0.2 ? 'gladys' : roll < 0.4 ? 'xinqiuyi' : null);
+        ctx.replacePlant(this, this.rank >= 2 ? (roll < 0.2 ? 'gladys' : roll < 0.4 ? 'xinqiuyi' : null) : null);
       },
     });
   }
