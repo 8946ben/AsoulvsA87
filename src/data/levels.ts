@@ -111,7 +111,7 @@ export const ALL_LEVELS: LevelConfig[] = [
   },
   {
     id: 9, name: '第九幕 · 隐藏踪迹', description: '全员到齐，在高密度波次中完成最终彩排。',
-    startingSun: 300, availablePlants: P9, featuredEnemies: ['football', 'sled', 'miner', 'ladder'], reward: '解锁最终幕 · 跃跃欲试', accent: 0xff6fba,
+    startingSun: 300, availablePlants: P9, featuredEnemies: ['football', 'sled', 'miner', 'ladder'], reward: '解锁第 10 幕 · 跃跃欲试', accent: 0xff6fba,
     waves: [
       wave(4500, '高密前奏', [spawn('basic', 6, 1900)]),
       wave(7000, '铁门方阵', [spawn('basic', 4, 1700), spawn('screen', 4, 2700)], true),

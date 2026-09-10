@@ -60,7 +60,7 @@ export const ZOMBIES: Record<ZombieType, ZombieConfig> = {
     hp: 240, speed: 7.5, attackDps: 45, texture: TEX.ZOMBIE_FLAG, flagWave: true,
   },
   screen: {
-    type: 'screen', name: '铁门网 A87', quote: '它们说，这是骑士的盾牌',
+    type: 'screen', name: '铁门网 A87', quote: '它们说这是骑士的盾牌',
     hp: 1080, speed: 9, attackDps: 52, texture: TEX.ZOMBIE_SCREEN,
     accessoryBreakHp: 240, breakTexture: TEX.ZOMBIE_BASIC,
   },
@@ -69,7 +69,7 @@ export const ZOMBIES: Record<ZombieType, ZombieConfig> = {
     hp: 360, speed: 11, attackDps: 52, texture: TEX.ZOMBIE_BALLOON, flying: true,
   },
   ladder: {
-    type: 'ladder', name: '梯子 A87', quote: '对于解决不了的问题，它们会选择绕过',
+    type: 'ladder', name: '梯子 A87', quote: '对于回答不了的问题，它们会选择绕过',
     hp: 720, speed: 16, attackDps: 55, texture: TEX.ZOMBIE_LADDER,
     canVault: true, vaultHeight: 28, postVaultSpeedMultiplier: 0.62, dropGearAfterVault: true,
   },
@@ -79,7 +79,7 @@ export const ZOMBIES: Record<ZombieType, ZombieConfig> = {
     accessoryBreakHp: 240, breakTexture: TEX.ZOMBIE_BASIC,
   },
   football: {
-    type: 'football', name: '橄榄球 A87', quote: '它们看不懂橄榄球，但确实喜欢这种奔跑和冲撞的感觉',
+    type: 'football', name: '橄榄球 A87', quote: '它们看不懂橄榄球，但确实喜欢这种冲撞的感觉',
     hp: 1100, speed: 19, attackDps: 82, texture: TEX.ZOMBIE_FOOTBALL, charge: true,
   },
   sled: {

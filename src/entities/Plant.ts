@@ -91,7 +91,7 @@ export class Plant extends Phaser.GameObjects.Sprite {
       case 'bomb':
         this.specialTimer += delta;
         this.setScale(this.baseScale * (1 + Math.sin(time / 55) * 0.07));
-        if (!this.resolving && this.specialTimer >= 520) {
+        if (!this.resolving && this.specialTimer >= 500) {
           this.resolving = true; ctx.damageGridArea(this.row, this.col, this.config.attackDamage ?? 1500, 350);
           this.burst(0xff5a91); ctx.replacePlant(this, null);
         }
