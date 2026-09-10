@@ -35,11 +35,12 @@ Windows 首次运行未知来源的程序时，可能显示安全提示。请确
 
 > **https://47.114.37.80/game/**
 
-- 首次打开需要下载约 58 MB 资源（JS 已 gzip 压缩），之后浏览器会缓存，二次进入明显变快。
+- 首次打开需要下载约 58 MB 资源（JS 已 gzip 压缩），之后浏览器会缓存，二次进入明显变快。加载期间会显示即显加载动画与实时进度条。
+- **在线人数限制：最多 3 人同时在线**。满员时会显示排队提示并自动等待空位；正常关闭页面立即释放名额，异常关闭（崩溃/断网）约 2 分钟后自动释放。每个标签页占用一个名额。
 - 进度保存在浏览器的 localStorage 中，与 Windows 便携版的存档互不相通；清理浏览器数据会丢档。
 - 使用 IP 直连部署，无需备案域名；HTTPS 证书为 Let's Encrypt 签发的 IP 证书（短周期、自动续期），个别老旧系统若提示证书异常，更新系统根证书后再试。
 
-发布方式（开发者）：在项目主目录运行 `python scripts/publish-web.py --build`，脚本会把 `dist/` 上传到服务器 `/opt/game` 并同步 nginx 的 `/game/` 子路径配置；只改配置不上传文件用 `--config-only`。需要本机安装 `paramiko`，服务器凭据沿用 `D:\waw\novel-site\server-credentials.txt`。
+发布方式（开发者）：在项目主目录运行 `python scripts/publish-web.py --build`，脚本会把 `dist/` 上传到服务器 `/opt/game`、同步 nginx 的 `/game/` 子路径配置，并部署/更新入场券限流服务（`server/game_gate.py` → 服务器 `/opt/game-gate/`，systemd 服务 `game-gate`）；只同步配置不上传文件用 `--config-only`。需要本机安装 `paramiko`，服务器凭据沿用 `D:\waw\novel-site\server-credentials.txt`。
 
 ### 基本操作
 
@@ -113,7 +114,8 @@ asoulVsA87/
 │  └─ ui/                 卡槽和主题 UI
 ├─ public/images/          游戏正式图片资源
 ├─ electron/main.cjs       Windows 桌面程序入口
-├─ scripts/                便携版打包脚本
+├─ scripts/                便携版打包与网页版发布脚本
+├─ server/                 网页版入场券限流服务（部署到云端，最大同时在线限制）
 ├─ background.md           玩法、角色和关卡设计设定
 ├─ package.json            npm 命令和依赖配置
 └─ vite.config.ts          Web 构建配置
@@ -208,6 +210,14 @@ out/AsoulvsA87-win32-x64/AsoulvsA87.exe
 6. 实测本次修改涉及的角色或敌人机制。
 
 ## 更新日志
+
+### 网页版在线服务（2026-09-10）
+
+- 游戏上线云端网页版：https://47.114.37.80/game/（nginx 静态托管，`npm run build` 产物直出）
+- 新增首屏即显加载动画：打开页面立刻可见，随后展示真实资源加载进度，完成后淡出
+- 新增入场限流：最多 3 人同时在线，满员自动排队；`server/game_gate.py` 入场券服务负责发票/心跳/释放，
+  客户端 `src/core/AdmissionGate.ts` 在进游戏前领票，服务不可达时放行
+- 一键发布：`python scripts/publish-web.py --build`（上传产物 + 同步 nginx 标记段 + 部署限流服务）
 
 ### 肉鸽模式开发版（2026-08-31）
 

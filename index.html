@@ -41,6 +41,131 @@
   </head>
   <body>
     <div id="game-root"></div>
+    <div id="boot-loader">
+      <div class="boot-card">
+        <div class="boot-sun"></div>
+        <div class="boot-title">A-SOUL vs A87</div>
+        <div class="boot-bar"><div class="boot-fill"></div></div>
+        <div class="boot-status">正在进入舞台…</div>
+        <div class="boot-tip">首次加载资源较大（约 58 MB），完成后浏览器会缓存，二次进入更快</div>
+      </div>
+    </div>
+    <script>
+      // 即显加载层：在游戏 JS 下载完成之前就能看到，BootScene 通过它汇报进度。
+      window.BootLoader = (function () {
+        var el = document.getElementById('boot-loader');
+        var fill = el.querySelector('.boot-fill');
+        var status = el.querySelector('.boot-status');
+        var removed = false;
+        return {
+          phase: function (text) {
+            if (!removed) status.textContent = text;
+          },
+          progress: function (p) {
+            if (removed) return;
+            var pct = Math.max(0, Math.min(100, Math.round(p * 100)));
+            fill.style.width = pct + '%';
+            status.textContent = '正在加载资源 ' + pct + '%';
+          },
+          done: function () {
+            if (removed) return;
+            removed = true;
+            fill.style.width = '100%';
+            status.textContent = '加载完成，即将开场…';
+            el.classList.add('boot-hide');
+            setTimeout(function () {
+              el.remove();
+              console.info('[boot] loader removed');
+            }, 450);
+          }
+        };
+      })();
+    </script>
+    <style>
+      #boot-loader {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background:
+          radial-gradient(circle at 18% 18%, rgba(255, 255, 255, 0.82), transparent 28%),
+          radial-gradient(circle at 82% 78%, rgba(255, 218, 139, 0.5), transparent 34%),
+          linear-gradient(145deg, #bcefff, #eaf9ef 58%, #fff0d2);
+        transition: opacity 0.4s ease;
+        font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+      }
+      #boot-loader.boot-hide {
+        opacity: 0;
+        pointer-events: none;
+      }
+      .boot-card {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 14px;
+        padding: 34px 44px 28px;
+        border-radius: 20px;
+        background: rgba(255, 255, 255, 0.78);
+        box-shadow: 0 18px 60px rgba(80, 113, 126, 0.25);
+        backdrop-filter: blur(4px);
+      }
+      .boot-sun {
+        width: 58px;
+        height: 58px;
+        border-radius: 50%;
+        background: radial-gradient(circle at 35% 32%, #fff3c4, #ffcf4d 68%, #ffb347);
+        box-shadow: 0 0 26px rgba(255, 193, 7, 0.55);
+        position: relative;
+        animation: boot-pulse 1.4s ease-in-out infinite;
+      }
+      .boot-sun::before {
+        content: '';
+        position: absolute;
+        inset: -16px;
+        border-radius: 50%;
+        border: 3px dashed rgba(255, 166, 77, 0.85);
+        animation: boot-spin 1.6s linear infinite;
+      }
+      .boot-title {
+        font-size: 26px;
+        font-weight: 700;
+        letter-spacing: 1px;
+        color: #5a4632;
+      }
+      .boot-bar {
+        width: min(320px, 68vw);
+        height: 12px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.85);
+        box-shadow: inset 0 1px 3px rgba(80, 113, 126, 0.25);
+        overflow: hidden;
+      }
+      .boot-fill {
+        width: 0%;
+        height: 100%;
+        border-radius: inherit;
+        background: linear-gradient(90deg, #7ad7ff, #ffd166);
+        transition: width 0.2s ease;
+      }
+      .boot-status {
+        font-size: 14px;
+        color: #4a5b66;
+        min-height: 1.4em;
+      }
+      .boot-tip {
+        font-size: 12px;
+        color: #8a99a3;
+      }
+      @keyframes boot-spin {
+        to { transform: rotate(360deg); }
+      }
+      @keyframes boot-pulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.08); }
+      }
+    </style>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

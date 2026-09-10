@@ -22,6 +22,9 @@ export class BootScene extends Phaser.Scene {
   }
 
   preload(): void {
+    // 加载进度汇报给 index.html 的即显加载层（window.BootLoader）
+    this.load.on('progress', (value: number) => window.BootLoader?.progress(value));
+
     // 加载真实素材。个别文件缺失不会中断流程——
     // create() 里的 TextureFactory 会为未覆盖的 key 补上占位图。
     for (const [key, path] of Object.entries(ASSETS)) {
@@ -30,6 +33,9 @@ export class BootScene extends Phaser.Scene {
   }
 
   create(): void {
+    // 资源全部就绪，撤掉 DOM 加载层，露出游戏画面
+    window.BootLoader?.done();
+
     // 补齐所有尚未被真实素材覆盖的 key，保证没有任何外部资源也能完整运行
     TextureFactory.generateAll(this);
 

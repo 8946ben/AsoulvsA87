@@ -2,12 +2,14 @@
 """把 dist/ 的网页版发布到阿里云 ECS 的 nginx 子路径 /game/。
 
 用法：
-    python scripts/publish-web.py            # 上传 dist/ 并确保 nginx /game/ 配置就位
+    python scripts/publish-web.py            # 上传 dist/ 并确保 nginx /game/ 配置与入场券服务就位
     python scripts/publish-web.py --build    # 先执行 npm run build 再发布
-    python scripts/publish-web.py --config-only  # 只同步 nginx /game/ 配置，不上传文件
+    python scripts/publish-web.py --config-only  # 只同步 nginx /game/ 配置与入场券服务，不上传游戏文件
 
 行为说明：
 - 服务器目录：/opt/game/（只写这个新目录，不碰 /opt/novel、/opt/xujie 等现有站点）。
+- 入场券服务：server/game_gate.py 部署到 /opt/game-gate/，systemd 服务 game-gate，
+  只监听 127.0.0.1:8793；文件无变化不重启，重启即清空在线名单（客户端会自动重新领票）。
 - nginx 配置：/etc/nginx/sites-available/xujie 的 443 server 块内插入/替换一段
   由标记 `# >>> asoul-game` ... `# <<< asoul-game <<<` 包裹的 location 片段，幂等可重复执行。
 - 每次修改配置前都会先备份为 sites-available/xujie.bak-asoul-<时间戳>；
@@ -17,6 +19,7 @@
 """
 from __future__ import annotations
 
+import hashlib
 import subprocess
 import sys
 import time
@@ -29,6 +32,11 @@ REMOTE_DIR = "/opt/game"
 SITE_FILE = "/etc/nginx/sites-available/xujie"
 CRED_FILE = Path(r"D:\waw\novel-site\server-credentials.txt")
 DIST_DIR = Path(__file__).resolve().parent.parent / "dist"
+REPO_DIR = DIST_DIR.parent
+GATE_DIR = "/opt/game-gate"
+GATE_SERVICE = "game-gate"
+GATE_SRC = REPO_DIR / "server" / "game_gate.py"
+UNIT_SRC = REPO_DIR / "server" / "game-gate.service"
 MARK_BEGIN = "# >>> asoul-game (managed by scripts/publish-web.py) >>>"
 MARK_END = "# <<< asoul-game <<<"
 
@@ -42,6 +50,10 @@ NGINX_SNIPPET = f"""{MARK_BEGIN}
         index index.html;
         try_files $uri $uri/ =404;
         expires 5m;
+    }}
+    location /game/api/ {{
+        proxy_pass http://127.0.0.1:8793/api/;
+        proxy_set_header Host $host;
     }}
     location ~* ^/game/assets/.+\\.(js|css)$ {{
         root /opt;
@@ -69,6 +81,35 @@ def run(ssh: paramiko.SSHClient, cmd: str, timeout: int = 120) -> tuple[int, str
     errtext = err.read().decode("utf-8", "replace")
     code = out.channel.recv_exit_status()
     return code, (text + errtext).strip()
+
+
+def sync_gate(ssh: paramiko.SSHClient, sftp: paramiko.SFTPClient) -> int:
+    """部署/更新入场券服务；内容无变化则只保证服务在运行，不重启（重启会清空在线名单）。"""
+    gate_md5 = hashlib.md5(GATE_SRC.read_bytes()).hexdigest()
+    unit_md5 = hashlib.md5(UNIT_SRC.read_bytes()).hexdigest()
+    _, remote_gate = run(ssh, f"md5sum {GATE_DIR}/game_gate.py 2>/dev/null")
+    _, remote_unit = run(ssh, f"md5sum /etc/systemd/system/{GATE_SERVICE}.service 2>/dev/null")
+    changed = (gate_md5 not in remote_gate) or (unit_md5 not in remote_unit)
+
+    run(ssh, f"mkdir -p {GATE_DIR}")
+    sftp.put(str(GATE_SRC), f"{GATE_DIR}/game_gate.py")
+    sftp.put(str(UNIT_SRC), f"/etc/systemd/system/{GATE_SERVICE}.service")
+
+    if changed:
+        code, out = run(ssh, f"systemctl daemon-reload && systemctl enable --now {GATE_SERVICE} "
+                             f"&& systemctl restart {GATE_SERVICE} && systemctl is-active {GATE_SERVICE}")
+        print(f"入场券服务已更新并重启: {out}")
+    else:
+        code, out = run(ssh, f"systemctl is-active {GATE_SERVICE}")
+        if out != "active":
+            code, out = run(ssh, f"systemctl enable --now {GATE_SERVICE} && systemctl is-active {GATE_SERVICE}")
+            print(f"入场券服务未运行，已拉起: {out}")
+        else:
+            print("入场券服务无变化，保持运行")
+    time.sleep(0.5)
+    code, out = run(ssh, "curl -s http://127.0.0.1:8793/api/status")
+    print("入场券服务自检:", out)
+    return 0 if '"ok": true' in out.replace(" ", "") or '"ok":true' in out.replace(" ", "") else 1
 
 
 def main() -> int:
@@ -112,6 +153,9 @@ def main() -> int:
         done += p.stat().st_size
         print(f"  up {rel}  {done / 1048576:5.1f}/{total_mb:.1f} MB")
     print(f"上传完成，用时 {time.time() - t0:.0f}s")
+
+    if sync_gate(ssh, sftp) != 0:
+        print("入场券服务自检失败，继续检查 nginx 配置（服务状态见上方输出）")
 
     code, out = run(ssh, f"cat {SITE_FILE}")
     if code != 0:

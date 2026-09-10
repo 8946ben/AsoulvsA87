@@ -1,0 +1,15 @@
+[Unit]
+Description=A-SOUL vs A87 admission gate (max concurrent players, listens on 127.0.0.1:8793)
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/game-gate
+ExecStart=/usr/bin/python3 /opt/game-gate/game_gate.py
+Environment=GAME_MAX_SLOTS=3
+Environment=GAME_LEASE_SECONDS=120
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

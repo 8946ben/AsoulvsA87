@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { RENDER_HEIGHT, RENDER_WIDTH } from './config/GameConfig';
 import { installHighResolution } from './core/HighResolution';
+import { AdmissionGate } from './core/AdmissionGate';
 import { BootScene } from './scenes/BootScene';
 import { GameScene } from './scenes/GameScene';
 import { MenuScene } from './scenes/MenuScene';
@@ -41,23 +42,31 @@ const config: Phaser.Types.Core.GameConfig = {
   ],
 };
 
-// 只由 Phaser ScaleManager 管理画布显示尺寸和输入坐标。
-// FIT 会保持 16:9 逻辑画布并在非 16:9 窗口中自动留边，鼠标映射也随窗口尺寸同步更新。
-const game = new Phaser.Game(config);
-installHighResolution(game);
+// 启动流程：先领入场票（限流，失败放行），再创建 Phaser 实例。
+// 桌面版（Electron 走 file://）没有 api 后端，领票自动放行，行为不变。
+async function startGame(): Promise<void> {
+  window.BootLoader?.phase('正在连接入场服务…');
+  await AdmissionGate.enter((text) => window.BootLoader?.phase(text));
+  window.BootLoader?.phase('正在加载资源…');
 
-// Electron 在最大化、还原或快速拖动窗口时，原生 resize 与父容器布局完成的时机可能不同。
-// 下一帧重新读取父容器，不触碰相机、渲染背板或输入变换，避免画布沿用旧尺寸。
-let resizeFrame = 0;
-const refreshScale = (): void => {
-  window.cancelAnimationFrame(resizeFrame);
-  resizeFrame = window.requestAnimationFrame(() => {
-    game.scale.refresh();
-    game.scale.updateBounds();
-  });
-};
+  const game = new Phaser.Game(config);
+  installHighResolution(game);
 
-window.addEventListener('resize', refreshScale);
-window.visualViewport?.addEventListener('resize', refreshScale);
-const gameRoot = document.getElementById('game-root');
-if (gameRoot) new ResizeObserver(refreshScale).observe(gameRoot);
+  // Electron 在最大化、还原或快速拖动窗口时，原生 resize 与父容器布局完成的时机可能不同。
+  // 下一帧重新读取父容器，不触碰相机、渲染背板或输入变换，避免画布沿用旧尺寸。
+  let resizeFrame = 0;
+  const refreshScale = (): void => {
+    window.cancelAnimationFrame(resizeFrame);
+    resizeFrame = window.requestAnimationFrame(() => {
+      game.scale.refresh();
+      game.scale.updateBounds();
+    });
+  };
+
+  window.addEventListener('resize', refreshScale);
+  window.visualViewport?.addEventListener('resize', refreshScale);
+  const gameRoot = document.getElementById('game-root');
+  if (gameRoot) new ResizeObserver(refreshScale).observe(gameRoot);
+}
+
+void startGame();
