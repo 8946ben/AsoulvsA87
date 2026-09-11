@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { GAME_HEIGHT, GAME_WIDTH } from '../config/GameConfig';
-import { ADVANCE_COST, advancePlant, getCollectedPlants, getCollectionRank, getStardust, isPlantCollected } from '../core/Collection';
+import { ADVANCE_COST, advancePlant, getCollectedPlants, getCollectionRank, getStardust, isAdvanceable, isPlantCollected, revertPlant } from '../core/Collection';
 import { sharpenSceneText, sharpenText } from '../core/TextQuality';
 import { CODEX_PLANT_ORDER, PLANTS, type PlantType } from '../data/plants';
 import { createFreshBackdrop, FRESH } from '../ui/FreshTheme';
@@ -59,7 +59,8 @@ export class BackpackScene extends Phaser.Scene {
     const collected = getCollectedPlants();
     if (!isPlantCollected(this.selectedType)) this.selectedType = collected[0] ?? 'beijixing';
     this.countText.setText(`已收录 ${collected.length} / ${CODEX_PLANT_ORDER.length}`);
-    this.stardustText.setText(`✦ 星愿徽记  ${getStardust()}`);
+    const stardust = getStardust();
+    this.stardustText.setText(`✦ 星愿徽记  ${Number.isFinite(stardust) ? stardust : '∞'}`);
     this.renderList();
     this.renderDetail();
     sharpenSceneText(this);
@@ -72,20 +73,26 @@ export class BackpackScene extends Phaser.Scene {
       const config = PLANTS[type]; const col = index % 2; const row = Math.floor(index / 2);
       const x = colX[col]; const y = 199 + row * 68;
       const owned = isPlantCollected(type); const selected = type === this.selectedType;
-      const fill = owned ? (selected ? 0xffeff5 : FRESH.PAPER) : 0xe9eeed;
-      const card = this.add.rectangle(x, y, cardW, cardH, fill, owned ? 0.99 : 0.72)
-        .setStrokeStyle(2, owned ? config.accent : 0xaebbb8, selected ? 0.95 : 0.3)
+      if (!owned) {
+        // 未收录：槽位空置，仅保留素色卡片占位。
+        const slot = this.add.rectangle(x, y, cardW, cardH, 0xe9eeed, 0.72).setStrokeStyle(2, 0xaebbb8, 0.3);
+        this.listLayer.add(slot);
+        return;
+      }
+      const fill = selected ? 0xffeff5 : FRESH.PAPER;
+      const card = this.add.rectangle(x, y, cardW, cardH, fill, 0.99)
+        .setStrokeStyle(2, config.accent, selected ? 0.95 : 0.3)
         .setInteractive({ useHandCursor: true });
-      const icon = this.fitImage(this.add.image(x - 56, y, config.texture), 42, 43).setAlpha(owned ? 1 : 0.22);
-      const name = this.add.text(x - 27, y - 14, owned ? config.name : '？？？', {
-        fontFamily: 'Microsoft YaHei', fontSize: '12px', color: owned ? '#42506d' : '#879692', fontStyle: 'bold',
-      });
+      const icon = this.fitImage(this.add.image(x - 56, y, config.texture), 42, 43);
       const rank = getCollectionRank(type);
-      const state = this.add.text(x - 27, y + 8, owned ? `档案 · ${rank >= 2 ? 'Ⅱ 阶' : 'Ⅰ 阶'}` : '尚未收录', {
-        fontFamily: 'Microsoft YaHei', fontSize: '10px', color: owned ? (rank >= 2 ? '#d7527c' : '#348c72') : '#9ba8a6',
+      const name = this.add.text(x - 27, y - 14, config.name, {
+        fontFamily: 'Microsoft YaHei', fontSize: '12px', color: '#42506d', fontStyle: 'bold',
       });
-      card.on('pointerover', () => card.setStrokeStyle(2, owned ? config.accent : 0xaebbb8, 0.86));
-      card.on('pointerout', () => card.setStrokeStyle(2, owned ? config.accent : 0xaebbb8, selected ? 0.95 : 0.3));
+      const state = this.add.text(x - 27, y + 8, `档案 · ${rank >= 2 ? 'Ⅱ 阶' : 'Ⅰ 阶'}`, {
+        fontFamily: 'Microsoft YaHei', fontSize: '10px', color: rank >= 2 ? '#d7527c' : '#348c72',
+      });
+      card.on('pointerover', () => card.setStrokeStyle(2, config.accent, 0.86));
+      card.on('pointerout', () => card.setStrokeStyle(2, config.accent, selected ? 0.95 : 0.3));
       card.on('pointerdown', () => { this.selectedType = type; this.refresh(); });
       this.listLayer.add([card, icon, name, state]);
     });
@@ -99,11 +106,16 @@ export class BackpackScene extends Phaser.Scene {
     const rank = getCollectionRank(type);
     const accentText = Phaser.Display.Color.IntegerToColor(config.accent).rgba;
 
-    // 详情区立绘：有非 Q 版动漫立绘的角色展示立绘卡片，其余维持战场 Q 版模型。
-    const hasPortrait = !!config.portrait && this.textures.exists(config.portrait);
+    // 详情区：Ⅱ 阶优先显示专属进阶立绘；Ⅰ 阶保留原有立绘或战场 Q 版模型。
+    const portraitTexture = rank >= 2 && config.advancedPortrait && this.textures.exists(config.advancedPortrait)
+      ? config.advancedPortrait
+      : config.portrait && this.textures.exists(config.portrait)
+        ? config.portrait
+        : undefined;
+    const hasPortrait = !!portraitTexture;
     if (hasPortrait) {
       // 卡片按立绘宽高比自适应，四周留 14px 白边，整体限制在详情区左栏内。
-      const source = this.textures.get(config.portrait!).getSourceImage() as HTMLImageElement | HTMLCanvasElement;
+      const source = this.textures.get(portraitTexture!).getSourceImage() as HTMLImageElement | HTMLCanvasElement;
       const scale = Math.min(280 / source.width, 448 / source.height);
       const cardW = Math.min(source.width * scale + 28, 308);
       const cardH = Math.min(source.height * scale + 28, 476);
@@ -112,14 +124,14 @@ export class BackpackScene extends Phaser.Scene {
       backing.fillRoundedRect(630 - cardW / 2, 396 - cardH / 2, cardW, cardH, 14);
       backing.lineStyle(2, owned ? config.accent : 0xaebbb8, owned ? 0.45 : 0.3);
       backing.strokeRoundedRect(630 - cardW / 2, 396 - cardH / 2, cardW, cardH, 14);
-      const portrait = this.add.image(630, 396, config.portrait!).setScale(scale).setAlpha(owned ? 1 : 0.2);
+      const portrait = this.add.image(630, 396, portraitTexture!).setScale(scale).setAlpha(owned ? 1 : 0.2);
       this.detailLayer.add([backing, portrait]);
     } else {
       const portraitHalo = this.add.ellipse(630, 392, 316, 420, owned ? config.accent : 0xaebbb8, owned ? 0.13 : 0.08).setStrokeStyle(2, owned ? config.accent : 0xaebbb8, 0.36);
       const portrait = this.fitImage(this.add.image(630, 390, config.texture), 280, 350).setAlpha(owned ? 1 : 0.2);
       this.detailLayer.add([portraitHalo, portrait]);
     }
-    const modelTag = this.add.text(630, 650, hasPortrait ? '角色立绘 · 非 Q 版' : '战场模型 · Q版', {
+    const modelTag = this.add.text(630, 650, rank >= 2 && portraitTexture === config.advancedPortrait ? 'Ⅱ 阶进阶立绘' : hasPortrait ? '角色立绘 · 非 Q 版' : '战场模型 · Q版', {
       fontFamily: 'Microsoft YaHei', fontSize: '11px', color: '#52667d', backgroundColor: '#e8f5f2', padding: { x: 12, y: 6 }, fontStyle: 'bold',
     }).setOrigin(0.5);
 
@@ -137,21 +149,49 @@ export class BackpackScene extends Phaser.Scene {
     const stats = this.add.text(852, 412, owned ? `生命  ${config.hp}     部署应援  ${config.cost || '融合'}     冷却  ${config.cooldown ? `${(config.cooldown / 1000).toFixed(1)} 秒` : '即时'}` : '档案数据将在收录后开放', {
       fontFamily: 'Microsoft YaHei', fontSize: '13px', color: owned ? '#a66b25' : '#8b9997', fontStyle: 'bold',
     });
-    const progressTitle = this.add.text(852, 458, '进阶档案', { fontFamily: 'Microsoft YaHei', fontSize: '15px', color: '#42506d', fontStyle: 'bold' });
-    const progress = this.add.text(852, 488, owned
-      ? (rank >= 2 ? 'Ⅱ 阶已解锁 · 战斗将以高阶角色部署，启用现有联动与分支效果。' : 'Ⅰ 阶档案 · 使用星愿徽记进阶至Ⅱ阶，解锁高阶战斗规则。')
-      : '尚未收录，无法进阶。', {
-      fontFamily: 'Microsoft YaHei', fontSize: '12px', color: owned ? '#52667d' : '#8b9997', wordWrap: { width: 384, useAdvancedWrap: true }, lineSpacing: 3,
-    });
-    const advance = this.add.text(1124, 640, !owned ? '尚未收录' : rank >= 2 ? 'Ⅱ 阶已完成' : `进阶至Ⅱ阶  ·  ${ADVANCE_COST} ✦`, {
-      fontFamily: 'Microsoft YaHei', fontSize: '15px', color: '#ffffff', backgroundColor: !owned ? '#aab8b2' : rank >= 2 ? '#58bd92' : '#e85f91', padding: { x: 21, y: 11 }, fontStyle: 'bold',
-    }).setOrigin(0.5).setInteractive({ useHandCursor: owned && rank < 2 });
-    if (owned && rank < 2) {
-      advance.on('pointerover', () => advance.setScale(1.035));
-      advance.on('pointerout', () => advance.setScale(1));
-      advance.on('pointerdown', () => this.tryAdvance(type));
+    const advanceable = owned && isAdvanceable(type);
+    const progressTitle = this.add.text(852, 458, owned ? (advanceable ? '进阶档案' : '角色特性') : '进阶档案', { fontFamily: 'Microsoft YaHei', fontSize: '15px', color: '#42506d', fontStyle: 'bold' });
+    const traitTexts: Phaser.GameObjects.Text[] = [];
+    if (owned) {
+      const stage1 = this.add.text(852, 488, `Ⅰ 阶 · ${(config.stageTraits ?? []).join('；')}`, {
+        fontFamily: 'Microsoft YaHei', fontSize: '12px', color: '#52667d', wordWrap: { width: 384, useAdvancedWrap: true }, lineSpacing: 4,
+      });
+      traitTexts.push(stage1);
+      if (advanceable) {
+        const reached = rank >= 2;
+        const advancedDescription = config.advanceTraits?.length ? config.advanceTraits.join('；') : '解锁Ⅱ阶专属立绘';
+        traitTexts.push(this.add.text(852, 488 + stage1.height + 8, `Ⅱ 阶 · ${advancedDescription}${reached ? '' : '（进阶解锁）'}`, {
+          fontFamily: 'Microsoft YaHei', fontSize: '12px', color: reached ? accentText : '#9aa8a4', wordWrap: { width: 384, useAdvancedWrap: true }, lineSpacing: 4, fontStyle: reached ? 'bold' : undefined,
+        }));
+      }
+    } else {
+      traitTexts.push(this.add.text(852, 488, '尚未收录，无法进阶。', { fontFamily: 'Microsoft YaHei', fontSize: '12px', color: '#8b9997' }));
     }
-    this.detailLayer.add([modelTag, code, title, role, line, description, quote, stats, progressTitle, progress, advance]);
+    let advance: Phaser.GameObjects.Text | null = null;
+    if (!owned) {
+      advance = this.add.text(1124, 640, '尚未收录', {
+        fontFamily: 'Microsoft YaHei', fontSize: '15px', color: '#ffffff', backgroundColor: '#aab8b2', padding: { x: 21, y: 11 }, fontStyle: 'bold',
+      }).setOrigin(0.5);
+    } else if (advanceable) {
+      if (rank >= 2) {
+        advance = this.add.text(1124, 640, '切换至 Ⅰ 阶', {
+          fontFamily: 'Microsoft YaHei', fontSize: '15px', color: '#ffffff', backgroundColor: '#58bd92', padding: { x: 21, y: 11 }, fontStyle: 'bold',
+        }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+        advance.on('pointerover', () => advance!.setScale(1.035));
+        advance.on('pointerout', () => advance!.setScale(1));
+        advance.on('pointerdown', () => { revertPlant(type); this.refresh(); });
+      } else {
+        advance = this.add.text(1124, 640, `进阶至Ⅱ阶  ·  ${ADVANCE_COST} ✦`, {
+          fontFamily: 'Microsoft YaHei', fontSize: '15px', color: '#ffffff', backgroundColor: '#e85f91', padding: { x: 21, y: 11 }, fontStyle: 'bold',
+        }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+        advance.on('pointerover', () => advance!.setScale(1.035));
+        advance.on('pointerout', () => advance!.setScale(1));
+        advance.on('pointerdown', () => this.tryAdvance(type));
+      }
+    }
+    const details: Phaser.GameObjects.GameObject[] = [modelTag, code, title, role, line, description, quote, stats, progressTitle, ...traitTexts];
+    if (advance) details.push(advance);
+    this.detailLayer.add(details);
   }
 
   private tryAdvance(type: PlantType): void {

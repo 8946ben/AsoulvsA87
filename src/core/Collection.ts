@@ -1,12 +1,21 @@
 import { ALL_LEVELS } from '../data/levels';
-import { CODEX_PLANT_ORDER, type PlantType } from '../data/plants';
+import { CODEX_PLANT_ORDER, PLANTS, type PlantType } from '../data/plants';
 import { isTechUnlocked } from './Coins';
+import { isDeveloperMode } from './DeveloperMode';
 import { getLevelProgress } from './LevelProgress';
 
 const STORAGE_KEY = 'asoul-character-collection-v1';
 export const ADVANCE_COST = 6;
 
 export type CollectionRank = 0 | 1 | 2;
+
+/**
+ * 只要角色已配置Ⅱ阶立绘即可在背包进阶。没有额外战斗特性的角色，进阶只解锁外观；
+ * 有 advanceTraits 的角色仍照常获得既有Ⅱ阶效果。
+ */
+export function isAdvanceable(type: PlantType): boolean {
+  return !!PLANTS[type].advancedPortrait;
+}
 
 interface CollectionState {
   version: 1;
@@ -43,8 +52,9 @@ function isFusion(type: PlantType): boolean {
   return type === 'xingkongtang' || type === 'xilanai' || type === 'jiaxinnaitang' || type === 'yigehun';
 }
 
-/** 已通关关卡决定基础角色收录；融合角色沿用现有科技树解锁条件。 */
+/** 已通关关卡决定基础角色收录；融合角色沿用现有科技树解锁条件；开发者模式直接全收录。 */
 export function getCollectedPlants(): PlantType[] {
+  if (isDeveloperMode()) return [...CODEX_PLANT_ORDER];
   const { unlocked } = getLevelProgress();
   const level = ALL_LEVELS[Math.max(0, Math.min(ALL_LEVELS.length - 1, unlocked - 1))];
   const campaignCollection = level?.availablePlants ?? [];
@@ -57,11 +67,23 @@ export function isPlantCollected(type: PlantType): boolean {
 
 export function getCollectionRank(type: PlantType): CollectionRank {
   if (!isPlantCollected(type)) return 0;
+  if (!isAdvanceable(type)) return 1;
   return readState().ranks[type] === 2 ? 2 : 1;
 }
 
 export function getStardust(): number {
+  if (isDeveloperMode()) return Number.POSITIVE_INFINITY;
   return readState().stardust;
+}
+
+/** Ⅱ 阶切回 Ⅰ 阶：免费撤销进阶状态，随时可再次进阶。 */
+export function revertPlant(type: PlantType): AdvanceResult {
+  const state = readState();
+  if (!isPlantCollected(type)) return { ok: false, reason: 'locked', stardust: state.stardust };
+  if (!isAdvanceable(type) || state.ranks[type] !== 2) return { ok: false, reason: 'max-rank', stardust: state.stardust };
+  delete state.ranks[type];
+  writeState(state);
+  return { ok: true, stardust: state.stardust };
 }
 
 /** 每场普通战役结算提供进阶材料。 */
@@ -75,9 +97,12 @@ export function awardStardust(amount: number): number {
 export function advancePlant(type: PlantType): AdvanceResult {
   const state = readState();
   if (!isPlantCollected(type)) return { ok: false, reason: 'locked', stardust: state.stardust };
-  if (state.ranks[type] === 2) return { ok: false, reason: 'max-rank', stardust: state.stardust };
-  if (state.stardust < ADVANCE_COST) return { ok: false, reason: 'insufficient-stardust', stardust: state.stardust };
-  state.stardust -= ADVANCE_COST;
+  if (!isAdvanceable(type) || state.ranks[type] === 2) return { ok: false, reason: 'max-rank', stardust: state.stardust };
+  // 开发者模式徽记无限：不校验也不扣除存量。
+  if (!isDeveloperMode()) {
+    if (state.stardust < ADVANCE_COST) return { ok: false, reason: 'insufficient-stardust', stardust: state.stardust };
+    state.stardust -= ADVANCE_COST;
+  }
   state.ranks[type] = 2;
   writeState(state);
   return { ok: true, stardust: state.stardust };

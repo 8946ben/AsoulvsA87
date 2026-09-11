@@ -17,7 +17,7 @@ import { Sun } from '../entities/Sun';
 import { Zombie, type ZombieContext } from '../entities/Zombie';
 import { createSeedBankBackground, SeedBank } from '../ui/SeedBank';
 import { createFreshBackdrop, FRESH } from '../ui/FreshTheme';
-import { CAMPAIGN_BATTLE, getUnitRank, type BattleSession } from '../core/BattleSession';
+import { CAMPAIGN_BATTLE, getUnitRank, type BattleSession, type UnitRank } from '../core/BattleSession';
 import { getRogueCombatModifiers, loadRogueRun, resolveRogueBattle, type RogueCombatModifiers } from '../core/RogueRun';
 
 interface SpawnTask { time: number; type: ZombieType; row: number; wave: number; }
@@ -251,7 +251,11 @@ export class GameScene extends Phaser.Scene {
   }
 
   private createSeedBank(): void {
-    createSeedBankBackground(this); this.seedBank = new SeedBank(this, this.selectedPlants, this.battleSession.unitRanks); this.seedBank.applyInitialCooldown(1700);
+    createSeedBankBackground(this);
+    // 战役模式的 unitRanks 为空，需按收录阶位逐个解析，否则种子栏会全部显示 Ⅱ 阶。
+    const seedRanks: Partial<Record<PlantType, UnitRank>> = {};
+    for (const type of this.selectedPlants) seedRanks[type] = getUnitRank(this.battleSession, type);
+    this.seedBank = new SeedBank(this, this.selectedPlants, seedRanks); this.seedBank.applyInitialCooldown(1700);
   }
 
   private buildSpawnSchedule(): void {

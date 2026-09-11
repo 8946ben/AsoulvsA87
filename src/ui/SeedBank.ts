@@ -147,7 +147,7 @@ export class SeedBank {
   hideTooltip(): void { this.tooltip.setVisible(false); }
 
   private addCard(type: PlantType): SeedCard {
-    const card = new SeedCard(this.scene, 0, SEEDBANK_HEIGHT / 2, PLANTS[type], (this.ranks[type] ?? 2) >= 2 ? 2 : 1);
+    const card = new SeedCard(this.scene, 0, SEEDBANK_HEIGHT / 2, PLANTS[type], (this.ranks[type] ?? 1) >= 2 ? 2 : 1);
     card.parentBank = this; card.on('pointerdown', () => this.toggleSelect(card)); this.cards.push(card);
     return card;
   }
