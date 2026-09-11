@@ -66,7 +66,6 @@ export class GameScene extends Phaser.Scene {
   private pauseOverlay!: Phaser.GameObjects.Container;
   private pauseShowcase!: Phaser.GameObjects.Image;
   private pauseShowcaseName!: Phaser.GameObjects.Text;
-  private pauseShowcaseRole!: Phaser.GameObjects.Text;
   private pauseShowcaseBaseY = 0;
   private pauseShowcaseBaseScale = 1;
   private shovelMode = false;
@@ -211,18 +210,43 @@ export class GameScene extends Phaser.Scene {
     this.previewRect = this.add.graphics().setDepth(62);
 
     const pauseShade = this.add.rectangle(0, 0, GAME_WIDTH, GAME_HEIGHT, FRESH.INK, 0.46).setOrigin(0).setInteractive();
-    const pauseCard = this.add.rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2, 560, 430, FRESH.CREAM, 0.99).setStrokeStyle(3, FRESH.BLUE, 0.72);
+    const pauseCard = this.add.rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2, 560, 470, FRESH.CREAM, 0.99).setStrokeStyle(3, FRESH.BLUE, 0.72);
     const pauseTitle = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 182, '舞台暂歇', { fontFamily: 'Microsoft YaHei', fontSize: '31px', color: '#42506d', fontStyle: 'bold' }).setOrigin(0.5);
-    const pauseHint = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 142, '角色正在为下一波积蓄舞台能量', { fontFamily: 'Microsoft YaHei', fontSize: '15px', color: '#3d8ea5' }).setOrigin(0.5);
     const showcaseHalo = this.add.ellipse(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 18, 235, 245, 0xdff5ee, 0.92).setStrokeStyle(2, FRESH.BLUE, 0.36);
     this.pauseShowcase = this.add.image(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 24, TEX.PLANT_BEIJIXING).setOrigin(0.5);
     this.pauseShowcaseBaseY = GAME_HEIGHT / 2 - 24;
     this.pauseShowcaseName = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 + 104, '', { fontFamily: 'Microsoft YaHei', fontSize: '22px', color: '#42506d', fontStyle: 'bold' }).setOrigin(0.5);
-    this.pauseShowcaseRole = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 + 133, '', { fontFamily: 'Microsoft YaHei', fontSize: '13px', color: '#3d8ea5' }).setOrigin(0.5);
-    const resumeButton = this.makeButton(GAME_WIDTH / 2, GAME_HEIGHT / 2 + 168, '继续游戏', () => this.togglePause(), 211);
-    const retryButton = this.makeButton(GAME_WIDTH / 2 - 112, GAME_HEIGHT / 2 + 220, '重新开始本关', () => this.restartCurrentLevel(), 211);
-    const menuButton = this.makeButton(GAME_WIDTH / 2 + 112, GAME_HEIGHT / 2 + 220, '返回主页面', () => this.returnToMenu(), 211);
-    this.pauseOverlay = this.add.container(0, 0, [pauseShade, pauseCard, pauseTitle, pauseHint, showcaseHalo, this.pauseShowcase, this.pauseShowcaseName, this.pauseShowcaseRole, resumeButton, retryButton, menuButton]).setDepth(210).setVisible(false);
+    const iconY = GAME_HEIGHT / 2 + 160;
+    const retryIcon = this.makePauseIcon(GAME_WIDTH / 2 - 124, iconY, '↻', '重新开始', () => this.restartCurrentLevel(), false);
+    const resumeIcon = this.makePauseIcon(GAME_WIDTH / 2, iconY, '▶', '继续', () => this.togglePause(), true);
+    const menuIcon = this.makePauseIcon(GAME_WIDTH / 2 + 124, iconY, '⌂', '主界面', () => this.returnToMenu(), false);
+    this.pauseOverlay = this.add.container(0, 0, [pauseShade, pauseCard, pauseTitle, showcaseHalo, this.pauseShowcase, this.pauseShowcaseName, ...retryIcon, ...resumeIcon, ...menuIcon]).setDepth(210).setVisible(false);
+  }
+
+  /** 暂停面板的圆形图标按钮：悬浮时放大并在下方浮出作用提示。 */
+  private makePauseIcon(x: number, y: number, glyph: string, tooltip: string, onTap: () => void, primary: boolean): Phaser.GameObjects.GameObject[] {
+    const bg = this.add.circle(x, y, 34, primary ? 0xe85f91 : 0xffffff, 1)
+      .setStrokeStyle(3, primary ? 0xffffff : FRESH.BLUE, primary ? 0.9 : 0.55)
+      .setInteractive({ useHandCursor: true });
+    const icon = this.add.text(x, y, glyph, {
+      fontFamily: 'Segoe UI Symbol, Microsoft YaHei, Arial', fontSize: '25px',
+      color: primary ? '#ffffff' : '#3d8ea5', fontStyle: 'bold',
+    }).setOrigin(0.5);
+    const tipBg = this.add.rectangle(x, y + 52, tooltip.length * 15 + 22, 30, FRESH.INK, 0.92).setStrokeStyle(1, 0xffffff, 0.3);
+    const tip = this.add.text(x, y + 52, tooltip, { fontFamily: 'Microsoft YaHei', fontSize: '13px', color: '#ffffff' }).setOrigin(0.5);
+    tipBg.setVisible(false); tip.setVisible(false);
+    bg.on('pointerover', () => {
+      bg.setScale(1.12); icon.setScale(1.12);
+      tipBg.setVisible(true); tip.setVisible(true);
+      if (!primary) bg.setFillStyle(0xdff4ef, 1);
+    });
+    bg.on('pointerout', () => {
+      bg.setScale(1); icon.setScale(1);
+      tipBg.setVisible(false); tip.setVisible(false);
+      if (!primary) bg.setFillStyle(0xffffff, 1);
+    });
+    bg.on('pointerdown', onTap);
+    return [bg, icon, tipBg, tip];
   }
 
   private createSeedBank(): void {
@@ -288,7 +312,6 @@ export class GameScene extends Phaser.Scene {
     this.pauseShowcaseBaseScale = Math.min(154 / width, 178 / height);
     this.pauseShowcase.setScale(this.pauseShowcaseBaseScale);
     this.pauseShowcaseName.setText(config.name);
-    this.pauseShowcaseRole.setText(`${config.role} · 点击“继续游戏”返回战场`);
   }
 
   private updatePauseShowcase(time: number): void {
