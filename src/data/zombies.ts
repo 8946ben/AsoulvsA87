@@ -92,7 +92,7 @@ export const ZOMBIES: Record<ZombieType, ZombieConfig> = {
   },
   bucket: {
     type: 'bucket', name: '铁桶 A87', quote: '它们需要这个来保护脑子，呃，如果它们有的话',
-    hp: 720, speed: 10, attackDps: 55, texture: TEX.ZOMBIE_BUCKET,
+    hp: 1080, speed: 10, attackDps: 55, texture: TEX.ZOMBIE_BUCKET,
   },
   pole: {
     type: 'pole', name: '撑杆跳 A87', quote: '据说，它一直有一个去大型体育馆的梦想',

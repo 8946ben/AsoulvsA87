@@ -51,6 +51,8 @@ async function startGame(): Promise<void> {
 
   const game = new Phaser.Game(config);
   installHighResolution(game);
+  // 调试/自动化测试用：暴露游戏实例以便在控制台检查场景状态。
+  (window as unknown as { __game?: Phaser.Game }).__game = game;
 
   // Electron 在最大化、还原或快速拖动窗口时，原生 resize 与父容器布局完成的时机可能不同。
   // 下一帧重新读取父容器，不触碰相机、渲染背板或输入变换，避免画布沿用旧尺寸。

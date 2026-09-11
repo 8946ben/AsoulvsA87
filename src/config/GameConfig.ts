@@ -164,7 +164,7 @@ export const PALETTE = {
 
 export const SUN_RULES = {
   START_SUN: 150,
-  SKY_DROP_INTERVAL: 9000,
+  SKY_DROP_INTERVAL: 8000,
   SKY_DROP_AMOUNT: 25,
   FALL_SPEED: 48,
   LIFETIME: 12000,
@@ -172,4 +172,14 @@ export const SUN_RULES = {
   DROP_MAX_X: GRID.OFFSET_X + GRID.COLS * GRID.CELL_W - 42,
   DROP_MIN_Y: GRID.OFFSET_Y + 52,
   DROP_MAX_Y: GAME_HEIGHT - 48,
+} as const;
+
+/** 波次节奏规则（参考 PVZ 杂交版的提前出波机制）。 */
+export const WAVE_RULES = {
+  /** 当前波出场僵尸的存活血量占比降到该值以下时，允许下一波提前来袭。 */
+  EARLY_NEXT_RATIO: 0.15,
+  /** 上一只僵尸出场后至少静默此时长，才允许提前出波。 */
+  EARLY_NEXT_QUIET_MS: 6000,
+  /** 原计划 3 秒内就要到达的波不再提前。 */
+  EARLY_NEXT_MIN_GAIN_MS: 3000,
 } as const;
