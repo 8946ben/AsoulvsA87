@@ -15,7 +15,8 @@ export const GRID = {
   ROWS: 5,
   CELL_W: 88,
   CELL_H: 104,
-  OFFSET_X: 252,
+  // 草坪右缘 1148，与屏幕右缘留 132px（1.5 格）出怪缓冲，对齐 PVZ 的右侧路面宽度。
+  OFFSET_X: 356,
   OFFSET_Y: 166,
 } as const;
 
@@ -27,8 +28,10 @@ export const PLANT_DISPLAY = {
 } as const;
 
 export const SEEDBANK_HEIGHT = 132;
-export const HOUSE_LINE_X = 196;
-export const LAWNMOWER_X = 218;
+/** 越线判定（游戏失败线），紧贴草坪左缘外侧。 */
+export const HOUSE_LINE_X = 300;
+/** 割草机驻留位，位于越线线与草坪左缘之间。 */
+export const LAWNMOWER_X = 322;
 export const ZOMBIE_SPAWN_X = GAME_WIDTH + 70;
 
 export const TEX = {
