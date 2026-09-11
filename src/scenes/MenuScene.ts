@@ -4,6 +4,7 @@ import { activateDeveloperMode, isDeveloperMode } from '../core/DeveloperMode';
 import { sharpenSceneText, sharpenText } from '../core/TextQuality';
 import { createFreshBackdrop, FRESH } from '../ui/FreshTheme';
 import { CodexScene } from './CodexScene';
+import { BackpackScene } from './BackpackScene';
 
 export class MenuScene extends Phaser.Scene {
   static readonly KEY = 'MenuScene';
@@ -13,7 +14,7 @@ export class MenuScene extends Phaser.Scene {
   constructor() { super(MenuScene.KEY); }
 
   create(): void {
-    this.createBackground(); this.createCast(); this.createTitle(); this.createStartButton(); this.createCodexButton(); this.createDeveloperButton();
+    this.createBackground(); this.createCast(); this.createTitle(); this.createStartButton(); this.createCodexButton(); this.createBackpackButton(); this.createDeveloperButton();
     this.add.text(GAME_WIDTH / 2, GAME_HEIGHT - 30, 'AI辅助创作 · 版权归A-SOUL官方及社区素材原作者所有', { fontFamily: 'Microsoft YaHei', fontSize: '12px', color: '#60758a' }).setOrigin(0.5);
     sharpenSceneText(this);
   }
@@ -72,12 +73,21 @@ export class MenuScene extends Phaser.Scene {
     button.on('pointerdown', () => this.scene.start(CodexScene.KEY));
   }
 
+  private createBackpackButton(): void {
+    const button = this.add.text(GAME_WIDTH / 2, 538, '打开角色背包', {
+      fontFamily: 'Microsoft YaHei', fontSize: '16px', color: '#42506d',
+      backgroundColor: '#fffaf1', padding: { x: 28, y: 11 }, fontStyle: 'bold',
+    }).setOrigin(0.5).setInteractive({ useHandCursor: true }).setDepth(5);
+    button.on('pointerover', () => button.setBackgroundColor('#fcebf2').setScale(1.03));
+    button.on('pointerout', () => button.setBackgroundColor('#fffaf1').setScale(1));
+    button.on('pointerdown', () => this.scene.start(BackpackScene.KEY));
+  }
   private createDeveloperButton(): void {
-    this.developerButton = this.add.text(GAME_WIDTH / 2, 540, '', {
+    this.developerButton = this.add.text(GAME_WIDTH / 2, 594, '', {
       fontFamily: 'Microsoft YaHei', fontSize: '13px', color: '#52667d',
       padding: { x: 20, y: 8 }, fontStyle: 'bold',
     }).setOrigin(0.5).setInteractive({ useHandCursor: true }).setDepth(5);
-    this.developerStatus = this.add.text(GAME_WIDTH / 2, 573, '', {
+    this.developerStatus = this.add.text(GAME_WIDTH / 2, 626, '', {
       fontFamily: 'Microsoft YaHei', fontSize: '11px', color: '#71809a',
     }).setOrigin(0.5);
     this.refreshDeveloperButton();

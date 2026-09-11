@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { GAME_HEIGHT, GAME_WIDTH, GRID, HOUSE_LINE_X, LAWNMOWER_X, PLANT_DISPLAY, SUN_RULES, TEX, WAVE_RULES, ZOMBIE_SPAWN_X } from '../config/GameConfig';
 import { Grid } from '../core/Grid';
 import { addCoins, isTechUnlocked } from '../core/Coins';
+import { awardStardust } from '../core/Collection';
 import { isDeveloperMode } from '../core/DeveloperMode';
 import { completeLevel } from '../core/LevelProgress';
 import { COIN_PER_CLEAR, COIN_PER_INTACT_MOWER } from '../data/techTree';
@@ -795,8 +796,10 @@ export class GameScene extends Phaser.Scene {
       completeLevel(this.level.id);
       const intactMowers = this.mowers.filter(Boolean).length;
       const coinTotal = COIN_PER_CLEAR + COIN_PER_INTACT_MOWER * intactMowers;
+      const stardustEarned = 2 + intactMowers;
       addCoins(coinTotal);
-      coinSummary = `金币 +${coinTotal}（通关 ${COIN_PER_CLEAR} ＋ 完整小车 ${intactMowers}×${COIN_PER_INTACT_MOWER}）`;
+      awardStardust(stardustEarned);
+      coinSummary = `金币 +${coinTotal}（通关 ${COIN_PER_CLEAR} ＋ 完整小车 ${intactMowers}×${COIN_PER_INTACT_MOWER}） · 星愿徽记 +${stardustEarned}`;
     }
     this.gameState = win ? 'win' : 'lose'; this.seedBank.clearSelection(); this.preview?.setVisible(false); this.previewRect.clear();
     const overlay = this.add.rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2, GAME_WIDTH, GAME_HEIGHT, FRESH.INK, 0.45).setDepth(220).setAlpha(0);

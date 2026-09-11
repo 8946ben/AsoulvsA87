@@ -5,6 +5,7 @@ import { AdmissionGate } from './core/AdmissionGate';
 import { BootScene } from './scenes/BootScene';
 import { GameScene } from './scenes/GameScene';
 import { MenuScene } from './scenes/MenuScene';
+import { BackpackScene } from './scenes/BackpackScene';
 import { CodexScene } from './scenes/CodexScene';
 import { LevelSelectScene } from './scenes/LevelSelectScene';
 import { ShopScene } from './scenes/ShopScene';
@@ -36,7 +37,7 @@ const config: Phaser.Types.Core.GameConfig = {
     roundPixels: true,
   },
   scene: [
-    BootScene, MenuScene, ModeSelectScene, ChapterSelectScene, LevelSelectScene, LoadoutScene,
+    BootScene, MenuScene, BackpackScene, ModeSelectScene, ChapterSelectScene, LevelSelectScene, LoadoutScene,
     CodexScene, ShopScene, RogueHubScene, RogueSetupScene, RogueMapScene, RogueRecruitScene,
     RogueEventScene, RogueRewardScene, RogueSummaryScene, GameScene,
   ],

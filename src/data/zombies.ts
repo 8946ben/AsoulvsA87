@@ -53,7 +53,7 @@ export const ZOMBIES: Record<ZombieType, ZombieConfig> = {
   phone: {
     type: 'phone', name: '刷手机 A87', quote: '它们从不错过任何一个热点',
     hp: 480, speed: 10, attackDps: 48, texture: TEX.ZOMBIE_PHONE,
-    accessoryBreakHp: 240, breakTexture: TEX.ZOMBIE_BASIC, enragedSpeedMultiplier: 2.5,
+    accessoryBreakHp: 240, breakTexture: TEX.ZOMBIE_PHONE_ANGRY, enragedSpeedMultiplier: 2.5,
   },
   flag: {
     type: 'flag', name: '旗子 A87', quote: '它们号召大家发起冲锋，但自己走的却很慢',
