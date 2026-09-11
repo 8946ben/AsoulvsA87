@@ -43,7 +43,7 @@ MARK_END = "# <<< asoul-game <<<"
 # 位置说明：插到 443 server 块的 `location /`（proxy_pass 那个）之前，
 # 前缀匹配天然优先于反代规则。缓存策略：index 5 分钟、哈希产物 1 年 immutable、图片 1 天。
 NGINX_SNIPPET = f"""{MARK_BEGIN}
-    # A-SOUL vs A87 网页版（由 scripts/publish-web.py 管理，可整段删除回退）
+    # 枝江舞台保卫战 网页版（由 scripts/publish-web.py 管理，可整段删除回退）
     location = /game {{ return 301 /game/; }}
     location /game/ {{
         root /opt;

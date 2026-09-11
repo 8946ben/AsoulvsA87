@@ -159,7 +159,6 @@ export class GameScene extends Phaser.Scene {
     bg.lineStyle(3, FRESH.CREAM, 0.88); bg.strokeRoundedRect(GRID.OFFSET_X - 11, GRID.OFFSET_Y - 9, GRID.COLS * GRID.CELL_W + 22, GRID.ROWS * GRID.CELL_H + 22, 16);
     bg.lineStyle(2, FRESH.MINT, 0.42); bg.strokeRoundedRect(GRID.OFFSET_X - 7, GRID.OFFSET_Y - 5, GRID.COLS * GRID.CELL_W + 14, GRID.ROWS * GRID.CELL_H + 14, 14);
     this.add.text(28, 166, 'STAGE\nGARDEN', { fontFamily: 'Arial', fontSize: '21px', color: '#3d8ea5', fontStyle: 'bold', align: 'center', lineSpacing: 4 }).setAlpha(0.78).setDepth(-5);
-    this.add.text(1192, 177, 'A87\nENTRY', { fontFamily: 'Arial', fontSize: '18px', color: '#d7557d', fontStyle: 'bold', align: 'center' }).setAlpha(0.72).setDepth(-5);
   }
 
   private createLawn(): void {

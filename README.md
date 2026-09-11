@@ -1,4 +1,4 @@
-# A-SOUL vs A87
+# 枝江舞台保卫战（A-SOUL vs A87）
 
 一款使用 Phaser 3、TypeScript、Vite 和 Electron 制作的 A-SOUL 同人塔防游戏。
 
