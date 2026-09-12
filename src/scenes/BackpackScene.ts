@@ -446,12 +446,12 @@ export class BackpackScene extends Phaser.Scene {
     // 创建遮罩层
     const overlay = this.add.rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2, GAME_WIDTH, GAME_HEIGHT, 0x000000, 0.5);
     const panel = this.add.rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2, 500, 400, 0xfffffb, 0.98).setStrokeStyle(2, 0x4eb3cf, 0.6);
-    const title = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 170, '选择要装配的藏品', {
+    const title = sharpenText(this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 170, '选择要装配的藏品', {
       fontFamily: 'Microsoft YaHei', fontSize: '18px', color: '#42506d', fontStyle: 'bold',
-    }).setOrigin(0.5);
-    const closeBtn = this.add.text(GAME_WIDTH / 2 + 220, GAME_HEIGHT / 2 - 170, '✕', {
+    }).setOrigin(0.5));
+    const closeBtn = sharpenText(this.add.text(GAME_WIDTH / 2 + 220, GAME_HEIGHT / 2 - 170, '✕', {
       fontFamily: 'Arial', fontSize: '20px', color: '#71809a', fontStyle: 'bold',
-    }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+    }).setOrigin(0.5).setInteractive({ useHandCursor: true }));
     closeBtn.on('pointerover', () => closeBtn.setColor('#d7527c'));
     closeBtn.on('pointerout', () => closeBtn.setColor('#71809a'));
     closeBtn.on('pointerdown', () => { overlay.destroy(); panel.destroy(); title.destroy(); closeBtn.destroy(); relicListContainer.destroy(); });
@@ -463,9 +463,9 @@ export class BackpackScene extends Phaser.Scene {
     });
 
     if (ownedRelics.length === 0) {
-      const emptyText = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2, '暂无可用藏品\n请前往「枝江藏品」页或抽卡转盘获取', {
+      const emptyText = sharpenText(this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2, '暂无可用藏品\n请前往「枝江藏品」页或抽卡转盘获取', {
         fontFamily: 'Microsoft YaHei', fontSize: '14px', color: '#9aa8a4', align: 'center',
-      }).setOrigin(0.5);
+      }).setOrigin(0.5));
       relicListContainer.add(emptyText);
     } else {
       ownedRelics.forEach((id, index) => {
@@ -473,12 +473,12 @@ export class BackpackScene extends Phaser.Scene {
         const col = index % 2; const row = Math.floor(index / 2);
         const x = GAME_WIDTH / 2 - 110 + col * 220; const y = GAME_HEIGHT / 2 - 100 + row * 80;
         const itemBg = this.add.rectangle(x, y, 200, 64, 0xe8f5f2, 0.99).setStrokeStyle(2, 0x4eb3cf, 0.4).setInteractive({ useHandCursor: true });
-        const itemText = this.add.text(x, y - 10, `${relic.glyph} ${relic.name}`, {
+        const itemText = sharpenText(this.add.text(x, y - 10, `${relic.glyph} ${relic.name}`, {
           fontFamily: 'Microsoft YaHei', fontSize: '13px', color: '#42506d', fontStyle: 'bold',
-        }).setOrigin(0.5);
-        const itemEffect = this.add.text(x, y + 12, describeRelicEffects(relic.effects)[0] ?? '', {
+        }).setOrigin(0.5));
+        const itemEffect = sharpenText(this.add.text(x, y + 12, describeRelicEffects(relic.effects)[0] ?? '', {
           fontFamily: 'Microsoft YaHei', fontSize: '10px', color: '#71809a',
-        }).setOrigin(0.5);
+        }).setOrigin(0.5));
         itemBg.on('pointerover', () => itemBg.setStrokeStyle(2, 0x4eb3cf, 0.8));
         itemBg.on('pointerout', () => itemBg.setStrokeStyle(2, 0x4eb3cf, 0.4));
         itemBg.on('pointerdown', () => {
