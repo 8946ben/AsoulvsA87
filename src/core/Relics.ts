@@ -13,8 +13,8 @@ const STORAGE_KEY = 'asoul-relic-inventory-v1';
 /** 星愿徽记抽卡定价（答题券抽卡固定消耗 1 张）。 */
 export const RELIC_DRAW_STARDUST_COST = 3;
 
-/** 抽卡时各稀有度的权重：C级最容易出，S级最稀有。 */
-export const RARITY_DRAW_WEIGHT: Record<RelicRarity, number> = { c: 40, b: 30, a: 20, s: 10 };
+/** 抽卡时各稀有度的权重：D级最容易出，S级最稀有。 */
+export const RARITY_DRAW_WEIGHT: Record<RelicRarity, number> = { d: 35, c: 30, b: 20, a: 10, s: 5 };
 
 interface RelicState {
   version: 1;

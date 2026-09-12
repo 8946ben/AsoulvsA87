@@ -23,8 +23,8 @@ export type RelicId =
   | 'keyboard-200'
   | 'xiaomi-keyboard';
 
-/** 藏品品质：C < B < A < S */
-export type RelicRarity = 'c' | 'b' | 'a' | 's';
+/** 藏品品质：D < C < B < A < S */
+export type RelicRarity = 'd' | 'c' | 'b' | 'a' | 's';
 
 export interface RelicEffects {
   /** 每秒回复的生命值。 */
@@ -65,6 +65,7 @@ export interface RelicConfig {
 }
 
 export const RARITY_LABEL: Record<RelicRarity, string> = {
+  d: 'D级',
   c: 'C级',
   b: 'B级',
   a: 'A级',
@@ -72,6 +73,7 @@ export const RARITY_LABEL: Record<RelicRarity, string> = {
 };
 
 export const RARITY_COLOR: Record<RelicRarity, number> = {
+  d: 0x6b7280,
   c: 0x8b9997,
   b: 0x399ec3,
   a: 0x9b72e8,
@@ -171,13 +173,13 @@ export const RELICS: Record<RelicId, RelicConfig> = {
     quote: '贝拉专属：一锅在手，天下我有。',
   },
   'minus-8000-mic': {
-    id: 'minus-8000-mic', name: '-8000麦克风', glyph: '🎙️', rarity: 'c',
+    id: 'minus-8000-mic', name: '-8000麦克风', glyph: '🎙️', rarity: 'd',
     allowedTypes: null,
     effects: { damageMultiplier: 1.3, costMultiplier: 1.3 },
     quote: '声音大，代价也大。',
   },
   'keyboard-20': {
-    id: 'keyboard-20', name: '20块的键盘', glyph: '⌨️', rarity: 'c',
+    id: 'keyboard-20', name: '20块的键盘', glyph: '⌨️', rarity: 'd',
     allowedTypes: null,
     effects: { hpMultiplier: 1.3, costMultiplier: 1.3 },
     quote: '便宜货，但能用。',
