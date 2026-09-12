@@ -489,7 +489,8 @@ export class BackpackScene extends Phaser.Scene {
         const itemText = sharpenText(this.add.text(x, y - 10, `${relic.glyph} ${relic.name}`, {
           fontFamily: 'Microsoft YaHei', fontSize: '13px', color: '#42506d', fontStyle: 'bold',
         }).setOrigin(0.5));
-        const itemEffect = sharpenText(this.add.text(x, y + 12, describeRelicEffects(relic.effects)[0] ?? '', {
+        const effectDesc = describeRelicEffects(relic.effects).join('，');
+        const itemEffect = sharpenText(this.add.text(x, y + 12, effectDesc, {
           fontFamily: 'Microsoft YaHei', fontSize: '10px', color: '#71809a',
         }).setOrigin(0.5));
         itemBg.on('pointerover', () => itemBg.setStrokeStyle(2, 0x4eb3cf, 0.8));
