@@ -1,10 +1,10 @@
-import { awardStardust, getCollectionRank, isPlantCollected } from './Collection';
+﻿import { awardStardust, getCollectionRank, isPlantCollected } from './Collection';
 import { RELIC_ORDER, RELICS, type RelicConfig, type RelicEffects, type RelicId, type RelicRarity } from '../data/relics';
 import type { PlantType } from '../data/plants';
 import { isDeveloperMode } from './DeveloperMode';
 
 /**
- * 枝江藏品的持有、装配与抽卡状态。
+ * 枝江装备的持有、装配与抽卡状态。
  * 藏品只能通过「抽卡转盘」获得：消耗星愿徽记或答题赢得的抽奖券。
  * 装配关系为「藏品 → 角色」的单向映射：一件藏品同一时间只能交给一名角色，
  * 一名角色同一时间也只能持有一件藏品（装配新藏品会自动归还原有藏品） */

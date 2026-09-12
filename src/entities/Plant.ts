@@ -1,4 +1,4 @@
-import Phaser from 'phaser';
+﻿import Phaser from 'phaser';
 import { GRID, PLANT_DISPLAY, TEX } from '../config/GameConfig';
 import { PLANTS, type PlantConfig, type PlantType } from '../data/plants';
 import type { RelicEffects } from '../data/relics';
@@ -28,7 +28,7 @@ export class Plant extends Phaser.GameObjects.Sprite {
   readonly col: number;
   hp: number;
   maxHp: number;
-  /** 背包装配的枝江藏品带来的数值加成；未装配时为 null。 */
+  /** 背包装配的枝江装备带来的数值加成；未装配时为 null。 */
   private readonly relic: RelicEffects | null;
   private attackTimer = 0;
   private produceTimer = 0;

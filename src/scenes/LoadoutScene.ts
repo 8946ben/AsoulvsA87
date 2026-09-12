@@ -30,7 +30,7 @@ export class LoadoutScene extends Phaser.Scene {
   }
 
   create(): void {
-    this.createBackground(); this.createHeader(); this.createPanels(); this.createControls(); this.refresh();
+    this.createBackground(); this.createHeader(); this.createPanels(); this.createControls(); this.createQuickEntries(); this.refresh();
     this.input.keyboard?.on('keydown-ESC', () => this.goBack());
     this.input.keyboard?.on('keydown-ENTER', () => this.startBattle());
     sharpenSceneText(this);
@@ -67,6 +67,26 @@ export class LoadoutScene extends Phaser.Scene {
     this.startButton = this.makeButton(GAME_WIDTH / 2, 667, '开始演出  ENTER', () => this.startBattle(), '#e85f91');
     this.makeButton(1035, 667, '清空', () => { this.selected = []; this.refresh(); }, '#a997e8').setFontSize(14);
     this.makeButton(1165, 667, '推荐阵容', () => { this.selected = this.level.availablePlants.slice(0, MAX_LOADOUT); this.refresh(); }, '#58bd92').setFontSize(14);
+  }
+
+  /** 底部快捷图标入口：图鉴 / 背包 / 转盘 / 商店，与主界面一致。 */
+  private createQuickEntries(): void {
+    const entries: Array<{ glyph: string; label: string; scene: string; color: number }> = [
+      { glyph: '📖', label: '图鉴', scene: 'CodexScene', color: FRESH.BLUE },
+      { glyph: '🎒', label: '背包', scene: 'BackpackScene', color: FRESH.PINK_DARK },
+      { glyph: '🎡', label: '转盘', scene: 'RelicDrawScene', color: FRESH.GOLD },
+      { glyph: '🛒', label: '商店', scene: 'ShopScene', color: FRESH.GREEN },
+    ];
+    entries.forEach((entry, index) => {
+      const x = 205 + index * 80;
+      const chip = this.add.rectangle(x, 651, 48, 48, 0xfffffb, 0.96).setStrokeStyle(2, entry.color, 0.55).setInteractive({ useHandCursor: true }).setDepth(5);
+      const glyph = this.add.text(x, 651, entry.glyph, { fontSize: '20px' }).setOrigin(0.5).setDepth(5);
+      const label = this.add.text(x, 686, entry.label, { fontFamily: 'Microsoft YaHei', fontSize: '10px', color: '#52667d', fontStyle: 'bold' }).setOrigin(0.5).setDepth(5);
+      chip.on('pointerover', () => { chip.setScale(1.08); glyph.setScale(1.08); });
+      chip.on('pointerout', () => { chip.setScale(1); glyph.setScale(1); });
+      chip.on('pointerdown', () => this.scene.start(entry.scene));
+      void label;
+    });
   }
 
   private refresh(): void {

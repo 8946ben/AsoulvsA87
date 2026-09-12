@@ -1,7 +1,7 @@
-import type { PlantType } from './plants';
+﻿import type { PlantType } from './plants';
 
 /**
- * 枝江藏品：可采购、可装配的永久强化道具。
+ * 枝江装备：可采购、可装配的永久强化道具。
  * effects 中的数值由战斗侧（Plant）直接消费，描述文案由 describeRelicEffects 程序化生成，
  * 保证图鉴/背包展示与实际数值不脱节。
  */

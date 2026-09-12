@@ -1,4 +1,4 @@
-import Phaser from 'phaser';
+﻿import Phaser from 'phaser';
 import { GAME_HEIGHT, GAME_WIDTH } from '../config/GameConfig';
 import { sharpenSceneText, sharpenText } from '../core/TextQuality';
 import { CODEX_PLANT_ORDER, PLANTS, type PlantConfig } from '../data/plants';
@@ -20,7 +20,7 @@ const TAB_ORDER: CodexTab[] = ['allies', 'enemies', 'relics'];
 const TAB_COUNT_TEXT: Record<CodexTab, (total: number) => string> = {
   allies: (total) => `我方角色 · ${total} 位（含融合）`,
   enemies: (total) => `已记录敌人 · ${total} 类`,
-  relics: (total) => `枝江藏品 · ${total} 件`,
+  relics: (total) => `枝江装备 · ${total} 件`,
 };
 
 /** 双方单位与藏品资料库：所有内容直接读取当前数据，避免图鉴与实际数值脱节。 */
@@ -67,7 +67,7 @@ export class CodexScene extends Phaser.Scene {
 
     this.tabButtons.allies = this.createTabButton(430, 54, '我方阵容', () => this.switchTab('allies'));
     this.tabButtons.enemies = this.createTabButton(585, 54, '敌方档案', () => this.switchTab('enemies'));
-    this.tabButtons.relics = this.createTabButton(740, 54, '枝江藏品', () => this.switchTab('relics'));
+    this.tabButtons.relics = this.createTabButton(740, 54, '枝江装备', () => this.switchTab('relics'));
     this.add.text(866, 58, 'TAB 切换', { fontFamily: 'Microsoft YaHei', fontSize: '12px', color: '#71809a' });
   }
 

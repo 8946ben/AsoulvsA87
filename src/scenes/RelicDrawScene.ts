@@ -1,4 +1,4 @@
-import Phaser from 'phaser';
+﻿import Phaser from 'phaser';
 import { GAME_HEIGHT, GAME_WIDTH } from '../config/GameConfig';
 import { getStardust, spendStardust } from '../core/Collection';
 import {
@@ -19,7 +19,7 @@ const RARITY_RANK: Record<RelicRarity, number> = { s: 0, a: 1, b: 2, c: 3, d: 4 
 const RARITY_ORDER: RelicRarity[] = ['s', 'a', 'b', 'c', 'd'];
 
 /**
- * 枝江藏品抽卡转盘：放回抽取——每次都从完整奖池按概率随机，
+ * 枝江装备抽卡转盘：放回抽取——每次都从完整奖池按概率随机，
  * 优先消耗答题券，不足时消耗星愿徽记；重复获得的藏品自动兑换星愿徽记。
  * 答题入口也在此场景，QuizScene 结算后返回这里。
  */
@@ -52,7 +52,7 @@ export class RelicDrawScene extends Phaser.Scene {
   }
 
   private createHeader(): void {
-    this.add.text(42, 26, '枝江藏品 · 抽卡转盘', { fontFamily: 'Microsoft YaHei', fontSize: '32px', color: '#42506d', fontStyle: 'bold' });
+    this.add.text(42, 26, '枝江装备 · 抽卡转盘', { fontFamily: 'Microsoft YaHei', fontSize: '32px', color: '#42506d', fontStyle: 'bold' });
     this.add.text(43, 70, 'ZHIJIANG RELIC ROULETTE', { fontFamily: 'Arial', fontSize: '13px', color: '#e85f91', fontStyle: 'bold', letterSpacing: 2 });
     this.add.text(42, 100, '每次抽取优先消耗答题券，不足时消耗 3 ✦；重复藏品自动兑换星愿徽记。', { fontFamily: 'Microsoft YaHei', fontSize: '13px', color: '#60758a' });
     this.stardustText = this.add.text(GAME_WIDTH - 42, 32, '', { fontFamily: 'Microsoft YaHei', fontSize: '15px', color: '#a66b25', fontStyle: 'bold' }).setOrigin(1, 0);

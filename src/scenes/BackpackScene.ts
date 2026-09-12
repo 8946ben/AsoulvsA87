@@ -1,4 +1,4 @@
-import Phaser from 'phaser';
+﻿import Phaser from 'phaser';
 import { GAME_HEIGHT, GAME_WIDTH } from '../config/GameConfig';
 import { ADVANCE_COST, advancePlant, getCollectedPlants, getCollectionRank, getStardust, isAdvanceable, isPlantCollected, revertPlant } from '../core/Collection';
 import { equipRelic, getEquippedRelics, getOwnedRelics, getRelicEffects, getRelicHolder, isRelicOwned, unequipRelic } from '../core/Relics';
@@ -12,7 +12,7 @@ type BackpackTab = 'characters' | 'relics';
 
 /**
  * 明日方舟式的角色背包：分「角色 / 藏品」两个页签。
- * 角色页左侧收录卡、右侧档案立绘与进阶操作；藏品页展示抽卡获得的枝江藏品，
+ * 角色页左侧收录卡、右侧档案立绘与进阶操作；藏品页展示抽卡获得的枝江装备，
  * 点击角色名完成装配，装配后战斗中获得对应数值加成。
  */
 export class BackpackScene extends Phaser.Scene {
@@ -59,12 +59,12 @@ export class BackpackScene extends Phaser.Scene {
   private createHeader(): void {
     this.add.text(42, 28, '角色背包', { fontFamily: 'Microsoft YaHei', fontSize: '35px', color: '#42506d', fontStyle: 'bold' });
     this.subtitleText = this.add.text(43, 76, 'ZHIJIANG OPERATOR ARCHIVE', { fontFamily: 'Arial', fontSize: '13px', color: '#e85f91', fontStyle: 'bold', letterSpacing: 2 });
-    this.add.text(42, 110, '收录角色，采购枝江藏品并为角色装配，使用星愿徽记完成进阶。战斗中始终展示对应的 Q 版模型。', { fontFamily: 'Microsoft YaHei', fontSize: '13px', color: '#60758a' });
+    this.add.text(42, 110, '收录角色，采购枝江装备并为角色装配，使用星愿徽记完成进阶。战斗中始终展示对应的 Q 版模型。', { fontFamily: 'Microsoft YaHei', fontSize: '13px', color: '#60758a' });
     this.countText = this.add.text(GAME_WIDTH - 42, 39, '', { fontFamily: 'Microsoft YaHei', fontSize: '15px', color: '#52667d', fontStyle: 'bold' }).setOrigin(1, 0);
     this.stardustText = this.add.text(GAME_WIDTH - 42, 73, '', { fontFamily: 'Microsoft YaHei', fontSize: '14px', color: '#a66b25', fontStyle: 'bold' }).setOrigin(1, 0);
     const rule = this.add.graphics(); rule.lineStyle(2, FRESH.BLUE, 0.28); rule.beginPath(); rule.moveTo(34, 128); rule.lineTo(GAME_WIDTH - 34, 128); rule.strokePath();
     this.characterTab = this.createTabButton(268, 47, '角色档案', () => this.switchTab('characters'));
-    this.relicTab = this.createTabButton(430, 47, '枝江藏品', () => this.switchTab('relics'));
+    this.relicTab = this.createTabButton(430, 47, '枝江装备', () => this.switchTab('relics'));
     this.add.text(542, 54, 'TAB 切换', { fontFamily: 'Microsoft YaHei', fontSize: '12px', color: '#71809a' });
   }
 
@@ -238,15 +238,17 @@ export class BackpackScene extends Phaser.Scene {
       traitTexts.push(this.add.text(852, 488, '尚未收录，无法进阶。', { fontFamily: 'Microsoft YaHei', fontSize: '12px', color: '#8b9997' }));
     }
 
-    // 装配藏品：方形装备槽位，点击槽位进行装配/卸下。
+    // 装配藏品：方形装备槽位，点击槽位进行装配/卸下；左侧固定「装备」标签。
     const equippedRelics = owned ? getEquippedRelics(type) : [];
     const maxSlots = rank >= 2 ? 2 : 1;
     const slotY = 624;
     const slotSize = 48;
-    const slotSpacing = 60;
-    const slotObjects: Phaser.GameObjects.GameObject[] = [];
+    const slotSpacing = 12;
+    const slotObjects: Phaser.GameObjects.GameObject[] = [this.add.text(852, slotY, '装备', {
+      fontFamily: 'Microsoft YaHei', fontSize: '12px', color: '#71809a', fontStyle: 'bold',
+    }).setOrigin(0, 0.5)];
     for (let i = 0; i < maxSlots; i++) {
-      const slotX = 852 + slotSize / 2 + i * (slotSize + slotSpacing);
+      const slotX = 884 + slotSize / 2 + i * (slotSize + slotSpacing);
       const equipped = equippedRelics[i];
       if (equipped) {
         // 已装备：显示藏品图标，点击卸下
@@ -478,7 +480,7 @@ export class BackpackScene extends Phaser.Scene {
     });
 
     if (ownedRelics.length === 0) {
-      const emptyText = sharpenText(this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2, '暂无可用藏品\n请前往「枝江藏品」页或抽卡转盘获取', {
+      const emptyText = sharpenText(this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2, '暂无可用藏品\n请前往「枝江装备」页或抽卡转盘获取', {
         fontFamily: 'Microsoft YaHei', fontSize: '14px', color: '#9aa8a4', align: 'center',
       }).setOrigin(0.5));
       pickerRoot.add(emptyText);
