@@ -73,7 +73,8 @@ export class GameScene extends Phaser.Scene {
   private pauseShowcaseBaseY = 0;
   private pauseShowcaseBaseScale = 1;
   private shovelMode = false;
-  private shovelButton!: Phaser.GameObjects.Text;
+  private shovelButton!: Phaser.GameObjects.Image;
+  private portalCursorPreview: Phaser.GameObjects.Image | null = null;
   private battleSession: BattleSession = CAMPAIGN_BATTLE;
   private combatModifiers: RogueCombatModifiers = { startingSunBonus: 0, plantHpMultiplier: 1 };
 
@@ -204,12 +205,14 @@ export class GameScene extends Phaser.Scene {
     this.add.text(BAR_X + BAR_W, 66, '◆ 密集波次', { fontFamily: 'Microsoft YaHei', fontSize: '9px', color: '#ff7698', fontStyle: 'bold' }).setOrigin(1, 0.5).setDepth(105);
     this.add.text(BAR_X, 76, this.level.name, { fontFamily: 'Microsoft YaHei', fontSize: '16px', color: '#42506d', fontStyle: 'bold' }).setDepth(105);
     this.add.text(BAR_X, 101, '空格 暂停  ·  ESC 取消', { fontFamily: 'Microsoft YaHei', fontSize: '12px', color: '#71809a' }).setDepth(105);
-    this.shovelButton = sharpenText(this.add.text(1220, 96, '铲子', {
-      fontFamily: 'Microsoft YaHei', fontSize: '13px', color: '#42506d', backgroundColor: '#e5f3ed',
-      padding: { x: 13, y: 8 }, fontStyle: 'bold',
-    })).setOrigin(0.5).setDepth(106).setInteractive({ useHandCursor: true });
-    this.shovelButton.on('pointerover', () => this.shovelButton.setScale(1.04));
-    this.shovelButton.on('pointerout', () => this.shovelButton.setScale(1));
+    this.shovelButton = this.add.image(1220, 96, TEX.RECYCLE_PORTAL)
+      .setDisplaySize(48, 48).setDepth(106).setInteractive({ useHandCursor: true });
+    const portalTip = this.add.text(1220, 126, '传送', {
+      fontFamily: 'Microsoft YaHei', fontSize: '12px', color: '#ffffff', backgroundColor: '#24334d',
+      padding: { x: 8, y: 4 }, fontStyle: 'bold',
+    }).setOrigin(0.5).setDepth(120).setVisible(false);
+    this.shovelButton.on('pointerover', () => { this.shovelButton.setTint(0xbff8ff); portalTip.setVisible(true); });
+    this.shovelButton.on('pointerout', () => { if (!this.shovelMode) this.shovelButton.clearTint(); portalTip.setVisible(false); });
     this.shovelButton.on('pointerdown', () => this.toggleShovelMode());
 
     this.alertText = this.add.text(GAME_WIDTH / 2, 295, '', { fontFamily: 'Microsoft YaHei', fontSize: '39px', color: '#e85f91', fontStyle: 'bold', stroke: '#fffaf1', strokeThickness: 9, align: 'center' }).setOrigin(0.5).setDepth(170).setAlpha(0);
@@ -342,22 +345,40 @@ export class GameScene extends Phaser.Scene {
     this.scene.start('MenuScene');
   }
 
-  private toggleShovelMode(): void {
-    if (this.gameState !== 'playing' || this.isPaused) return;
-    this.setShovelMode(!this.shovelMode);
-  }
-
   private setShovelMode(enabled: boolean): void {
     this.shovelMode = enabled;
     if (enabled) {
       this.seedBank.clearSelection();
       this.preview?.setVisible(false);
-      this.showToast('铲子已拿起：点击要移除的角色', 0xffd46f);
+      const pointer = this.input.activePointer;
+      this.portalCursorPreview?.destroy();
+      this.portalCursorPreview = this.add.image(pointer.worldX, pointer.worldY, TEX.RECYCLE_PORTAL)
+        .setDisplaySize(48, 48).setDepth(90).setAlpha(0.82);
+      this.showToast('传送门已开启：点击要送离的角色', 0x6bd9ff);
+    } else {
+      this.portalCursorPreview?.destroy();
+      this.portalCursorPreview = null;
     }
     this.previewRect?.clear();
-    this.shovelButton?.setText(enabled ? '铲子 ✓' : '铲子').setBackgroundColor(enabled ? '#ffe39a' : '#e5f3ed').setColor(enabled ? '#8d6221' : '#42506d');
+    this.shovelButton?.setTint(enabled ? 0xffdf79 : 0xffffff).setDisplaySize(48, 48);
   }
 
+  private toggleShovelMode(): void {
+    if (this.gameState !== 'playing' || this.isPaused) return;
+    this.setShovelMode(!this.shovelMode);
+  }
+
+  private recyclePlantAt(row: number, col: number): boolean {
+    const plant = this.grid.get(row, col);
+    if (!plant?.active) { this.showToast('这个格子里没有可传送的角色', 0xff738c); return false; }
+    const { x, y } = plant;
+    this.grid.remove(row, col);
+    plant.destroy();
+    const ring = this.add.circle(x, y, 16, 0x6bd9ff, 0.38).setDepth(70);
+    this.tweens.add({ targets: ring, scale: 3.5, alpha: 0, duration: 300, onComplete: () => ring.destroy() });
+    this.showToast('角色已传送离场', 0x6bd9ff);
+    return true;
+  }
   private updateWaves(): void {
     this.tryEarlyNextWave();
     while (this.alerts.length && this.elapsed >= this.alerts[0].time) {
@@ -766,6 +787,7 @@ export class GameScene extends Phaser.Scene {
         if (sun.containsPoint(pointer.worldX, pointer.worldY)) sun.collect();
       }
     }
+    if (this.shovelMode) this.portalCursorPreview?.setPosition(pointer.worldX, pointer.worldY);
     this.updatePreview(pointer);
   }
 
@@ -778,15 +800,8 @@ export class GameScene extends Phaser.Scene {
         if (this.seedBank.selectedType) this.setShovelMode(false);
         return;
       }
-      const plant = this.grid.get(cell.row, cell.col);
-      if (!plant?.active) { this.showToast('这个格子里没有可铲除的角色', 0xff738c); return; }
-      const { x, y } = plant;
-      this.grid.remove(cell.row, cell.col);
-      plant.destroy();
-      const ring = this.add.circle(x, y, 16, 0xffd36b, 0.38).setDepth(70);
-      this.tweens.add({ targets: ring, scale: 3.5, alpha: 0, duration: 300, onComplete: () => ring.destroy() });
+      this.recyclePlantAt(cell.row, cell.col);
       this.setShovelMode(false);
-      this.showToast('角色已移除（不返还应援值）', 0xffd36b);
       return;
     }
     const type = this.seedBank.selectedType; if (!type) return;
