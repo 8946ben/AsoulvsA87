@@ -238,31 +238,29 @@ export class BackpackScene extends Phaser.Scene {
       traitTexts.push(this.add.text(852, 488, '尚未收录，无法进阶。', { fontFamily: 'Microsoft YaHei', fontSize: '12px', color: '#8b9997' }));
     }
 
-    // 装配藏品：装备槽位展示，点击槽位进行装配/卸下。
+    // 装配藏品：方形装备槽位，点击槽位进行装配/卸下。
     const equippedRelics = owned ? getEquippedRelics(type) : [];
     const maxSlots = rank >= 2 ? 2 : 1;
-    const relicLabel = this.add.text(852, 604, `装配藏品（${equippedRelics.length}/${maxSlots}）`, { fontFamily: 'Microsoft YaHei', fontSize: '11px', color: '#71809a', fontStyle: 'bold' });
     const slotY = 624;
-    const slotSpacing = 88;
-    const slotObjects: Phaser.GameObjects.GameObject[] = [relicLabel];
+    const slotSize = 48;
+    const slotSpacing = 60;
+    const slotObjects: Phaser.GameObjects.GameObject[] = [];
     for (let i = 0; i < maxSlots; i++) {
-      const slotX = 852 + i * slotSpacing;
+      const slotX = 852 + slotSize / 2 + i * (slotSize + slotSpacing);
       const equipped = equippedRelics[i];
       if (equipped) {
-        // 已装备：显示藏品图标和名称，点击卸下
-        const slotBg = this.add.rectangle(slotX, slotY, 80, 36, 0xe8f5f2, 0.99).setStrokeStyle(2, 0x4eb3cf, 0.6).setInteractive({ useHandCursor: true });
-        const slotText = this.add.text(slotX, slotY, `${equipped.glyph} ${equipped.name}`, {
-          fontFamily: 'Microsoft YaHei', fontSize: '10px', color: '#348c72', fontStyle: 'bold',
-        }).setOrigin(0.5);
+        // 已装备：显示藏品图标，点击卸下
+        const slotBg = this.add.rectangle(slotX, slotY, slotSize, slotSize, 0xe8f5f2, 0.99).setStrokeStyle(2, 0x4eb3cf, 0.6).setInteractive({ useHandCursor: true });
+        const slotText = this.add.text(slotX, slotY, equipped.glyph, { fontSize: '22px' }).setOrigin(0.5);
         slotBg.on('pointerover', () => slotBg.setStrokeStyle(2, 0x4eb3cf, 0.9));
         slotBg.on('pointerout', () => slotBg.setStrokeStyle(2, 0x4eb3cf, 0.6));
         slotBg.on('pointerdown', () => { unequipRelic(equipped.id); this.refresh(); });
         slotObjects.push(slotBg, slotText);
       } else {
         // 空槽位：显示"+"号，点击打开装配选择
-        const slotBg = this.add.rectangle(slotX, slotY, 80, 36, 0xf5f2ea, 0.72).setStrokeStyle(2, 0xaebbb8, 0.4).setInteractive({ useHandCursor: true });
-        const slotText = this.add.text(slotX, slotY, '+ 装配', {
-          fontFamily: 'Microsoft YaHei', fontSize: '10px', color: '#9aa8a4', fontStyle: 'bold',
+        const slotBg = this.add.rectangle(slotX, slotY, slotSize, slotSize, 0xf5f2ea, 0.72).setStrokeStyle(2, 0xaebbb8, 0.4).setInteractive({ useHandCursor: true });
+        const slotText = this.add.text(slotX, slotY, '+', {
+          fontFamily: 'Microsoft YaHei', fontSize: '20px', color: '#9aa8a4', fontStyle: 'bold',
         }).setOrigin(0.5);
         slotBg.on('pointerover', () => slotBg.setStrokeStyle(2, 0xaebbb8, 0.7));
         slotBg.on('pointerout', () => slotBg.setStrokeStyle(2, 0xaebbb8, 0.4));
@@ -448,7 +446,6 @@ export class BackpackScene extends Phaser.Scene {
           } else if (equipRelic(relicId, type)) {
             this.cameras.main.flash(150, 255, 214, 232, false);
           } else {
-            this.cameras.main.shake(100, 0.004);
             return;
           }
           this.refresh();

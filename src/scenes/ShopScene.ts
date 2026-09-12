@@ -4,7 +4,7 @@ import { getCoins, isTechUnlocked, techRequiresMet, unlockTech } from '../core/C
 import { isDeveloperMode } from '../core/DeveloperMode';
 import { sharpenSceneText, sharpenText } from '../core/TextQuality';
 import { PLANTS } from '../data/plants';
-import { COIN_PER_CLEAR, COIN_PER_INTACT_MOWER, TECH_NODES, type TechNode } from '../data/techTree';
+import { COIN_PER_CLEAR, COIN_PER_INTACT_ALPACA, TECH_NODES, type TechNode } from '../data/techTree';
 import { createFreshBackdrop, FRESH } from '../ui/FreshTheme';
 
 const FORMULAS: Record<string, string> = {
@@ -42,7 +42,7 @@ export class ShopScene extends Phaser.Scene {
     this.add.text(GAME_WIDTH - 42, 34, `金币 ${getCoins()}`, {
       fontFamily: 'Microsoft YaHei', fontSize: '20px', color: '#9b6b22', fontStyle: 'bold',
     }).setOrigin(1, 0);
-    this.add.text(GAME_WIDTH - 42, 66, `通关固定 +${COIN_PER_CLEAR} 金币 · 每保留一辆完整小车 +${COIN_PER_INTACT_MOWER}`, {
+    this.add.text(GAME_WIDTH - 42, 66, `通关固定 +${COIN_PER_CLEAR} 金币 · 每保留一只完整羊驼 +${COIN_PER_INTACT_ALPACA}`, {
       fontFamily: 'Microsoft YaHei', fontSize: '12px', color: '#71809a',
     }).setOrigin(1, 0);
     if (isDeveloperMode()) {

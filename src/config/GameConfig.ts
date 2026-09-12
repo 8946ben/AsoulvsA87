@@ -103,6 +103,8 @@ export const TEX = {
   INJURY_BANDAGE: 'injury_bandage',
   SUN: 'sun',
   LAWNMOWER: 'lawnmower',
+  ALPACA_GUARD: 'alpaca_guard',
+  ALPACA_GUARD_RUN: 'alpaca_guard_run',
   CARD_FRAME: 'card_frame',
 } as const;
 
@@ -150,6 +152,8 @@ export const ASSETS: Record<string, string> = {
   [TEX.ADVANCED_PORTRAIT_XILANAI]: 'images/anime/advanced-xilanai-v1.png',
   [TEX.ADVANCED_PORTRAIT_JIAXINNAITANG]: 'images/anime/advanced-jiaxinnaitang-v1.png',
   [TEX.ADVANCED_PORTRAIT_YIGEHUN]: 'images/anime/advanced-yigehun-v1.png',
+  [TEX.ALPACA_GUARD]: 'images/alpaca-guard-v1.png',
+  [TEX.ALPACA_GUARD_RUN]: 'images/alpaca-guard-run-v1.png',
   [TEX.ZOMBIE_BASIC]: 'images/a87-base-v2.png',
   [TEX.ZOMBIE_PHONE]: 'images/a87-phone-v3.png',
   [TEX.ZOMBIE_PHONE_ANGRY]: 'images/a87-phone-angry-v1.png',

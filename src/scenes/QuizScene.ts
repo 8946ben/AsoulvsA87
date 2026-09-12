@@ -127,7 +127,7 @@ export class QuizScene extends Phaser.Scene {
     const banner = this.add.text(GAME_WIDTH / 2, 596, correct ? bannerText : `${bannerText}　正确答案：${'ABCD'[question.answer]}．${question.options[question.answer]}`, {
       fontFamily: 'Microsoft YaHei', fontSize: '17px', color: bannerColor, backgroundColor: '#fffaf1', padding: { x: 22, y: 10 }, fontStyle: 'bold',
     }).setOrigin(0.5).setDepth(20);
-    if (correct) this.cameras.main.flash(160, 214, 244, 226, false); else this.cameras.main.shake(120, 0.003);
+    if (correct) this.cameras.main.flash(160, 214, 244, 226, false);
 
     this.time.delayedCall(correct ? 850 : 1900, () => {
       banner.destroy();

@@ -5,7 +5,7 @@ import { addCoins, isTechUnlocked } from '../core/Coins';
 import { awardStardust } from '../core/Collection';
 import { isDeveloperMode } from '../core/DeveloperMode';
 import { completeLevel } from '../core/LevelProgress';
-import { COIN_PER_CLEAR, COIN_PER_INTACT_MOWER } from '../data/techTree';
+import { COIN_PER_CLEAR, COIN_PER_INTACT_ALPACA } from '../data/techTree';
 import { sharpenSceneText, sharpenText } from '../core/TextQuality';
 import { getNextLevel, LEVEL_1, type LevelConfig } from '../data/levels';
 import { PLANTS, type PlantType } from '../data/plants';
@@ -40,7 +40,7 @@ export class GameScene extends Phaser.Scene {
   private projectiles: Projectile[] = [];
   private burstProjectiles: BurstProjectile[] = [];
   private suns: Sun[] = [];
-  private mowers: (Phaser.GameObjects.Image | null)[] = [];
+  private alpacas: (Phaser.GameObjects.Image | null)[] = [];
   private sunAmount: number = SUN_RULES.START_SUN;
   private sunText!: Phaser.GameObjects.Text;
   private waveText!: Phaser.GameObjects.Text;
@@ -124,7 +124,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   create(): void {
-    this.resetState(); this.createBackground(); this.createLawn(); this.createMowers();
+    this.resetState(); this.createBackground(); this.createLawn(); this.createAlpacas();
     this.createUI(); this.createSeedBank(); this.buildSpawnSchedule(); this.bindInput();
     this.showToast('选择角色卡，守住枝江舞台！', 0x67e8ff);
     sharpenSceneText(this);
@@ -146,7 +146,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   private resetState(): void {
-    this.grid = new Grid(); this.plants = []; this.zombies = []; this.projectiles = []; this.burstProjectiles = []; this.suns = []; this.mowers = [];
+    this.grid = new Grid(); this.plants = []; this.zombies = []; this.projectiles = []; this.burstProjectiles = []; this.suns = []; this.alpacas = [];
     this.sunAmount = (this.level.startingSun ?? SUN_RULES.START_SUN) + this.combatModifiers.startingSunBonus; this.elapsed = 0; this.skySunTimer = 0; this.spawnSchedule = []; this.spawnIndex = 0;
     this.issuedWave = 0; this.waveHpIssued = 0; this.lastSpawnAt = 0;
     this.alerts = []; this.lastProgress = -1; this.gameState = 'playing'; this.preview = null; this.previewType = null; this.currentWave = 0; this.isPaused = false; this.shovelMode = false;
@@ -174,11 +174,13 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
-  private createMowers(): void {
+  private createAlpacas(): void {
     for (let row = 0; row < GRID.ROWS; row++) {
-      const mower = this.add.image(LAWNMOWER_X, this.grid.rowToY(row) + 28, TEX.LAWNMOWER).setDepth(8 + row * 0.1);
-      this.tweens.add({ targets: mower, x: mower.x + 3, duration: 850 + row * 70, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
-      this.mowers.push(mower);
+      const source = this.textures.get(TEX.ALPACA_GUARD).getSourceImage() as HTMLImageElement | HTMLCanvasElement;
+      const scale = Math.min(58 / source.width, 90 / source.height);
+      const alpaca = this.add.image(LAWNMOWER_X, this.grid.rowToY(row) + 8, TEX.ALPACA_GUARD).setScale(scale).setDepth(8 + row * 0.1);
+      this.tweens.add({ targets: alpaca, y: alpaca.y - 2, duration: 850 + row * 70, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+      this.alpacas.push(alpaca);
     }
   }
 
@@ -536,7 +538,6 @@ export class GameScene extends Phaser.Scene {
       if (!z.targetable || !z.active || z.state === 'dead') continue;
       if (Phaser.Math.Distance.Between(x, y, z.x, z.y) <= radius) { z.takeDamage(damage); if (stunMs) z.stunFor(stunMs); }
     }
-    this.cameras.main.shake(180, 0.007);
   }
 
   /** 3×3 格范围伤害：以 (row, col) 为中心，上下各一行、左右各一列。 */
@@ -548,7 +549,6 @@ export class GameScene extends Phaser.Scene {
       if (Math.abs(z.x - centerX) > GRID.CELL_W * 1.5) continue;
       z.takeDamage(damage); if (stunMs) z.stunFor(stunMs);
     }
-    this.cameras.main.shake(180, 0.007);
   }
 
   /** 化龙换道时发射的穿透射线：命中该行位于其身前的所有植物。 */
@@ -560,7 +560,6 @@ export class GameScene extends Phaser.Scene {
     const width = Math.max(10, fromX - HOUSE_LINE_X);
     const beam = this.add.rectangle(HOUSE_LINE_X + width / 2, y - 6, width, 10, 0xffd76a, 0.8).setDepth(69);
     this.tweens.add({ targets: beam, alpha: 0, scaleY: 2.4, duration: 340, ease: 'Quad.easeOut', onComplete: () => beam.destroy() });
-    this.cameras.main.shake(100, 0.003);
   }
 
   /** 黑化珈乐的穿透法术：紫色法球向四周扩散，范围内的植物受到伤害。 */
@@ -575,7 +574,6 @@ export class GameScene extends Phaser.Scene {
       const bolt = this.add.circle(x + Math.cos(angle) * 30, y + Math.sin(angle) * 30, 5, 0xd9a6ff, 0.95).setDepth(70);
       this.tweens.add({ targets: bolt, x: x + Math.cos(angle) * radius, y: y + Math.sin(angle) * radius, alpha: 0, duration: 380, onComplete: () => bolt.destroy() });
     }
-    this.cameras.main.shake(110, 0.0035);
   }
 
   private freezeAll(durationMs: number): void {
@@ -602,13 +600,16 @@ export class GameScene extends Phaser.Scene {
 
   private onZombieReachHouse(zombie: Zombie): void {
     if (this.gameState !== 'playing') return;
-    const row = zombie.row; const mower = this.mowers[row];
-    if (!mower) { this.gameOver(false); return; }
-    this.mowers[row] = null; this.tweens.killTweensOf(mower);
+    const row = zombie.row; const alpaca = this.alpacas[row];
+    if (!alpaca) { this.gameOver(false); return; }
+    this.alpacas[row] = null; this.tweens.killTweensOf(alpaca);
     for (const z of this.zombies) if (z.active && z.state !== 'dead' && z.row === row && z.x <= LAWNMOWER_X + 65) z.die();
-    this.tweens.add({ targets: mower, x: GAME_WIDTH + 100, angle: 720, duration: 1850, ease: 'Cubic.easeIn', onUpdate: () => {
-      for (const z of this.zombies) if (z.active && z.state !== 'dead' && z.row === row && Math.abs(z.x - mower.x) < 55) z.die();
-    }, onComplete: () => mower.destroy() });
+    const runningSource = this.textures.get(TEX.ALPACA_GUARD_RUN).getSourceImage() as HTMLImageElement | HTMLCanvasElement;
+    const runningScale = Math.min(104 / runningSource.width, 86 / runningSource.height);
+    alpaca.setTexture(TEX.ALPACA_GUARD_RUN).setScale(runningScale).setY(this.grid.rowToY(row) + 16);
+    this.tweens.add({ targets: alpaca, x: GAME_WIDTH + 100, scaleX: runningScale * 1.08, scaleY: runningScale * 0.94, duration: 1850, ease: 'Cubic.easeIn', onUpdate: () => {
+      for (const z of this.zombies) if (z.active && z.state !== 'dead' && z.row === row && Math.abs(z.x - alpaca.x) < 55) z.die();
+    }, onComplete: () => alpaca.destroy() });
   }
 
   private countActivePlants(type: PlantType, minimumRank: 1 | 2 = 1): number {
@@ -762,7 +763,7 @@ export class GameScene extends Phaser.Scene {
     const type = this.seedBank.selectedType; if (!type) return;
     const cell = this.grid.worldToCell(pointer.worldX, pointer.worldY); if (!cell) return;
     if (this.plantAt(cell.row, cell.col, type)) { this.updatePreview(pointer); return; }
-    this.cameras.main.shake(100, 0.0035); this.showToast('这里暂时无法部署', 0xff6585);
+    this.showToast('这里暂时无法部署', 0xff6585);
   }
 
   private showWaveAlert(title: string, huge: boolean): void {
@@ -798,12 +799,12 @@ export class GameScene extends Phaser.Scene {
       }
     } else if (win && !isDeveloperMode()) {
       completeLevel(this.level.id);
-      const intactMowers = this.mowers.filter(Boolean).length;
-      const coinTotal = COIN_PER_CLEAR + COIN_PER_INTACT_MOWER * intactMowers;
-      const stardustEarned = 2 + intactMowers;
+      const intactAlpacas = this.alpacas.filter(Boolean).length;
+      const coinTotal = COIN_PER_CLEAR + COIN_PER_INTACT_ALPACA * intactAlpacas;
+      const stardustEarned = 2 + intactAlpacas;
       addCoins(coinTotal);
       awardStardust(stardustEarned);
-      coinSummary = `金币 +${coinTotal}（通关 ${COIN_PER_CLEAR} ＋ 完整小车 ${intactMowers}×${COIN_PER_INTACT_MOWER}） · 星愿徽记 +${stardustEarned}`;
+      coinSummary = `金币 +${coinTotal}（通关 ${COIN_PER_CLEAR} ＋ 完整羊驼 ${intactAlpacas}×${COIN_PER_INTACT_ALPACA}） · 星愿徽记 +${stardustEarned}`;
     }
     this.gameState = win ? 'win' : 'lose'; this.seedBank.clearSelection(); this.preview?.setVisible(false); this.previewRect.clear();
     const overlay = this.add.rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2, GAME_WIDTH, GAME_HEIGHT, FRESH.INK, 0.45).setDepth(220).setAlpha(0);

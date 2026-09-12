@@ -1,4 +1,4 @@
-import { getCollectionRank, isPlantCollected } from './Collection';
+import { awardStardust, getCollectionRank, isPlantCollected } from './Collection';
 import { RELIC_ORDER, RELICS, type RelicConfig, type RelicEffects, type RelicId, type RelicRarity } from '../data/relics';
 import type { PlantType } from '../data/plants';
 import { isDeveloperMode } from './DeveloperMode';
@@ -13,8 +13,11 @@ const STORAGE_KEY = 'asoul-relic-inventory-v1';
 /** 星愿徽记抽卡定价（答题券抽卡固定消耗 1 张）。 */
 export const RELIC_DRAW_STARDUST_COST = 3;
 
-/** 抽卡时各稀有度的权重：D级最容易出，S级最稀有。 */
-export const RARITY_DRAW_WEIGHT: Record<RelicRarity, number> = { d: 35, c: 30, b: 20, a: 10, s: 5 };
+/** 抽卡各稀有度概率（%）：S 2% / A 8% / B 20% / C 40% / D 30%，合计 100。 */
+export const RARITY_DRAW_WEIGHT: Record<RelicRarity, number> = { s: 2, a: 8, b: 20, c: 40, d: 30 };
+
+/** 重复获得藏品时按稀有度兑换的星愿徽记。 */
+export const RARITY_DUPLICATE_REFUND: Record<RelicRarity, number> = { s: 15, a: 8, b: 4, c: 2, d: 1 };
 
 interface RelicState {
   version: 1;
@@ -26,8 +29,11 @@ interface RelicState {
 
 export interface RelicDrawResult {
   ok: boolean;
-  reason?: 'all-collected';
-  relic?: RelicConfig;
+  relic: RelicConfig;
+  /** true 表示重复获得：不再入库，已自动兑换星愿徽记。 */
+  duplicate: boolean;
+  /** 重复兑换获得的星愿徽记数量。 */
+  refund: number;
 }
 
 function readState(): RelicState {
@@ -86,23 +92,30 @@ export function consumeDrawTicket(): boolean {
   return true;
 }
 
-/** 从未持有的藏品中按稀有度权重随机抽取；全部集齐返回 null。 */
-export function drawRandomRelic(): RelicConfig | null {
-  const owned = new Set(getOwnedRelics());
-  const pool = RELIC_ORDER.filter((id) => !owned.has(id)).map((id) => RELICS[id]);
-  if (pool.length === 0) return null;
-  const totalWeight = pool.reduce((sum, relic) => sum + RARITY_DRAW_WEIGHT[relic.rarity], 0);
+/**
+ * 放回抽取：每次都从完整奖池按稀有度概率随机，奖池永不枯竭。
+ * 每件藏品仅可入库一次；重复获得时自动按稀有度兑换星愿徽记（S15/A8/B4/C2/D1）。
+ */
+export function drawRandomRelic(): RelicDrawResult {
+  const totalWeight = RELIC_ORDER.reduce((sum, id) => sum + RARITY_DRAW_WEIGHT[RELICS[id].rarity], 0);
   let roll = Math.random() * totalWeight;
-  for (const relic of pool) {
-    roll -= RARITY_DRAW_WEIGHT[relic.rarity];
+  let picked = RELICS[RELIC_ORDER[RELIC_ORDER.length - 1]];
+  for (const id of RELIC_ORDER) {
+    roll -= RARITY_DRAW_WEIGHT[RELICS[id].rarity];
     if (roll <= 0) {
-      const state = readState();
-      if (!state.owned.includes(relic.id)) state.owned.push(relic.id);
-      writeState(state);
-      return relic;
+      picked = RELICS[id];
+      break;
     }
   }
-  return pool[pool.length - 1];
+  const state = readState();
+  if (state.owned.includes(picked.id)) {
+    const refund = RARITY_DUPLICATE_REFUND[picked.rarity];
+    awardStardust(refund);
+    return { ok: true, relic: picked, duplicate: true, refund };
+  }
+  state.owned.push(picked.id);
+  writeState(state);
+  return { ok: true, relic: picked, duplicate: false, refund: 0 };
 }
 
 /** 该藏品当前装配在哪名角色身上。 */

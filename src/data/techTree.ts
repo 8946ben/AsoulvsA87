@@ -11,8 +11,8 @@ export interface TechNode {
 
 /** 通关固定金币。 */
 export const COIN_PER_CLEAR = 60;
-/** 每保留一辆完整小车（最终防线）的加成金币。 */
-export const COIN_PER_INTACT_MOWER = 15;
+/** 每保留一只完整羊驼（最终防线）的加成金币。 */
+export const COIN_PER_INTACT_ALPACA = 15;
 
 /** 融合科技树：二重融合 → 三重融合（一个魂需集齐全部二重配方）。 */
 export const TECH_NODES: TechNode[] = [

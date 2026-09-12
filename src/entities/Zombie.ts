@@ -131,7 +131,6 @@ export class Zombie extends Phaser.GameObjects.Sprite {
     if (blocker) {
       if (this.config.crushPlants) {
         blocker.takeDamage(blocker.hp + 1);
-        this.scene.cameras.main.shake(90, 0.0035);
         return;
       }
       if (this.config.canVault && !this.hasVaulted) {
@@ -170,7 +169,6 @@ export class Zombie extends Phaser.GameObjects.Sprite {
       this.direction = 1;
       this.x = GRID.OFFSET_X - 22;
       this.setFlipX(true);
-      this.scene.cameras.main.shake(120, 0.003);
       return;
     }
     if (!this.config.tunneling && this.direction < 0 && leadX <= HOUSE_LINE_X && !this.hasBreached) {
@@ -185,7 +183,6 @@ export class Zombie extends Phaser.GameObjects.Sprite {
     if (!this.accessoryBroken && this.config.accessoryBreakHp !== undefined && this.hp <= this.config.accessoryBreakHp) {
       this.accessoryBroken = true;
       if (this.config.breakTexture) this.setTexture(this.config.breakTexture);
-      this.scene.cameras.main.shake(90, 0.0025);
     }
     this.setTintFill(0xffffff);
     this.scene.time.delayedCall(55, () => { if (this.active && this.stunRemaining <= 0) this.clearTint(); });
