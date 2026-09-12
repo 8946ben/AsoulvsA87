@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { GAME_HEIGHT, GAME_WIDTH } from '../config/GameConfig';
 import { ADVANCE_COST, advancePlant, getCollectedPlants, getCollectionRank, getStardust, isAdvanceable, isPlantCollected, revertPlant } from '../core/Collection';
-import { equipRelic, getEquippedRelic, getOwnedRelics, getRelicHolder, isRelicOwned, unequipRelic } from '../core/Relics';
+import { equipRelic, getEquippedRelics, getOwnedRelics, getRelicHolder, isRelicOwned, unequipRelic } from '../core/Relics';
 import { sharpenSceneText, sharpenText } from '../core/TextQuality';
 import { describeRelicEffects, RARITY_COLOR, RARITY_LABEL, RELICS, RELIC_ORDER, type RelicId } from '../data/relics';
 import { CODEX_PLANT_ORDER, PLANTS, type PlantType } from '../data/plants';
@@ -233,15 +233,38 @@ export class BackpackScene extends Phaser.Scene {
       traitTexts.push(this.add.text(852, 488, '尚未收录，无法进阶。', { fontFamily: 'Microsoft YaHei', fontSize: '12px', color: '#8b9997' }));
     }
 
-    // 装配藏品：只读展示，装配与采购在「枝江藏品」页完成。
-    const equippedRelic = owned ? getEquippedRelic(type) : null;
-    const relicLabel = this.add.text(852, 604, '装配藏品', { fontFamily: 'Microsoft YaHei', fontSize: '11px', color: '#71809a', fontStyle: 'bold' });
-    const relicValue = this.add.text(852, 624, owned
-      ? (equippedRelic ? `${equippedRelic.glyph} ${equippedRelic.name}` : '未装配 · 前往「枝江藏品」页装配')
-      : '收录后可装配藏品', {
-      fontFamily: 'Microsoft YaHei', fontSize: '12px', color: equippedRelic ? '#52667d' : '#9aa8a4',
-      wordWrap: { width: 180, useAdvancedWrap: true },
-    });
+    // 装配藏品：装备槽位展示，点击槽位进行装配/卸下。
+    const equippedRelics = owned ? getEquippedRelics(type) : [];
+    const maxSlots = rank >= 2 ? 2 : 1;
+    const relicLabel = this.add.text(852, 604, `装配藏品（${equippedRelics.length}/${maxSlots}）`, { fontFamily: 'Microsoft YaHei', fontSize: '11px', color: '#71809a', fontStyle: 'bold' });
+    const slotY = 624;
+    const slotSpacing = 88;
+    const slotObjects: Phaser.GameObjects.GameObject[] = [relicLabel];
+    for (let i = 0; i < maxSlots; i++) {
+      const slotX = 852 + i * slotSpacing;
+      const equipped = equippedRelics[i];
+      if (equipped) {
+        // 已装备：显示藏品图标和名称，点击卸下
+        const slotBg = this.add.rectangle(slotX, slotY, 80, 36, 0xe8f5f2, 0.99).setStrokeStyle(2, 0x4eb3cf, 0.6).setInteractive({ useHandCursor: true });
+        const slotText = this.add.text(slotX, slotY, `${equipped.glyph} ${equipped.name}`, {
+          fontFamily: 'Microsoft YaHei', fontSize: '10px', color: '#348c72', fontStyle: 'bold',
+        }).setOrigin(0.5);
+        slotBg.on('pointerover', () => slotBg.setStrokeStyle(2, 0x4eb3cf, 0.9));
+        slotBg.on('pointerout', () => slotBg.setStrokeStyle(2, 0x4eb3cf, 0.6));
+        slotBg.on('pointerdown', () => { unequipRelic(equipped.id); this.refresh(); });
+        slotObjects.push(slotBg, slotText);
+      } else {
+        // 空槽位：显示"+"号，点击打开装配选择
+        const slotBg = this.add.rectangle(slotX, slotY, 80, 36, 0xf5f2ea, 0.72).setStrokeStyle(2, 0xaebbb8, 0.4).setInteractive({ useHandCursor: true });
+        const slotText = this.add.text(slotX, slotY, '+ 装配', {
+          fontFamily: 'Microsoft YaHei', fontSize: '10px', color: '#9aa8a4', fontStyle: 'bold',
+        }).setOrigin(0.5);
+        slotBg.on('pointerover', () => slotBg.setStrokeStyle(2, 0xaebbb8, 0.7));
+        slotBg.on('pointerout', () => slotBg.setStrokeStyle(2, 0xaebbb8, 0.4));
+        slotBg.on('pointerdown', () => { this.showRelicPicker(type); });
+        slotObjects.push(slotBg, slotText);
+      }
+    }
 
     let advance: Phaser.GameObjects.Text | null = null;
     if (!owned) {
@@ -265,7 +288,7 @@ export class BackpackScene extends Phaser.Scene {
         advance.on('pointerdown', () => this.tryAdvance(type));
       }
     }
-    const details: Phaser.GameObjects.GameObject[] = [modelTag, code, title, role, line, description, quote, stats, progressTitle, ...traitTexts, relicLabel, relicValue];
+    const details: Phaser.GameObjects.GameObject[] = [modelTag, code, title, role, line, description, quote, stats, progressTitle, ...traitTexts, ...slotObjects];
     if (advance) details.push(advance);
     this.detailLayer.add(details);
   }
@@ -418,10 +441,60 @@ export class BackpackScene extends Phaser.Scene {
     return chips;
   }
 
+  /** 显示藏品选择器：列出所有已持有且可装配给当前角色的藏品。 */
+  private showRelicPicker(type: PlantType): void {
+    // 创建遮罩层
+    const overlay = this.add.rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2, GAME_WIDTH, GAME_HEIGHT, 0x000000, 0.5);
+    const panel = this.add.rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2, 500, 400, 0xfffffb, 0.98).setStrokeStyle(2, 0x4eb3cf, 0.6);
+    const title = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 170, '选择要装配的藏品', {
+      fontFamily: 'Microsoft YaHei', fontSize: '18px', color: '#42506d', fontStyle: 'bold',
+    }).setOrigin(0.5);
+    const closeBtn = this.add.text(GAME_WIDTH / 2 + 220, GAME_HEIGHT / 2 - 170, '✕', {
+      fontFamily: 'Arial', fontSize: '20px', color: '#71809a', fontStyle: 'bold',
+    }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+    closeBtn.on('pointerover', () => closeBtn.setColor('#d7527c'));
+    closeBtn.on('pointerout', () => closeBtn.setColor('#71809a'));
+    closeBtn.on('pointerdown', () => { overlay.destroy(); panel.destroy(); title.destroy(); closeBtn.destroy(); relicListContainer.destroy(); });
+
+    const relicListContainer = this.add.container(0, 0);
+    const ownedRelics = getOwnedRelics().filter((id) => {
+      const relic = RELICS[id];
+      return !relic.allowedTypes || relic.allowedTypes.includes(type);
+    });
+
+    if (ownedRelics.length === 0) {
+      const emptyText = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2, '暂无可用藏品\n请前往「枝江藏品」页或抽卡转盘获取', {
+        fontFamily: 'Microsoft YaHei', fontSize: '14px', color: '#9aa8a4', align: 'center',
+      }).setOrigin(0.5);
+      relicListContainer.add(emptyText);
+    } else {
+      ownedRelics.forEach((id, index) => {
+        const relic = RELICS[id];
+        const col = index % 2; const row = Math.floor(index / 2);
+        const x = GAME_WIDTH / 2 - 110 + col * 220; const y = GAME_HEIGHT / 2 - 100 + row * 80;
+        const itemBg = this.add.rectangle(x, y, 200, 64, 0xe8f5f2, 0.99).setStrokeStyle(2, 0x4eb3cf, 0.4).setInteractive({ useHandCursor: true });
+        const itemText = this.add.text(x, y - 10, `${relic.glyph} ${relic.name}`, {
+          fontFamily: 'Microsoft YaHei', fontSize: '13px', color: '#42506d', fontStyle: 'bold',
+        }).setOrigin(0.5);
+        const itemEffect = this.add.text(x, y + 12, describeRelicEffects(relic.effects)[0] ?? '', {
+          fontFamily: 'Microsoft YaHei', fontSize: '10px', color: '#71809a',
+        }).setOrigin(0.5);
+        itemBg.on('pointerover', () => itemBg.setStrokeStyle(2, 0x4eb3cf, 0.8));
+        itemBg.on('pointerout', () => itemBg.setStrokeStyle(2, 0x4eb3cf, 0.4));
+        itemBg.on('pointerdown', () => {
+          if (equipRelic(id, type)) {
+            overlay.destroy(); panel.destroy(); title.destroy(); closeBtn.destroy(); relicListContainer.destroy();
+            this.refresh();
+          }
+        });
+        relicListContainer.add([itemBg, itemText, itemEffect]);
+      });
+    }
+  }
+
   private tryAdvance(type: PlantType): void {
     const result = advancePlant(type);
     if (!result.ok && result.reason === 'insufficient-stardust') {
-      this.cameras.main.shake(100, 0.004);
       this.stardustText.setColor('#d7527c').setText(`星愿徽记不足 · 还需 ${ADVANCE_COST - result.stardust}`);
       this.time.delayedCall(1150, () => this.refresh());
       return;

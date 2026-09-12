@@ -1,4 +1,4 @@
-import { isPlantCollected } from './Collection';
+import { getCollectionRank, isPlantCollected } from './Collection';
 import { RELIC_ORDER, RELICS, type RelicConfig, type RelicEffects, type RelicId, type RelicRarity } from '../data/relics';
 import type { PlantType } from '../data/plants';
 import { isDeveloperMode } from './DeveloperMode';
@@ -111,25 +111,35 @@ export function getRelicHolder(id: RelicId): PlantType | null {
   return holder ?? null;
 }
 
-/** 角色当前装配的藏品配置；未装配返回 null。战斗侧经 getRelicEffects 消费同一份数据。 */
-export function getEquippedRelic(type: PlantType): RelicConfig | null {
+/** 角色当前装配的全部藏品（Ⅰ阶1件、Ⅱ阶2件）；未装配返回空数组。战斗侧经 getRelicEffects 消费同一份数据。 */
+export function getEquippedRelics(type: PlantType): RelicConfig[] {
   const { equipped } = readState();
+  const result: RelicConfig[] = [];
   for (const id of Object.keys(equipped) as RelicId[]) {
-    if (equipped[id] === type) return RELICS[id] ?? null;
+    if (equipped[id] === type) result.push(RELICS[id]);
   }
-  return null;
+  return result;
 }
 
-/** 战斗侧入口：返回该角色由藏品带来的数值加成。 */
+/** 角色当前装配的第一件藏品配置（兼容旧接口）；未装配返回 null。 */
+export function getEquippedRelic(type: PlantType): RelicConfig | null {
+  return getEquippedRelics(type)[0] ?? null;
+}
+
+/** 战斗侧入口：返回该角色由藏品带来的数值加成（多藏品叠加）。 */
 export function getRelicEffects(type: PlantType): RelicEffects | null {
-  return getEquippedRelic(type)?.effects ?? null;
-}
-
-/** 归还角色身上的任意藏品（内用）。 */
-function unequipFrom(state: RelicState, type: PlantType): void {
-  for (const id of Object.keys(state.equipped) as RelicId[]) {
-    if (state.equipped[id] === type) delete state.equipped[id];
+  const relics = getEquippedRelics(type);
+  if (relics.length === 0) return null;
+  const merged: RelicEffects = {};
+  for (const relic of relics) {
+    const e = relic.effects;
+    if (e.hpRegenPerSec) merged.hpRegenPerSec = (merged.hpRegenPerSec ?? 0) + e.hpRegenPerSec;
+    if (e.hpMultiplier) merged.hpMultiplier = (merged.hpMultiplier ?? 1) * e.hpMultiplier;
+    if (e.damageMultiplier) merged.damageMultiplier = (merged.damageMultiplier ?? 1) * e.damageMultiplier;
+    if (e.attackSpeedMultiplier) merged.attackSpeedMultiplier = (merged.attackSpeedMultiplier ?? 1) * e.attackSpeedMultiplier;
+    if (e.produceBonus) merged.produceBonus = (merged.produceBonus ?? 0) + e.produceBonus;
   }
+  return merged;
 }
 
 export function unequipRelic(id: RelicId): void {
@@ -146,7 +156,12 @@ export function equipRelic(id: RelicId, type: PlantType): boolean {
   if (config.allowedTypes && !config.allowedTypes.includes(type)) return false;
   if (!isPlantCollected(type)) return false;
   const state = readState();
-  unequipFrom(state, type);
+  // 若该角色已装配此藏品，直接成功（幂等）
+  if (state.equipped[id] === type) return true;
+  // 检查角色当前装配数量是否已达上限（Ⅰ阶1件、Ⅱ阶2件）
+  const currentCount = Object.values(state.equipped).filter((t) => t === type).length;
+  const maxSlots = getCollectionRank(type) >= 2 ? 2 : 1;
+  if (currentCount >= maxSlots) return false;
   state.equipped[id] = type;
   writeState(state);
   return true;
