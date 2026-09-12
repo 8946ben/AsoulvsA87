@@ -57,9 +57,10 @@ export class GameScene extends Phaser.Scene {
   private alerts: WaveAlert[] = [];
   /** 最近一批已出场僵尸所属的波次号。 */
   private issuedWave = 0;
-  /** 当前波出场僵尸的最大生命总和，用于计算提前出波阈值。 */
+  /** 当前波出场僵尸（含召唤物）的最大生命总和，用于计算提前出波阈值。 */
   private waveHpIssued = 0;
-  private lastSpawnAt = 0;
+  /** 当前波开始时间，用于波龄判定。 */
+  private waveStartedAt = 0;
   private lastProgress = -1;
   private gameState: GameState = 'playing';
   private preview: Phaser.GameObjects.Sprite | null = null;
@@ -150,7 +151,7 @@ export class GameScene extends Phaser.Scene {
   private resetState(): void {
     this.grid = new Grid(); this.plants = []; this.zombies = []; this.projectiles = []; this.burstProjectiles = []; this.suns = []; this.alpacas = [];
     this.sunAmount = (this.level.startingSun ?? SUN_RULES.START_SUN) + this.combatModifiers.startingSunBonus; this.elapsed = 0; this.skySunTimer = 0; this.spawnSchedule = []; this.spawnIndex = 0;
-    this.issuedWave = 0; this.waveHpIssued = 0; this.lastSpawnAt = 0;
+    this.issuedWave = 0; this.waveHpIssued = 0; this.waveStartedAt = 0;
     this.alerts = []; this.lastProgress = -1; this.gameState = 'playing'; this.preview = null; this.previewType = null; this.currentWave = 0; this.isPaused = false; this.shovelMode = false;
     this.time.paused = false;
   }
@@ -364,33 +365,39 @@ export class GameScene extends Phaser.Scene {
     }
     while (this.spawnIndex < this.spawnSchedule.length && this.elapsed >= this.spawnSchedule[this.spawnIndex].time) {
       const task = this.spawnSchedule[this.spawnIndex++]; this.currentWave = task.wave;
-      if (task.wave > this.issuedWave) { this.issuedWave = task.wave; this.waveHpIssued = 0; }
-      this.issueSpawn(task.type, task.row);
+      if (task.wave > this.issuedWave) { this.issuedWave = task.wave; this.waveHpIssued = 0; this.waveStartedAt = this.elapsed; }
+      this.spawnZombie(task.type, task.row, ZOMBIE_SPAWN_X, task.wave);
     }
   }
 
-  private issueSpawn(type: ZombieType, row: number): void {
-    this.spawnZombie(type, row);
-    // 波次血量统计与实际生成一致：计入关卡生命加成，保证提前出波的 15% 判定准确。
-    this.waveHpIssued += Math.round(ZOMBIES[type].hp * (this.level.zombieModifiers?.hpMultiplier ?? 1));
-    this.lastSpawnAt = this.elapsed;
-  }
-
   /**
-   * 提前出波：当前波出场僵尸的存活血量占比降到阈值以下且场上已短暂静默时，
-   * 把下一波整体提前到当前时刻，避免清完场干等（参考 PVZ 杂交版节奏）。
+   * 提前出波（对齐 PVZ 杂交版 WaveManager 的三条件，满足其一即把下一波整体提前）：
+   * - 本波存活血量占比 < 10%：无视波龄立即提前；
+   * - 占比 < 15% 且本波已持续 10 秒；
+   * - 场上已无存活敌人且本波已持续 10 秒。
+   * 占比按「当前波出怪（含召唤物）」单独统计，上一波漏怪不影响判定。
    */
   private tryEarlyNextWave(): void {
     if (this.spawnIndex >= this.spawnSchedule.length) return;
     const next = this.spawnSchedule[this.spawnIndex];
     if (next.wave <= this.issuedWave || this.issuedWave === 0) return;
-    if (next.time - this.elapsed < WAVE_RULES.EARLY_NEXT_MIN_GAIN_MS) return;
-    if (this.elapsed - this.lastSpawnAt < WAVE_RULES.EARLY_NEXT_QUIET_MS) return;
-    const aliveHp = this.zombies.reduce((sum, z) => (z.active && z.state !== 'dead') ? sum + z.hp : sum, 0);
-    if (this.waveHpIssued <= 0 || aliveHp / this.waveHpIssued > WAVE_RULES.EARLY_NEXT_RATIO) return;
+    if (this.waveHpIssued <= 0) return;
 
-    const waveStart = next.time;
-    const delta = waveStart - this.elapsed;
+    let aliveCount = 0;
+    let aliveHp = 0;
+    for (const z of this.zombies) {
+      if (!z.active || z.state === 'dead') continue;
+      aliveCount++;
+      if (z.spawnWave === this.issuedWave) aliveHp += z.hp;
+    }
+    const ratio = aliveHp / this.waveHpIssued;
+    const mature = this.elapsed - this.waveStartedAt >= WAVE_RULES.MIN_WAVE_AGE_MS;
+    const due = ratio < WAVE_RULES.INSTANT_RATIO
+      || (mature && ratio < WAVE_RULES.EARLY_RATIO)
+      || (mature && aliveCount === 0);
+    if (!due) return;
+
+    const delta = next.time - this.elapsed;
     for (const task of this.spawnSchedule) if (task.wave >= next.wave) task.time -= delta;
     for (const alert of this.alerts) if (alert.wave >= next.wave) alert.time -= delta;
     this.showToast('舞台压力骤减，下一波提前来袭！', 0xff8e6f);
@@ -447,8 +454,10 @@ export class GameScene extends Phaser.Scene {
     if (this.spawnIndex >= this.spawnSchedule.length && this.zombies.every((z) => !z.active || z.state === 'dead')) this.gameOver(true);
   }
 
-  private spawnZombie(type: ZombieType, row: number, x = ZOMBIE_SPAWN_X): void {
-    const zombie = new Zombie(this, x, this.grid.rowToY(row) - 4, type, row, this.level.zombieModifiers); this.zombies.push(zombie);
+  private spawnZombie(type: ZombieType, row: number, x = ZOMBIE_SPAWN_X, wave = this.issuedWave): void {
+    const zombie = new Zombie(this, x, this.grid.rowToY(row) - 4, type, row, this.level.zombieModifiers, wave); this.zombies.push(zombie);
+    // 计划怪与召唤物都计入当前波血量池，供提前出波判定使用（与杂交版一致）。
+    if (wave === this.issuedWave) this.waveHpIssued += zombie.maxHp;
     if (ZOMBIES[type].boss) this.showBossBanner(ZOMBIES[type]);
   }
 

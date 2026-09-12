@@ -23,6 +23,8 @@ export class Zombie extends Phaser.GameObjects.Sprite {
   row: number;
   hp: number;
   readonly maxHp: number;
+  /** 出场所属波次号（1 起），用于按波统计存活血量占比；召唤物继承召唤者的波次。 */
+  readonly spawnWave: number;
   state: ZombieState = 'walking';
   private target: Plant | null = null;
   private readonly hpBar: Phaser.GameObjects.Graphics;
@@ -47,7 +49,7 @@ export class Zombie extends Phaser.GameObjects.Sprite {
   private direction: -1 | 1 = -1;
   private surfaced = false;
 
-  constructor(scene: Phaser.Scene, x: number, y: number, type: ZombieType, row: number, stats?: ZombieStatModifiers) {
+  constructor(scene: Phaser.Scene, x: number, y: number, type: ZombieType, row: number, stats?: ZombieStatModifiers, spawnWave = 0) {
     const config = ZOMBIES[type];
     const spawnY = y - (config.flying ? 34 : 0);
     super(scene, x, spawnY, config.texture);
@@ -55,7 +57,7 @@ export class Zombie extends Phaser.GameObjects.Sprite {
     this.speed = config.speed * (stats?.speedMultiplier ?? 1);
     this.attackDps = config.attackDps * (stats?.damageMultiplier ?? 1);
     const hp = Math.round(config.hp * (stats?.hpMultiplier ?? 1));
-    this.config = config; this.row = row; this.hp = hp; this.maxHp = hp;
+    this.config = config; this.row = row; this.hp = hp; this.maxHp = hp; this.spawnWave = spawnWave;
     this.baseY = spawnY;
     this.crawlPhase = Phaser.Math.FloatBetween(0, Math.PI * 2);
     this.charging = Boolean(config.charge);

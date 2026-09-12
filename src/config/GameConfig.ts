@@ -236,12 +236,12 @@ export const SUN_RULES = {
   DROP_MAX_Y: GAME_HEIGHT - 48,
 } as const;
 
-/** 波次节奏规则（参考 PVZ 杂交版的提前出波机制）。 */
+/** 波次节奏规则（对齐 PVZ 杂交版 WaveManager：三条件提前出波）。 */
 export const WAVE_RULES = {
-  /** 当前波出场僵尸的存活血量占比降到该值以下时，允许下一波提前来袭。 */
-  EARLY_NEXT_RATIO: 0.15,
-  /** 上一只僵尸出场后至少静默此时长，才允许提前出波。 */
-  EARLY_NEXT_QUIET_MS: 6000,
-  /** 原计划 3 秒内就要到达的波不再提前。 */
-  EARLY_NEXT_MIN_GAIN_MS: 3000,
+  /** 波次最小年龄：当前波开始未满该时长时不提前出波（杂交版 spawnColStart=10s）。 */
+  MIN_WAVE_AGE_MS: 10000,
+  /** 本波存活血量占比低于该值且波次已满龄时，下一波提前来袭（杂交版 maxNextWaveHealthPercentage=0.15）。 */
+  EARLY_RATIO: 0.15,
+  /** 本波存活血量占比低于该值时无视波龄立即提前（杂交版 minNextWaveHealthPercentage=0.10）。 */
+  INSTANT_RATIO: 0.10,
 } as const;
