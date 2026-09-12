@@ -1,18 +1,19 @@
 import Phaser from 'phaser';
 import { GAME_HEIGHT, GAME_WIDTH } from '../config/GameConfig';
 import { ADVANCE_COST, advancePlant, getCollectedPlants, getCollectionRank, getStardust, isAdvanceable, isPlantCollected, revertPlant } from '../core/Collection';
-import { equipRelic, getEquippedRelic, getOwnedRelics, getRelicHolder, isRelicOwned, purchaseRelic, unequipRelic } from '../core/Relics';
+import { equipRelic, getEquippedRelic, getOwnedRelics, getRelicHolder, isRelicOwned, unequipRelic } from '../core/Relics';
 import { sharpenSceneText, sharpenText } from '../core/TextQuality';
 import { describeRelicEffects, RARITY_COLOR, RARITY_LABEL, RELICS, RELIC_ORDER, type RelicId } from '../data/relics';
 import { CODEX_PLANT_ORDER, PLANTS, type PlantType } from '../data/plants';
+import { RelicDrawScene } from './RelicDrawScene';
 import { createFreshBackdrop, FRESH } from '../ui/FreshTheme';
 
 type BackpackTab = 'characters' | 'relics';
 
 /**
  * 明日方舟式的角色背包：分「角色 / 藏品」两个页签。
- * 角色页左侧收录卡、右侧档案立绘与进阶操作；藏品页用星愿徽记采购枝江藏品，
- * 并点击角色名完成装配，装配后战斗中获得对应数值加成。
+ * 角色页左侧收录卡、右侧档案立绘与进阶操作；藏品页展示抽卡获得的枝江藏品，
+ * 点击角色名完成装配，装配后战斗中获得对应数值加成。
  */
 export class BackpackScene extends Phaser.Scene {
   static readonly KEY = 'BackpackScene';
@@ -30,6 +31,10 @@ export class BackpackScene extends Phaser.Scene {
   private relicTab!: Phaser.GameObjects.Text;
 
   constructor() { super(BackpackScene.KEY); }
+
+  init(data: { tab?: BackpackTab }): void {
+    this.activeTab = data?.tab === 'relics' ? 'relics' : 'characters';
+  }
 
   create(): void {
     createFreshBackdrop(this, 'paper');
@@ -87,7 +92,7 @@ export class BackpackScene extends Phaser.Scene {
     back.on('pointerover', () => back.setBackgroundColor('#d1eeee'));
     back.on('pointerout', () => back.setBackgroundColor('#e6f5f4'));
     back.on('pointerdown', () => this.scene.start('MenuScene'));
-    this.add.text(GAME_WIDTH - 42, GAME_HEIGHT - 28, '主线通关收录角色 · 战役结算获得星愿徽记，用于进阶与采购藏品', {
+    this.add.text(GAME_WIDTH - 42, GAME_HEIGHT - 28, '战役结算获得星愿徽记用于进阶 · 藏品经答题与抽卡转盘获得', {
       fontFamily: 'Microsoft YaHei', fontSize: '12px', color: '#71809a',
     }).setOrigin(1, 1);
   }
@@ -328,7 +333,7 @@ export class BackpackScene extends Phaser.Scene {
     const index = RELIC_ORDER.indexOf(relic.id) + 1;
     const code = this.add.text(852, 166, `NO. ${String(index).padStart(2, '0')}`, { fontFamily: 'Arial', fontSize: '12px', color: '#71809a', fontStyle: 'bold' });
     const title = this.add.text(852, 190, relic.name, { fontFamily: 'Microsoft YaHei', fontSize: '30px', color: '#42506d', fontStyle: 'bold' });
-    const meta = this.add.text(854, 240, owned ? `${RARITY_LABEL[relic.rarity]} · 已入库` : `${RARITY_LABEL[relic.rarity]} · 采购价 ${relic.price} ✦`, {
+    const meta = this.add.text(854, 240, owned ? `${RARITY_LABEL[relic.rarity]} · 已入库` : `${RARITY_LABEL[relic.rarity]} · 转盘抽取`, {
       fontFamily: 'Microsoft YaHei', fontSize: '13px', color: owned ? '#348c72' : '#a66b25', fontStyle: 'bold',
     });
     const line = this.add.graphics(); line.lineStyle(2, accent, 0.38); line.beginPath(); line.moveTo(852, 266); line.lineTo(1236, 266); line.strokePath();
@@ -341,18 +346,18 @@ export class BackpackScene extends Phaser.Scene {
 
     const allowTitle = this.add.text(852, effectBottom + 14, '可装配角色', { fontFamily: 'Microsoft YaHei', fontSize: '15px', color: '#42506d', fontStyle: 'bold' });
     const chips = this.createRelicChips(relic.id, effectBottom + 44);
-    const holderHint = this.add.text(852, 624, !owned ? '入库后即可为左侧名单中的角色装配' : holder ? '再次点击持有者的名字可卸下藏品' : '点击角色名即完成装配', {
+    const holderHint = this.add.text(852, 624, !owned ? '通过抽卡转盘获得后即可装配' : holder ? '再次点击持有者的名字可卸下藏品' : '点击角色名即完成装配', {
       fontFamily: 'Microsoft YaHei', fontSize: '11px', color: '#8b9997', wordWrap: { width: 180, useAdvancedWrap: true },
     });
 
     let action: Phaser.GameObjects.Text;
     if (!owned) {
-      action = this.add.text(1124, 640, `入库  ·  ${relic.price} ✦`, {
+      action = this.add.text(1124, 640, '前往抽卡转盘 →', {
         fontFamily: 'Microsoft YaHei', fontSize: '15px', color: '#ffffff', backgroundColor: '#e85f91', padding: { x: 21, y: 11 }, fontStyle: 'bold',
       }).setOrigin(0.5).setInteractive({ useHandCursor: true });
       action.on('pointerover', () => action.setScale(1.035));
       action.on('pointerout', () => action.setScale(1));
-      action.on('pointerdown', () => this.tryPurchase(relic.id));
+      action.on('pointerdown', () => this.scene.start(RelicDrawScene.KEY));
     } else {
       action = this.add.text(1124, 640, holder ? '已装配' : '已入库', {
         fontFamily: 'Microsoft YaHei', fontSize: '15px', color: '#ffffff', backgroundColor: '#aab8b2', padding: { x: 21, y: 11 }, fontStyle: 'bold',
@@ -397,10 +402,11 @@ export class BackpackScene extends Phaser.Scene {
           if (holding) {
             unequipRelic(relicId);
             this.cameras.main.flash(120, 214, 232, 246, false);
-          } else {
-            const result = equipRelic(relicId, type);
-            if (!result.ok) { this.cameras.main.shake(100, 0.004); return; }
+          } else if (equipRelic(relicId, type)) {
             this.cameras.main.flash(150, 255, 214, 232, false);
+          } else {
+            this.cameras.main.shake(100, 0.004);
+            return;
           }
           this.refresh();
         });
@@ -408,19 +414,6 @@ export class BackpackScene extends Phaser.Scene {
       chips.push(chip);
     });
     return chips;
-  }
-
-  private tryPurchase(relicId: RelicId): void {
-    const result = purchaseRelic(relicId);
-    if (!result.ok && result.reason === 'insufficient-stardust') {
-      this.cameras.main.shake(100, 0.004);
-      const price = RELICS[relicId].price;
-      this.stardustText.setColor('#d7527c').setText(`星愿徽记不足 · 还需 ${price - getStardust()}`);
-      this.time.delayedCall(1150, () => this.refresh());
-      return;
-    }
-    if (result.ok) this.cameras.main.flash(150, 255, 214, 232, false);
-    this.refresh();
   }
 
   private tryAdvance(type: PlantType): void {

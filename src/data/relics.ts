@@ -36,8 +36,6 @@ export interface RelicConfig {
   /** 展示用 emoji 图标（无独立图片素材，直接以字形渲染）。 */
   glyph: string;
   rarity: RelicRarity;
-  /** 采购所需星愿徽记。 */
-  price: number;
   /** 可装配角色；null 表示全体角色可装配。 */
   allowedTypes: PlantType[] | null;
   effects: RelicEffects;
@@ -63,49 +61,49 @@ export const RELIC_ORDER: RelicId[] = [
 
 export const RELICS: Record<RelicId, RelicConfig> = {
   'melodious-key': {
-    id: 'melodious-key', name: '好听的钥匙', glyph: '🔑', rarity: 'legend', price: 8,
+    id: 'melodious-key', name: '好听的钥匙', glyph: '🔑', rarity: 'legend',
     allowedTypes: ['beijixing', 'naiqilin', 'jiaxintang'],
     effects: { hpRegenPerSec: 50 },
     quote: '枝江传闻：用这把钥匙轻轻敲敲话筒，会传出好听的歌。',
   },
   'fan-cheerstick': {
-    id: 'fan-cheerstick', name: '单推应援棒', glyph: '🎇', rarity: 'epic', price: 6,
+    id: 'fan-cheerstick', name: '单推应援棒', glyph: '🎇', rarity: 'epic',
     allowedTypes: ['bella', 'diana', 'xingkongtang'],
     effects: { attackSpeedMultiplier: 1.2 },
     quote: '就算只单推一个人，也要全力应援。',
   },
   'sweet-chocolate': {
-    id: 'sweet-chocolate', name: '甜甜巧克力', glyph: '🍫', rarity: 'epic', price: 6,
+    id: 'sweet-chocolate', name: '甜甜巧克力', glyph: '🍫', rarity: 'epic',
     allowedTypes: ['jiaxintang', 'naiqilin', 'jiaxinnaitang'],
     effects: { damageMultiplier: 1.25 },
     quote: '甜甜的，就像台下的大家。',
   },
   'star-mic': {
-    id: 'star-mic', name: '星愿麦克风', glyph: '🎤', rarity: 'epic', price: 5,
+    id: 'star-mic', name: '星愿麦克风', glyph: '🎤', rarity: 'epic',
     allowedTypes: ['eileen', 'gladys', 'fiona', 'xilanai'],
     effects: { damageMultiplier: 1.2 },
     quote: '把大家的星愿，唱给所有人听。',
   },
   'zhijiang-umbrella': {
-    id: 'zhijiang-umbrella', name: '枝江小雨伞', glyph: '☂️', rarity: 'rare', price: 5,
+    id: 'zhijiang-umbrella', name: '枝江小雨伞', glyph: '☂️', rarity: 'rare',
     allowedTypes: ['xiaohainuo', 'beijixing', 'eileen'],
     effects: { hpMultiplier: 1.5 },
     quote: '枝江多阵雨，出门记得带伞。',
   },
   'pixel-console': {
-    id: 'pixel-console', name: '像素游戏机', glyph: '🎮', rarity: 'rare', price: 7,
+    id: 'pixel-console', name: '像素游戏机', glyph: '🎮', rarity: 'rare',
     allowedTypes: null,
     effects: { attackSpeedMultiplier: 1.15, hpMultiplier: 1.25 },
     quote: '枝江游戏厅的最高分纪录，保持者不详。',
   },
   'tour-ticket': {
-    id: 'tour-ticket', name: '巡演纪念票根', glyph: '🎫', rarity: 'rare', price: 7,
+    id: 'tour-ticket', name: '巡演纪念票根', glyph: '🎫', rarity: 'rare',
     allowedTypes: null,
     effects: { hpMultiplier: 1.3, damageMultiplier: 1.1 },
     quote: '第一场枝江巡演的入场凭证，值得永久珍藏。',
   },
   'glowing-jellyfish': {
-    id: 'glowing-jellyfish', name: '应援海月灯', glyph: '🪼', rarity: 'legend', price: 6,
+    id: 'glowing-jellyfish', name: '应援海月灯', glyph: '🪼', rarity: 'legend',
     allowedTypes: ['beijixing', 'xilanai'],
     effects: { produceBonus: 15 },
     quote: '深夜的排练室里，它一直亮着。',

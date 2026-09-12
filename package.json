@@ -11,6 +11,7 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
+    "quiz:sync": "node scripts/sync-quiz.mjs",
     "electron:start": "npm run build && electron .",
     "package:win": "npm run build && powershell -NoProfile -ExecutionPolicy Bypass -File scripts/prepare-portable.ps1 && powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-portable.ps1",
     "portable:win": "npm run package:win && powershell -NoProfile -ExecutionPolicy Bypass -File scripts/package-portable.ps1"

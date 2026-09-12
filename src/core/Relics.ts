@@ -1,29 +1,33 @@
-import { isPlantCollected, spendStardust } from './Collection';
-import { RELIC_ORDER, RELICS, type RelicConfig, type RelicEffects, type RelicId } from '../data/relics';
+import { isPlantCollected } from './Collection';
+import { RELIC_ORDER, RELICS, type RelicConfig, type RelicEffects, type RelicId, type RelicRarity } from '../data/relics';
 import type { PlantType } from '../data/plants';
 import { isDeveloperMode } from './DeveloperMode';
 
 /**
- * 枝江藏品的持有与装配状态。
+ * 枝江藏品的持有、装配与抽卡状态。
+ * 藏品只能通过「抽卡转盘」获得：消耗星愿徽记或答题赢得的抽奖券。
  * 装配关系为「藏品 → 角色」的单向映射：一件藏品同一时间只能交给一名角色，
- * 一名角色同一时间也只能持有一件藏品（装配新藏品会自动归还原有藏品）。
- */
+ * 一名角色同一时间也只能持有一件藏品（装配新藏品会自动归还原有藏品） */
 const STORAGE_KEY = 'asoul-relic-inventory-v1';
+
+/** 星愿徽记抽卡定价（答题券抽卡固定消耗 1 张）。 */
+export const RELIC_DRAW_STARDUST_COST = 3;
+
+/** 抽卡时各稀有度的权重：稀有更容易出，传说最稀有。 */
+export const RARITY_DRAW_WEIGHT: Record<RelicRarity, number> = { rare: 45, epic: 35, legend: 20 };
 
 interface RelicState {
   version: 1;
   owned: RelicId[];
   equipped: Partial<Record<RelicId, PlantType>>;
+  /** 答题奖励的抽奖券张数。 */
+  tickets: number;
 }
 
-export interface RelicPurchaseResult {
+export interface RelicDrawResult {
   ok: boolean;
-  reason?: 'already-owned' | 'insufficient-stardust';
-}
-
-export interface RelicEquipResult {
-  ok: boolean;
-  reason?: 'not-owned' | 'not-allowed' | 'character-locked';
+  reason?: 'all-collected';
+  relic?: RelicConfig;
 }
 
 function readState(): RelicState {
@@ -32,10 +36,15 @@ function readState(): RelicState {
     if (raw) {
       const parsed = JSON.parse(raw) as Partial<RelicState>;
       const owned = Array.isArray(parsed.owned) ? parsed.owned.filter((id) => id in RELICS) : [];
-      return { version: 1, owned, equipped: parsed.equipped ?? {} };
+      return {
+        version: 1,
+        owned,
+        equipped: parsed.equipped ?? {},
+        tickets: Math.max(0, Math.floor(parsed.tickets ?? 0)),
+      };
     }
   } catch { /* 无痕模式或损坏存档时回退为本局默认值。 */ }
-  return { version: 1, owned: [], equipped: {} };
+  return { version: 1, owned: [], equipped: {}, tickets: 0 };
 }
 
 function writeState(state: RelicState): void {
@@ -52,14 +61,48 @@ export function isRelicOwned(id: RelicId): boolean {
   return getOwnedRelics().includes(id);
 }
 
-/** 购买藏品：扣减星愿徽记（由 Collection 统一管理余额）。 */
-export function purchaseRelic(id: RelicId): RelicPurchaseResult {
-  if (isRelicOwned(id)) return { ok: false, reason: 'already-owned' };
-  if (!spendStardust(RELICS[id].price)) return { ok: false, reason: 'insufficient-stardust' };
+/** 答题抽奖券余额；开发者模式不限量。 */
+export function getDrawTickets(): number {
+  if (isDeveloperMode()) return Number.POSITIVE_INFINITY;
+  return readState().tickets;
+}
+
+/** 答题达标（10 题对 8 题）后的奖励入账。 */
+export function awardDrawTickets(amount: number): number {
   const state = readState();
-  if (!state.owned.includes(id)) state.owned.push(id);
+  state.tickets += Math.max(0, Math.floor(amount));
   writeState(state);
-  return { ok: true };
+  return state.tickets;
+}
+
+/** 消耗一张答题抽奖券；不足返回 false。 */
+export function consumeDrawTicket(): boolean {
+  const state = readState();
+  if (!isDeveloperMode()) {
+    if (state.tickets < 1) return false;
+    state.tickets -= 1;
+    writeState(state);
+  }
+  return true;
+}
+
+/** 从未持有的藏品中按稀有度权重随机抽取；全部集齐返回 null。 */
+export function drawRandomRelic(): RelicConfig | null {
+  const owned = new Set(getOwnedRelics());
+  const pool = RELIC_ORDER.filter((id) => !owned.has(id)).map((id) => RELICS[id]);
+  if (pool.length === 0) return null;
+  const totalWeight = pool.reduce((sum, relic) => sum + RARITY_DRAW_WEIGHT[relic.rarity], 0);
+  let roll = Math.random() * totalWeight;
+  for (const relic of pool) {
+    roll -= RARITY_DRAW_WEIGHT[relic.rarity];
+    if (roll <= 0) {
+      const state = readState();
+      if (!state.owned.includes(relic.id)) state.owned.push(relic.id);
+      writeState(state);
+      return relic;
+    }
+  }
+  return pool[pool.length - 1];
 }
 
 /** 该藏品当前装配在哪名角色身上。 */
@@ -97,14 +140,14 @@ export function unequipRelic(id: RelicId): void {
 }
 
 /** 装配藏品：要求已持有、角色已收录且在可装配名单内；角色原持有藏品会被自动归还。 */
-export function equipRelic(id: RelicId, type: PlantType): RelicEquipResult {
-  if (!isRelicOwned(id)) return { ok: false, reason: 'not-owned' };
+export function equipRelic(id: RelicId, type: PlantType): boolean {
+  if (!isRelicOwned(id)) return false;
   const config = RELICS[id];
-  if (config.allowedTypes && !config.allowedTypes.includes(type)) return { ok: false, reason: 'not-allowed' };
-  if (!isPlantCollected(type)) return { ok: false, reason: 'character-locked' };
+  if (config.allowedTypes && !config.allowedTypes.includes(type)) return false;
+  if (!isPlantCollected(type)) return false;
   const state = readState();
   unequipFrom(state, type);
   state.equipped[id] = type;
   writeState(state);
-  return { ok: true };
+  return true;
 }

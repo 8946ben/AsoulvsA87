@@ -245,7 +245,7 @@ export class CodexScene extends Phaser.Scene {
     const imageX = -w / 2 + 61; const textX = -w / 2 + 116; const textW = w - 132;
     const glyph = this.add.text(imageX, 14, config.glyph, { fontSize: '46px' }).setOrigin(0.5);
     const name = this.add.text(textX, -86, config.name, { fontFamily: 'Microsoft YaHei', fontSize: '19px', color: '#42506d', fontStyle: 'bold' });
-    const rarity = this.add.text(textX, -56, `${RARITY_LABEL[config.rarity]}藏品 · ${config.price} ✦`, { fontFamily: 'Microsoft YaHei', fontSize: '11px', color: Phaser.Display.Color.IntegerToColor(accent).rgba, fontStyle: 'bold' });
+    const rarity = this.add.text(textX, -56, `${RARITY_LABEL[config.rarity]}藏品 · 转盘抽取`, { fontFamily: 'Microsoft YaHei', fontSize: '11px', color: Phaser.Display.Color.IntegerToColor(accent).rgba, fontStyle: 'bold' });
     const effect = this.add.text(textX, -32, describeRelicEffects(config.effects).join('，'), { fontFamily: 'Microsoft YaHei', fontSize: '11px', color: '#5e6f84', wordWrap: { width: textW, useAdvancedWrap: true }, lineSpacing: 3 });
     const allowed = this.add.text(textX, 8, config.allowedTypes ? `仅 ${config.allowedTypes.map((t) => PLANTS[t].name).join('、')} 可装配` : '全体角色可装配', { fontFamily: 'Microsoft YaHei', fontSize: '10px', color: '#a66b25', fontStyle: 'bold', wordWrap: { width: textW, useAdvancedWrap: true }, lineSpacing: 2 });
     const quote = this.add.text(textX, 52, `“${config.quote}”`, { fontFamily: 'Microsoft YaHei', fontSize: '10px', color: '#8a94a6', fontStyle: 'italic', wordWrap: { width: textW, useAdvancedWrap: true }, lineSpacing: 2 });
