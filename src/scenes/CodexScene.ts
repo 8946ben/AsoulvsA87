@@ -5,6 +5,7 @@ import { CODEX_PLANT_ORDER, PLANTS, type PlantConfig } from '../data/plants';
 import { describeRelicEffects, RARITY_COLOR, RARITY_LABEL, RELICS, RELIC_ORDER, type RelicConfig } from '../data/relics';
 import { ZOMBIES, type ZombieConfig, type ZombieType } from '../data/zombies';
 import { createFreshBackdrop, FRESH } from '../ui/FreshTheme';
+import { createRelicIcon } from '../ui/RelicIcon';
 import { type ParentSceneData, returnToParentScene } from '../core/SceneNavigation';
 
 type CodexTab = 'allies' | 'enemies' | 'relics';
@@ -247,7 +248,7 @@ export class CodexScene extends Phaser.Scene {
     const strip = this.add.rectangle(-w / 2 + 4, 0, 7, h - 10, accent, 0.86);
     const number = this.add.text(-w / 2 + 18, -h / 2 + 12, `R-${String(index).padStart(2, '0')}`, { fontFamily: 'Arial', fontSize: '11px', color: '#71809a', fontStyle: 'bold' });
     const imageX = -w / 2 + 61; const textX = -w / 2 + 116; const textW = w - 132;
-    const glyph = this.add.text(imageX, 14, config.glyph, { fontSize: '46px' }).setOrigin(0.5);
+    const glyph = createRelicIcon(this, config, imageX, 14, 82, 82);
     const name = this.add.text(textX, -86, config.name, { fontFamily: 'Microsoft YaHei', fontSize: '19px', color: '#42506d', fontStyle: 'bold' });
     const rarity = this.add.text(textX, -56, `${RARITY_LABEL[config.rarity]}藏品 · 转盘抽取`, { fontFamily: 'Microsoft YaHei', fontSize: '11px', color: Phaser.Display.Color.IntegerToColor(accent).rgba, fontStyle: 'bold' });
     const effect = this.add.text(textX, -32, describeRelicEffects(config.effects).join('，'), { fontFamily: 'Microsoft YaHei', fontSize: '11px', color: '#5e6f84', wordWrap: { width: textW, useAdvancedWrap: true }, lineSpacing: 3 });

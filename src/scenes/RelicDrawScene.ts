@@ -9,6 +9,7 @@ import {
 import { describeRelicEffects, RARITY_COLOR, RARITY_LABEL, RELICS, RELIC_ORDER, type RelicConfig, type RelicRarity } from '../data/relics';
 import { sharpenSceneText, sharpenText } from '../core/TextQuality';
 import { createFreshBackdrop, FRESH } from '../ui/FreshTheme';
+import { createRelicIcon } from '../ui/RelicIcon';
 import { type ParentSceneData, openChildScene, returnToParentScene } from '../core/SceneNavigation';
 
 const WHEEL_X = 400;
@@ -82,8 +83,8 @@ export class RelicDrawScene extends Phaser.Scene {
       sectors.slice(0, 0, WHEEL_R, start, end, false); sectors.strokePath();
       const mid = start + Phaser.Math.DegToRad(SECTOR / 2);
       const glyphR = WHEEL_R * 0.72;
-      const glyph = this.add.text(Math.cos(mid) * glyphR, Math.sin(mid) * glyphR, relic.glyph, { fontSize: '24px' })
-        .setOrigin(0.5).setRotation(mid + Math.PI / 2);
+      const glyph = createRelicIcon(this, relic, Math.cos(mid) * glyphR, Math.sin(mid) * glyphR, 26, 26)
+        .setRotation(mid + Math.PI / 2);
       this.wheel.add(glyph);
     });
     // 外圈与中心装饰。
@@ -130,7 +131,7 @@ export class RelicDrawScene extends Phaser.Scene {
       const relic = RELICS[id];
       const col = index % 2; const row = Math.floor(index / 2);
       const x = 722 + col * 258; const y = 518 + row * 21;
-      const glyph = this.add.text(x + 8, y, relic.glyph, { fontSize: '12px' }).setOrigin(0, 0.5);
+      const glyph = createRelicIcon(this, relic, x + 8, y, 16, 16);
       const name = this.add.text(x + 30, y, relic.name, { fontFamily: 'Microsoft YaHei', fontSize: '11px', color: '#42506d' }).setOrigin(0, 0.5);
       const mark = this.add.text(x + 246, y, '', { fontFamily: 'Microsoft YaHei', fontSize: '10px', fontStyle: 'bold' }).setOrigin(1, 0.5);
       this.poolMarks.push(mark);
@@ -233,7 +234,7 @@ export class RelicDrawScene extends Phaser.Scene {
       const title = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 118,
         result.duplicate ? `重复藏品 · 兑换 +${result.refund} ✦` : '恭喜收录新藏品！',
         { fontFamily: 'Microsoft YaHei', fontSize: '15px', color: result.duplicate ? '#a66b25' : '#e85f91', fontStyle: 'bold' }).setOrigin(0.5);
-      const glyph = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 34, result.relic.glyph, { fontSize: '64px' }).setOrigin(0.5);
+      const glyph = createRelicIcon(this, result.relic, GAME_WIDTH / 2, GAME_HEIGHT / 2 - 34, 88, 88);
       const name = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 + 42, `${result.relic.name} · ${RARITY_LABEL[result.relic.rarity]}`, { fontFamily: 'Microsoft YaHei', fontSize: '24px', color: '#42506d', fontStyle: 'bold' }).setOrigin(0.5);
       const effect = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 + 82, describeRelicEffects(result.relic.effects).join('，'), { fontFamily: 'Microsoft YaHei', fontSize: '13px', color: '#52667d', wordWrap: { width: 400, useAdvancedWrap: true } }).setOrigin(0.5);
       const confirm = this.makeAction('收下！', '#e85f91', () => { this.resultLayer.removeAll(true); this.refresh(); });
@@ -249,7 +250,7 @@ export class RelicDrawScene extends Phaser.Scene {
         const x = GAME_WIDTH / 2 - 262 + col * 272; const y = GAME_HEIGHT / 2 - 148 + row * 62;
         const accent = RARITY_COLOR[result.relic.rarity];
         const chip = this.add.rectangle(x, y - 12, 44, 16, accent, 0.16);
-        const glyph = this.add.text(x + 6, y - 12, result.relic.glyph, { fontSize: '18px' }).setOrigin(0, 0.5);
+        const glyph = createRelicIcon(this, result.relic, x + 12, y - 12, 22, 22);
         const name = this.add.text(x + 32, y - 12, result.relic.name, { fontFamily: 'Microsoft YaHei', fontSize: '13px', color: '#42506d', fontStyle: 'bold' }).setOrigin(0, 0.5);
         const rarity = this.add.text(x + 132, y - 12, RARITY_LABEL[result.relic.rarity], { fontFamily: 'Microsoft YaHei', fontSize: '10px', color: Phaser.Display.Color.IntegerToColor(accent).rgba, fontStyle: 'bold' }).setOrigin(0, 0.5);
         const outcome = result.duplicate

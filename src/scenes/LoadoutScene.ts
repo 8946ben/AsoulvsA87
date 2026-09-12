@@ -6,6 +6,7 @@ import { PLANTS, type PlantType } from '../data/plants';
 import { ZOMBIES } from '../data/zombies';
 import { GameScene } from './GameScene';
 import { createFreshBackdrop, FRESH } from '../ui/FreshTheme';
+import { createRelicIcon } from '../ui/RelicIcon';
 import { CAMPAIGN_BATTLE, getUnitRank, type BattleSession } from '../core/BattleSession';
 import { getEquippedRelics } from '../core/Relics';
 import { openChildScene } from '../core/SceneNavigation';
@@ -144,10 +145,8 @@ export class LoadoutScene extends Phaser.Scene {
       // 已装配的枝江装备：在卡片右下角展示图标，便于战前确认。
       const equippedRelics = getEquippedRelics(type);
       if (equippedRelics.length > 0) {
-        const relicGlyphs = this.add.text(x + 104, y + 44, equippedRelics.map((relic) => relic.glyph).join(' '), {
-          fontFamily: 'Microsoft YaHei', fontSize: '14px', color: '#a66b25', fontStyle: 'bold',
-        }).setOrigin(1, 0.5);
-        this.cardLayer.add(relicGlyphs);
+        const relicIcons = equippedRelics.map((relic, index) => createRelicIcon(this, relic, x + 88 + index * 28, y + 44, 24, 24));
+        this.cardLayer.add(relicIcons);
       }
     });
   }

@@ -1,10 +1,38 @@
-﻿import Phaser from 'phaser';
+import Phaser from 'phaser';
 import { GRID, PLANT_DISPLAY, TEX } from '../config/GameConfig';
 import { PLANTS, type PlantConfig, type PlantType } from '../data/plants';
 import type { RelicEffects } from '../data/relics';
 import { getRelicEffects, hasRelicSynergy } from '../core/Relics';
 import type { ProjectileOptions } from './Projectile';
 import type { Zombie } from './Zombie';
+interface VisibleBounds { width: number; height: number; }
+const visibleBoundsCache = new WeakMap<object, VisibleBounds>();
+const DIANA_RAPID_FORM_SPEED = 3;
+
+/** Returns the opaque content size, excluding transparent padding baked into an asset canvas. */
+function getVisibleBounds(source: CanvasImageSource & { width: number; height: number }): VisibleBounds {
+  const cached = visibleBoundsCache.get(source as object);
+  if (cached) return cached;
+  const canvas = document.createElement('canvas');
+  canvas.width = source.width; canvas.height = source.height;
+  const context = canvas.getContext('2d', { willReadFrequently: true });
+  if (!context) return { width: source.width, height: source.height };
+  context.drawImage(source, 0, 0);
+  const { data } = context.getImageData(0, 0, canvas.width, canvas.height);
+  let minX = canvas.width; let minY = canvas.height; let maxX = -1; let maxY = -1;
+  for (let y = 0; y < canvas.height; y += 2) {
+    for (let x = 0; x < canvas.width; x += 2) {
+      if (data[(y * canvas.width + x) * 4 + 3] < 18) continue;
+      minX = Math.min(minX, x); minY = Math.min(minY, y);
+      maxX = Math.max(maxX, x); maxY = Math.max(maxY, y);
+    }
+  }
+  const bounds = maxX < 0
+    ? { width: source.width, height: source.height }
+    : { width: maxX - minX + 1, height: maxY - minY + 1 };
+  visibleBoundsCache.set(source as object, bounds);
+  return bounds;
+}
 
 export interface PlantContext {
   getNearestZombie(row: number, fromX: number): Zombie | null;
@@ -38,6 +66,7 @@ export class Plant extends Phaser.GameObjects.Sprite {
   private transformed = false;
   private resolving = false;
   private synergyEmpowered = false;
+  private dianaRapidForm = false;
   private lastCtx: PlantContext | null = null;
   private readonly baseY: number;
   private readonly hpBar: Phaser.GameObjects.Graphics;
@@ -52,8 +81,9 @@ export class Plant extends Phaser.GameObjects.Sprite {
     super(scene, x, y, config.texture);
     const src = scene.textures.get(config.texture).getSourceImage() as HTMLImageElement;
     const srcW = src?.width || 78; const srcH = src?.height || 94;
-    this.baseScale = Math.min(PLANT_DISPLAY.MAX_W / srcW, PLANT_DISPLAY.MAX_H / srcH);
-    this.dispW = srcW * this.baseScale; this.dispH = srcH * this.baseScale;
+    const bounds = config.fitVisibleBounds && src ? getVisibleBounds(src) : { width: srcW, height: srcH };
+    this.baseScale = Math.min(PLANT_DISPLAY.MAX_W / bounds.width, PLANT_DISPLAY.MAX_H / bounds.height);
+    this.dispW = bounds.width * this.baseScale; this.dispH = bounds.height * this.baseScale;
     this.relic = getRelicEffects(type, extraRelic);
     const maxHp = Math.round(config.hp * (this.relic?.hpMultiplier ?? 1));
     this.config = config; this.rank = rank; this.row = row; this.col = col; this.hp = maxHp; this.maxHp = maxHp;
@@ -78,7 +108,8 @@ export class Plant extends Phaser.GameObjects.Sprite {
     if (regenPerSec > 0 && this.hp < this.maxHp) this.hp = Math.min(this.maxHp, this.hp + (regenPerSec * delta) / 1000);
     this.shadow.setPosition(this.x, this.y + PLANT_DISPLAY.SHADOW_Y);
     this.redrawHpBar();
-    if (!this.resolving) this.angle = Math.sin(time / 360 + this.col * 0.7) * 1.4;
+    if (!this.resolving && !this.dianaRapidForm) this.angle = Math.sin(time / 360 + this.col * 0.7) * 1.4;
+    else if (this.dianaRapidForm) this.setAngle(0);
     this.updateInjuryOverlay();
     const target = ctx.getNearestZombie(this.row, this.x);
 
@@ -126,9 +157,11 @@ export class Plant extends Phaser.GameObjects.Sprite {
           const baseInterval = this.attackIntervalWith(950);
           const distanceRatio = Phaser.Math.Clamp((distance - GRID.CELL_W) / (GRID.CELL_W * 7), 0, 1);
           const speedMultiplier = Phaser.Math.Linear(5, 1, distanceRatio);
+          const totalSpeedMultiplier = speedMultiplier * (this.relic?.attackSpeedMultiplier ?? 1);
+          this.setDianaRapidForm(totalSpeedMultiplier >= DIANA_RAPID_FORM_SPEED);
           const interval = baseInterval / speedMultiplier;
           if (this.attackTimer >= interval) { this.attackTimer = 0; this.fireBurst(ctx); this.recoil(); }
-        }
+        } else this.setDianaRapidForm(false);
         break;
       case 'freeze':
         this.specialTimer += delta;
@@ -402,6 +435,22 @@ export class Plant extends Phaser.GameObjects.Sprite {
     });
   }
 
+
+  /** 嘉然在总攻速达到原基础值 3 倍时切换为趴姿机枪形态。 */
+  private setDianaRapidForm(active: boolean): void {
+    if (active === this.dianaRapidForm) return;
+    this.dianaRapidForm = active;
+    this.scene.tweens.killTweensOf(this);
+    if (!active) {
+      this.setTexture(this.config.texture).setPosition(this.x, this.baseY).setScale(this.baseScale * 0.78).setAlpha(1).setVisible(true).setAngle(0);
+      this.scene.tweens.add({ targets: this, scale: this.baseScale, duration: 180, ease: 'Back.easeOut' });
+      return;
+    }
+    const source = this.scene.textures.get(TEX.PLANT_DIANA_GATLING).getSourceImage() as HTMLImageElement;
+    const scale = Math.min((GRID.CELL_W - 6) / (source?.width || 200), (GRID.CELL_H * 0.78) / (source?.height || 128));
+    this.setTexture(TEX.PLANT_DIANA_GATLING).setPosition(this.x, this.baseY + 14).setScale(scale * 0.78).setAlpha(1).setVisible(true).setAngle(0);
+    this.scene.tweens.add({ targets: this, scale, duration: 180, ease: 'Back.easeOut' });
+  }
   private fire(ctx: PlantContext, options: ProjectileOptions, lobbed: boolean, row = this.row): void {
     const damage = Math.round(this.attackDamage * ctx.getDamageMultiplier(this.config.type));
     ctx.spawnProjectile(this.x + this.dispW * 0.3, this.y - 12, this.config.projectile ?? 'projectile_candy', damage, row, { ...options, lobbed });
@@ -411,7 +460,8 @@ export class Plant extends Phaser.GameObjects.Sprite {
     const damage = Math.round(this.attackDamage * ctx.getDamageMultiplier(this.config.type));
     for (let i = 0; i < count; i++) {
       const offsetX = (i - (count - 1) / 2) * 8;
-      ctx.spawnProjectile(this.x + this.dispW * 0.3 + offsetX, this.y - 12, this.config.projectile ?? 'projectile_candy', damage, this.row, {});
+      const muzzleX = this.dianaRapidForm ? this.x + this.displayWidth * 0.45 : this.x + this.dispW * 0.3;
+      ctx.spawnProjectile(muzzleX + offsetX, this.y - 12, this.config.projectile ?? 'projectile_candy', damage, this.row, {});
     }
   }
   /** 攻击伤害：计入装配藏品的伤害倍率。 */

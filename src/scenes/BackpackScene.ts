@@ -7,6 +7,7 @@ import { describeRelicEffects, RARITY_COLOR, RARITY_LABEL, RELICS, RELIC_ORDER, 
 import { CODEX_PLANT_ORDER, PLANTS, type PlantType } from '../data/plants';
 import { RelicDrawScene } from './RelicDrawScene';
 import { createFreshBackdrop, FRESH } from '../ui/FreshTheme';
+import { createRelicIcon } from '../ui/RelicIcon';
 import { type ParentSceneData, openChildScene, returnToParentScene } from '../core/SceneNavigation';
 
 type BackpackTab = 'characters' | 'relics';
@@ -219,9 +220,14 @@ export class BackpackScene extends Phaser.Scene {
       const relicEffects = getRelicEffects(type);
       const hp = Math.round(config.hp * (relicEffects?.hpMultiplier ?? 1));
       const cost = Math.round(config.cost * (relicEffects?.costMultiplier ?? 1));
-      return `生命  ${hp}     部署应援  ${cost || '融合'}     冷却  ${config.cooldown ? `${(config.cooldown / 1000).toFixed(1)} 秒` : '即时'}`;
+      const line1 = `生命  ${hp}     部署应援  ${cost || '融合'}     冷却  ${config.cooldown ? `${(config.cooldown / 1000).toFixed(1)} 秒` : '即时'}`;
+      if (!config.attackDamage) return line1;
+      // 攻击力与攻速同样计入装备加成（武器/愿望券等会修改这两项）。
+      const attack = Math.round(config.attackDamage * (relicEffects?.damageMultiplier ?? 1));
+      const interval = ((config.attackInterval ?? 0) / (relicEffects?.attackSpeedMultiplier ?? 1) / 1000).toFixed(1);
+      return `${line1}\n攻击  ${attack}     攻速  ${interval} 秒/发`;
     })() : '档案数据将在收录后开放', {
-      fontFamily: 'Microsoft YaHei', fontSize: '13px', color: owned ? '#a66b25' : '#8b9997', fontStyle: 'bold',
+      fontFamily: 'Microsoft YaHei', fontSize: '13px', color: owned ? '#a66b25' : '#8b9997', fontStyle: 'bold', lineSpacing: 6,
     });
     const advanceable = owned && isAdvanceable(type);
     const progressTitle = this.add.text(852, 458, owned ? (advanceable ? '进阶档案' : '角色特性') : '进阶档案', { fontFamily: 'Microsoft YaHei', fontSize: '15px', color: '#42506d', fontStyle: 'bold' });
@@ -262,7 +268,7 @@ export class BackpackScene extends Phaser.Scene {
       if (equipped) {
         // 已装备：显示藏品图标，悬停展示名词信息，点击卸下
         const slotBg = this.add.rectangle(slotX, slotY, slotSize, slotSize, 0xe8f5f2, 0.99).setStrokeStyle(2, 0x4eb3cf, 0.6).setInteractive({ useHandCursor: true });
-        const slotText = this.add.text(slotX, slotY, equipped.glyph, { fontSize: '22px' }).setOrigin(0.5);
+        const slotText = createRelicIcon(this, equipped, slotX, slotY, 34, 34);
         const effectLines = describeRelicEffects(equipped.effects).join('，') || '无数值效果';
         const tooltipLines = [`${equipped.glyph} ${equipped.name} · ${RARITY_LABEL[equipped.rarity]}`, effectLines];
         if (equipped.specialEffect) tooltipLines.push(equipped.specialEffect);
@@ -337,7 +343,7 @@ export class BackpackScene extends Phaser.Scene {
       const card = this.add.rectangle(x, y, cardW, cardH, fill, owned ? 0.99 : 0.86)
         .setStrokeStyle(2, owned ? accent : 0xaebbb8, selected ? 0.95 : 0.3)
         .setInteractive({ useHandCursor: true });
-      const glyph = this.add.text(x - 56, y, relic.glyph, { fontSize: '17px' }).setOrigin(0.5).setAlpha(owned ? 1 : 0.3);
+      const glyph = createRelicIcon(this, relic, x - 56, y, 24, 24, owned ? 1 : 0.3);
       const name = this.add.text(x - 27, y - 9, relic.name, {
         fontFamily: 'Microsoft YaHei', fontSize: '11px', color: '#42506d', fontStyle: 'bold',
       });
@@ -365,7 +371,7 @@ export class BackpackScene extends Phaser.Scene {
     backing.fillRoundedRect(630 - 122, 372 - 122, 244, 244, 18);
     backing.lineStyle(2, owned ? accent : 0xaebbb8, owned ? 0.55 : 0.3);
     backing.strokeRoundedRect(630 - 122, 372 - 122, 244, 244, 18);
-    const glyph = this.add.text(630, 366, relic.glyph, { fontSize: '100px' }).setOrigin(0.5).setAlpha(owned ? 1 : 0.35);
+    const glyph = createRelicIcon(this, relic, 630, 366, 180, 180, owned ? 1 : 0.35);
     const rarityTag = this.add.text(630, 524, `${RARITY_LABEL[relic.rarity]}藏品`, {
       fontFamily: 'Microsoft YaHei', fontSize: '12px', color: owned ? '#ffffff' : '#f5f2ea', backgroundColor: accentText, padding: { x: 14, y: 7 }, fontStyle: 'bold',
     }).setOrigin(0.5).setAlpha(owned ? 1 : 0.45);
@@ -529,7 +535,8 @@ export class BackpackScene extends Phaser.Scene {
         const col = index % 2; const row = Math.floor(index / 2);
         const x = GAME_WIDTH / 2 - 110 + col * 220; const y = GAME_HEIGHT / 2 - 112 + row * 76;
         const itemBg = this.add.rectangle(x, y, 200, 64, 0xe8f5f2, 0.99).setStrokeStyle(2, 0x4eb3cf, 0.4).setInteractive({ useHandCursor: true });
-        const itemText = sharpenText(this.add.text(x, y - 10, `${relic.glyph} ${relic.name}`, {
+        const itemIcon = createRelicIcon(this, relic, x - 80, y - 10, 22, 22);
+        const itemText = sharpenText(this.add.text(x + 14, y - 10, relic.name, {
           fontFamily: 'Microsoft YaHei', fontSize: '13px', color: '#42506d', fontStyle: 'bold',
         }).setOrigin(0.5));
         const effectDesc = describeRelicEffects(relic.effects).join('，');
@@ -544,7 +551,7 @@ export class BackpackScene extends Phaser.Scene {
             this.refresh();
           }
         });
-        pageContainer.add([itemBg, itemText, itemEffect]);
+        pageContainer.add([itemBg, itemIcon, itemText, itemEffect]);
       });
       pageText.setText(`${page + 1} / ${pageCount}`);
       prevBtn.setAlpha(page > 0 ? 1 : 0.3);

@@ -1,5 +1,6 @@
 import { PLANTS } from './plants';
 import type { PlantType } from './plants';
+import { TEX } from '../config/GameConfig';
 
 /**
  * 枝江装备：可通过抽卡转盘获取、可装配给角色的永久强化道具。
@@ -65,6 +66,8 @@ export interface RelicConfig {
   name: string;
   /** 展示用 emoji 图标（无独立图片素材，直接以字形渲染）。 */
   glyph: string;
+  /** 已绘制的装备图标纹理；未配置时沿用 emoji 字形。 */
+  iconTexture?: string;
   rarity: RelicRarity;
   /** 可装配角色；null 表示全体角色可装配。 */
   allowedTypes: PlantType[] | null;
@@ -109,7 +112,7 @@ export const RELIC_ORDER: RelicId[] = [
 
 export const RELICS: Record<RelicId, RelicConfig> = {
   'bella-hammer': {
-    id: 'bella-hammer', name: '一个锤子', glyph: '🔨', rarity: 's',
+    id: 'bella-hammer', name: '一个锤子', glyph: '🔨', iconTexture: TEX.RELIC_BELLA_HAMMER, rarity: 's',
     allowedTypes: ['bella'],
     effects: { damageMultiplier: 1.0 },
     specialEffect: '贝拉爆炸伤害范围扩大1.5倍',
@@ -121,7 +124,7 @@ export const RELICS: Record<RelicId, RelicConfig> = {
     quote: '贝拉专属：一锤定音。',
   },
   'bella-pan': {
-    id: 'bella-pan', name: '一口平底锅', glyph: '🍳', rarity: 's',
+    id: 'bella-pan', name: '一口平底锅', glyph: '🍳', iconTexture: TEX.RELIC_BELLA_PAN, rarity: 's',
     allowedTypes: ['bella'],
     effects: { damageMultiplier: 1.0 },
     specialEffect: '贝拉爆炸伤害提升150%',
@@ -133,7 +136,7 @@ export const RELICS: Record<RelicId, RelicConfig> = {
     quote: '贝拉专属：一锅在手，天下我有。',
   },
   'joker-small': {
-    id: 'joker-small', name: '扑克牌-小王', glyph: '🃏', rarity: 's',
+    id: 'joker-small', name: '扑克牌-小王', glyph: '🃏', iconTexture: TEX.RELIC_JOKER_SMALL, rarity: 's',
     allowedTypes: ['diana'],
     effects: { attackSpeedMultiplier: 1.5 },
     synergy: {
@@ -144,7 +147,7 @@ export const RELICS: Record<RelicId, RelicConfig> = {
     quote: '小王在手，节奏我有。',
   },
   'joker-big': {
-    id: 'joker-big', name: '扑克牌-大王', glyph: '🎴', rarity: 's',
+    id: 'joker-big', name: '扑克牌-大王', glyph: '🎴', iconTexture: TEX.RELIC_JOKER_BIG, rarity: 's',
     allowedTypes: ['diana'],
     effects: { damageMultiplier: 2.0 },
     synergy: {
@@ -155,7 +158,7 @@ export const RELICS: Record<RelicId, RelicConfig> = {
     quote: '大王压轴，一锤定音。',
   },
   'hotpot-base': {
-    id: 'hotpot-base', name: '大凤沟火锅底料', glyph: '🍲', rarity: 's',
+    id: 'hotpot-base', name: '大凤沟火锅底料', glyph: '🍲', iconTexture: TEX.RELIC_HOTPOT_BASE, rarity: 's',
     allowedTypes: ['eileen'],
     effects: { eileenSpikeDamageMultiplier: 2 },
     synergy: {
@@ -166,7 +169,7 @@ export const RELICS: Record<RelicId, RelicConfig> = {
     quote: '大凤沟的配方，辣得很地道。',
   },
   'fakao-book': {
-    id: 'fakao-book', name: '枝江法考宝典', glyph: '📖', rarity: 's',
+    id: 'fakao-book', name: '枝江法考宝典', glyph: '📖', iconTexture: TEX.RELIC_FAKAO_BOOK, rarity: 's',
     allowedTypes: ['eileen'],
     effects: { eileenBeamBidirectional: true },
     synergy: {
