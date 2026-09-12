@@ -39,7 +39,7 @@ export class RelicDrawScene extends Phaser.Scene {
     this.resultLayer = this.add.container(0, 0).setDepth(300);
     this.createBackButton();
     this.refresh();
-    this.input.keyboard?.on('keydown-ESC', () => this.scene.start('BackpackScene', { tab: 'relics' }));
+    this.input.keyboard?.on('keydown-ESC', () => this.scene.start('MenuScene'));
     sharpenSceneText(this);
   }
 
@@ -125,12 +125,12 @@ export class RelicDrawScene extends Phaser.Scene {
   }
 
   private createBackButton(): void {
-    const back = sharpenText(this.add.text(42, GAME_HEIGHT - 24, '← 返回背包  ESC', {
+    const back = sharpenText(this.add.text(42, GAME_HEIGHT - 24, '← 返回主界面  ESC', {
       fontFamily: 'Microsoft YaHei', fontSize: '14px', color: '#42506d', backgroundColor: '#e6f5f4', padding: { x: 15, y: 9 }, fontStyle: 'bold',
     })).setOrigin(0, 1).setInteractive({ useHandCursor: true });
     back.on('pointerover', () => back.setBackgroundColor('#d1eeee'));
     back.on('pointerout', () => back.setBackgroundColor('#e6f5f4'));
-    back.on('pointerdown', () => this.scene.start('BackpackScene', { tab: 'relics' }));
+    back.on('pointerdown', () => this.scene.start('MenuScene'));
   }
 
   private refresh(): void {

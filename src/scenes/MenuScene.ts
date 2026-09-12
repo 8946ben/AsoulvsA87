@@ -5,6 +5,8 @@ import { sharpenSceneText, sharpenText } from '../core/TextQuality';
 import { createFreshBackdrop, FRESH } from '../ui/FreshTheme';
 import { CodexScene } from './CodexScene';
 import { BackpackScene } from './BackpackScene';
+import { RelicDrawScene } from './RelicDrawScene';
+import { ShopScene } from './ShopScene';
 
 export class MenuScene extends Phaser.Scene {
   static readonly KEY = 'MenuScene';
@@ -14,7 +16,7 @@ export class MenuScene extends Phaser.Scene {
   constructor() { super(MenuScene.KEY); }
 
   create(): void {
-    this.createBackground(); this.createCast(); this.createTitle(); this.createStartButton(); this.createCodexButton(); this.createBackpackButton(); this.createDeveloperButton();
+    this.createBackground(); this.createCast(); this.createTitle(); this.createStartButton(); this.createIconBar(); this.createDeveloperButton();
     this.add.text(GAME_WIDTH / 2, GAME_HEIGHT - 30, 'AI辅助创作 · 版权归A-SOUL官方及社区素材原作者所有', { fontFamily: 'Microsoft YaHei', fontSize: '12px', color: '#60758a' }).setOrigin(0.5);
     sharpenSceneText(this);
   }
@@ -63,25 +65,38 @@ export class MenuScene extends Phaser.Scene {
     this.add.text(GAME_WIDTH / 2, 429, '点击角色卡 → 点击草坪部署　｜　移动鼠标收集应援球', { fontFamily: 'Microsoft YaHei', fontSize: '14px', color: '#687991' }).setOrigin(0.5);
   }
 
-  private createCodexButton(): void {
-    const button = this.add.text(GAME_WIDTH / 2, 482, '查看枝江图鉴', {
-      fontFamily: 'Microsoft YaHei', fontSize: '16px', color: '#42506d',
-      backgroundColor: '#fffaf1', padding: { x: 28, y: 11 }, fontStyle: 'bold',
-    }).setOrigin(0.5).setInteractive({ useHandCursor: true }).setDepth(5);
-    button.on('pointerover', () => button.setBackgroundColor('#e9f8fb').setScale(1.03));
-    button.on('pointerout', () => button.setBackgroundColor('#fffaf1').setScale(1));
-    button.on('pointerdown', () => this.scene.start(CodexScene.KEY));
+  /** 底部功能图标栏：图鉴 / 背包 / 抽卡转盘 / 商店，与背包和图鉴同级。 */
+  private createIconBar(): void {
+    const entries = [
+      { icon: '📖', label: '枝江图鉴', scene: CodexScene.KEY, color: '#4eb3cf', hover: '#e9f8fb' },
+      { icon: '🎒', label: '角色背包', scene: BackpackScene.KEY, color: '#e85f91', hover: '#fcebf2' },
+      { icon: '🎡', label: '抽卡转盘', scene: RelicDrawScene.KEY, color: '#a66b25', hover: '#fdf3e3' },
+      { icon: '🛒', label: '融合商店', scene: ShopScene.KEY, color: '#348c72', hover: '#e8f5f2' },
+    ];
+    const startX = GAME_WIDTH / 2 - ((entries.length - 1) * 148) / 2;
+    entries.forEach((entry, index) => {
+      const x = startX + index * 148;
+      const y = 500;
+      const card = this.add.rectangle(x, y, 128, 108, 0xfffffb, 0.94)
+        .setStrokeStyle(2, Phaser.Display.Color.HexStringToColor(entry.color).color, 0.45)
+        .setInteractive({ useHandCursor: true })
+        .setDepth(5);
+      const icon = this.add.text(x, y - 22, entry.icon, { fontSize: '40px' }).setOrigin(0.5).setDepth(6);
+      const label = this.add.text(x, y + 28, entry.label, {
+        fontFamily: 'Microsoft YaHei', fontSize: '14px', color: '#42506d', fontStyle: 'bold',
+      }).setOrigin(0.5).setDepth(6);
+      card.on('pointerover', () => {
+        card.setFillStyle(Phaser.Display.Color.HexStringToColor(entry.hover).color, 1).setScale(1.04);
+        icon.setScale(1.1); label.setScale(1.05);
+      });
+      card.on('pointerout', () => {
+        card.setFillStyle(0xfffffb, 0.94).setScale(1);
+        icon.setScale(1); label.setScale(1);
+      });
+      card.on('pointerdown', () => this.scene.start(entry.scene));
+    });
   }
 
-  private createBackpackButton(): void {
-    const button = this.add.text(GAME_WIDTH / 2, 538, '打开角色背包', {
-      fontFamily: 'Microsoft YaHei', fontSize: '16px', color: '#42506d',
-      backgroundColor: '#fffaf1', padding: { x: 28, y: 11 }, fontStyle: 'bold',
-    }).setOrigin(0.5).setInteractive({ useHandCursor: true }).setDepth(5);
-    button.on('pointerover', () => button.setBackgroundColor('#fcebf2').setScale(1.03));
-    button.on('pointerout', () => button.setBackgroundColor('#fffaf1').setScale(1));
-    button.on('pointerdown', () => this.scene.start(BackpackScene.KEY));
-  }
   private createDeveloperButton(): void {
     this.developerButton = this.add.text(GAME_WIDTH / 2, 594, '', {
       fontFamily: 'Microsoft YaHei', fontSize: '13px', color: '#52667d',
