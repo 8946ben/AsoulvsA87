@@ -7,6 +7,8 @@ import { ZOMBIES } from '../data/zombies';
 import { GameScene } from './GameScene';
 import { createFreshBackdrop, FRESH } from '../ui/FreshTheme';
 import { CAMPAIGN_BATTLE, getUnitRank, type BattleSession } from '../core/BattleSession';
+import { getEquippedRelics } from '../core/Relics';
+import { openChildScene } from '../core/SceneNavigation';
 
 const MAX_LOADOUT = 8;
 
@@ -84,7 +86,7 @@ export class LoadoutScene extends Phaser.Scene {
       const label = this.add.text(x, 686, entry.label, { fontFamily: 'Microsoft YaHei', fontSize: '10px', color: '#52667d', fontStyle: 'bold' }).setOrigin(0.5).setDepth(5);
       chip.on('pointerover', () => { chip.setScale(1.08); glyph.setScale(1.08); });
       chip.on('pointerout', () => { chip.setScale(1); glyph.setScale(1); });
-      chip.on('pointerdown', () => this.scene.start(entry.scene));
+      chip.on('pointerdown', () => openChildScene(this, entry.scene));
       void label;
     });
   }
@@ -139,6 +141,14 @@ export class LoadoutScene extends Phaser.Scene {
       bg.on('pointerout', () => bg.setFillStyle(selectedIndex >= 0 ? 0xfff0f5 : FRESH.PAPER, 0.96).setStrokeStyle(2, config.accent, selectedIndex >= 0 ? 0.9 : 0.32));
       bg.on('pointerdown', () => this.toggleCard(type));
       this.cardLayer.add([bg, icon, name, rank, role, stats, hint]);
+      // 已装配的枝江装备：在卡片右下角展示图标，便于战前确认。
+      const equippedRelics = getEquippedRelics(type);
+      if (equippedRelics.length > 0) {
+        const relicGlyphs = this.add.text(x + 104, y + 44, equippedRelics.map((relic) => relic.glyph).join(' '), {
+          fontFamily: 'Microsoft YaHei', fontSize: '14px', color: '#a66b25', fontStyle: 'bold',
+        }).setOrigin(1, 0.5);
+        this.cardLayer.add(relicGlyphs);
+      }
     });
   }
 

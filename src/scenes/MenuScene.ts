@@ -7,6 +7,7 @@ import { CodexScene } from './CodexScene';
 import { BackpackScene } from './BackpackScene';
 import { RelicDrawScene } from './RelicDrawScene';
 import { ShopScene } from './ShopScene';
+import { openChildScene } from '../core/SceneNavigation';
 
 export class MenuScene extends Phaser.Scene {
   static readonly KEY = 'MenuScene';
@@ -41,7 +42,7 @@ export class MenuScene extends Phaser.Scene {
       this.tweens.add({ targets: [image, glow], y: y - 9, duration: 1200 + index * 130, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
     });
     const enemyGlow = this.add.circle(1110, 422, 115, FRESH.PURPLE, 0.16).setDepth(1);
-    const enemy = this.add.image(1110, 422, TEX.ZOMBIE_DRAGON).setScale(1.55).setDepth(3);
+    const enemy = this.add.image(1110, 422, TEX.MENU_DRAGON).setScale(0.165).setDepth(3);
     this.tweens.add({ targets: enemy, angle: 2.5, y: enemy.y - 8, duration: 1050, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
     this.tweens.add({ targets: enemyGlow, scale: 1.18, alpha: 0.04, duration: 900, yoyo: true, repeat: -1 });
     this.add.text(1110, 552, '神区化龙 A87', { fontFamily: 'Microsoft YaHei', fontSize: '15px', color: '#885f9f', fontStyle: 'bold' }).setOrigin(0.5);
@@ -60,7 +61,7 @@ export class MenuScene extends Phaser.Scene {
     const button = this.add.text(GAME_WIDTH / 2, 365, '开始舞台巡演', { fontFamily: 'Microsoft YaHei', fontSize: '24px', color: '#ffffff', backgroundColor: '#e85f91', padding: { x: 42, y: 16 }, fontStyle: 'bold' }).setOrigin(0.5).setInteractive({ useHandCursor: true }).setDepth(5);
     button.on('pointerover', () => { button.setBackgroundColor('#f176a3').setScale(1.035); glow.setAlpha(0.3); });
     button.on('pointerout', () => { button.setBackgroundColor('#e85f91').setScale(1); glow.setAlpha(1); });
-    button.on('pointerdown', () => this.scene.start('ModeSelectScene'));
+    button.on('pointerdown', () => openChildScene(this, 'ModeSelectScene'));
     this.tweens.add({ targets: glow, scaleX: 1.06, scaleY: 1.12, alpha: 0.05, duration: 950, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
     this.add.text(GAME_WIDTH / 2, 429, '点击角色卡 → 点击草坪部署　｜　移动鼠标收集应援球', { fontFamily: 'Microsoft YaHei', fontSize: '14px', color: '#687991' }).setOrigin(0.5);
   }
@@ -93,7 +94,7 @@ export class MenuScene extends Phaser.Scene {
         card.setFillStyle(0xfffffb, 0.94).setScale(1);
         icon.setScale(1); label.setScale(1);
       });
-      card.on('pointerdown', () => this.scene.start(entry.scene));
+      card.on('pointerdown', () => openChildScene(this, entry.scene));
     });
   }
 

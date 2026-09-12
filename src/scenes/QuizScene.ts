@@ -5,6 +5,7 @@ import { awardDrawTickets } from '../core/Relics';
 import { RelicDrawScene } from './RelicDrawScene';
 import { sharpenSceneText } from '../core/TextQuality';
 import { createFreshBackdrop, FRESH } from '../ui/FreshTheme';
+import { type ParentSceneData, returnToParentScene } from '../core/SceneNavigation';
 
 const QUESTION_MS = 15000;
 const ROUND_SIZE = 10;
@@ -28,8 +29,11 @@ export class QuizScene extends Phaser.Scene {
   private timerText!: Phaser.GameObjects.Text;
   private questionText!: Phaser.GameObjects.Text;
   private optionButtons: Phaser.GameObjects.Text[] = [];
+  private returnScene?: string;
 
   constructor() { super(QuizScene.KEY); }
+
+  init(data: ParentSceneData): void { this.returnScene = data?.returnScene; }
 
   create(): void {
     createFreshBackdrop(this, 'garden');
@@ -38,7 +42,7 @@ export class QuizScene extends Phaser.Scene {
     this.optionButtons = [];
     this.createHeader();
     this.layer = this.add.container(0, 0);
-    this.input.keyboard?.on('keydown-ESC', () => this.scene.start('RelicDrawScene'));
+    this.input.keyboard?.on('keydown-ESC', () => returnToParentScene(this, this.returnScene, RelicDrawScene.KEY));
     this.showQuestion();
     sharpenSceneText(this);
   }
@@ -153,7 +157,7 @@ export class QuizScene extends Phaser.Scene {
     const stats = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 16, `本轮答对 ${this.correctCount} / ${this.questions.length} 题（需 ${PASS_COUNT} 题）`, { fontFamily: 'Microsoft YaHei', fontSize: '16px', color: '#5e6f84' }).setOrigin(0.5);
     const reward = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 + 26, passed ? '🎟 获得 1 张抽卡券！' : '🎟 未达到 8 题，本轮没有奖励', { fontFamily: 'Microsoft YaHei', fontSize: '18px', color: passed ? '#2f9a75' : '#9aa8a4', fontStyle: 'bold' }).setOrigin(0.5);
     const again = this.makeButton(GAME_WIDTH / 2 - 130, GAME_HEIGHT / 2 + 104, '再来一轮', () => this.scene.restart(), '#4eb3cf');
-    const back = this.makeButton(GAME_WIDTH / 2 + 130, GAME_HEIGHT / 2 + 104, '返回抽卡转盘', () => this.scene.start(RelicDrawScene.KEY), '#e85f91');
+    const back = this.makeButton(GAME_WIDTH / 2 + 130, GAME_HEIGHT / 2 + 104, '返回抽卡转盘', () => returnToParentScene(this, this.returnScene, RelicDrawScene.KEY), '#e85f91');
     this.layer.add([overlay, card, kicker, title, stats, reward, again, back]);
     sharpenSceneText(this);
   }

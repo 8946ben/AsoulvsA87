@@ -8,7 +8,9 @@ import { ALL_LEVELS, type LevelConfig } from '../data/levels';
 import { ZOMBIES } from '../data/zombies';
 import { LoadoutScene } from './LoadoutScene';
 import { ShopScene } from './ShopScene';
+import { BackpackScene } from './BackpackScene';
 import { createFreshBackdrop, FRESH } from '../ui/FreshTheme';
+import { openChildScene } from '../core/SceneNavigation';
 
 export class LevelSelectScene extends Phaser.Scene {
   static readonly KEY = 'LevelSelectScene';
@@ -122,6 +124,13 @@ export class LevelSelectScene extends Phaser.Scene {
     back.on('pointerover', () => back.setBackgroundColor('#d1eeee'));
     back.on('pointerout', () => back.setBackgroundColor('#e6f5f4'));
     back.on('pointerdown', () => this.scene.start('ChapterSelectScene'));
+    const backpack = sharpenText(this.add.text(GAME_WIDTH - 210, GAME_HEIGHT - 23, '角色背包', {
+      fontFamily: 'Microsoft YaHei', fontSize: '14px', color: '#b54d70',
+      backgroundColor: '#fcebf2', padding: { x: 16, y: 9 }, fontStyle: 'bold',
+    })).setOrigin(1, 1).setInteractive({ useHandCursor: true });
+    backpack.on('pointerover', () => backpack.setBackgroundColor('#f9d9e6'));
+    backpack.on('pointerout', () => backpack.setBackgroundColor('#fcebf2'));
+    backpack.on('pointerdown', () => openChildScene(this, BackpackScene.KEY));
 
     const tech = sharpenText(this.add.text(GAME_WIDTH - 42, GAME_HEIGHT - 23, `枝江商店  ·  金币 ${getCoins()}`, {
       fontFamily: 'Microsoft YaHei', fontSize: '14px', color: '#8d6221',
@@ -129,6 +138,6 @@ export class LevelSelectScene extends Phaser.Scene {
     })).setOrigin(1, 1).setInteractive({ useHandCursor: true });
     tech.on('pointerover', () => tech.setBackgroundColor('#ffe69a'));
     tech.on('pointerout', () => tech.setBackgroundColor('#fff1bd'));
-    tech.on('pointerdown', () => this.scene.start(ShopScene.KEY));
+    tech.on('pointerdown', () => openChildScene(this, ShopScene.KEY));
   }
 }

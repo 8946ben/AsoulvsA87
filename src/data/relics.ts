@@ -1,29 +1,36 @@
-﻿import type { PlantType } from './plants';
+import { PLANTS } from './plants';
+import type { PlantType } from './plants';
 
 /**
- * 枝江装备：可采购、可装配的永久强化道具。
+ * 枝江装备：可通过抽卡转盘获取、可装配给角色的永久强化道具。
+ * 设计文档见 background.md「枝江装备」章节，数值与概率以文档为准。
  * effects 中的数值由战斗侧（Plant）直接消费，描述文案由 describeRelicEffects 程序化生成，
  * 保证图鉴/背包展示与实际数值不脱节。
  */
 export type RelicId =
-  | 'melodious-key'
-  | 'fan-cheerstick'
-  | 'sweet-chocolate'
-  | 'star-mic'
-  | 'zhijiang-umbrella'
-  | 'pixel-console'
-  | 'tour-ticket'
-  | 'glowing-jellyfish'
-  | 'haoting-key'
-  | 'nanting-key'
   | 'bella-hammer'
   | 'bella-pan'
+  | 'joker-small'
+  | 'joker-big'
+  | 'hotpot-base'
+  | 'fakao-book'
+  | 'xiaomi-keyboard'
+  | 'pointer-01'
+  | 'wish-ticket-a'
+  | 'wish-ticket-b'
+  | 'fan-cheerstick'
+  | 'tour-ticket'
+  | 'haoting-key'
+  | 'nanting-key'
+  | 'keyboard-200'
+  | 'beijixing-weekly'
+  | 'naiqilin-weekly'
+  | 'jiaxintang-weekly'
   | 'minus-8000-mic'
   | 'keyboard-20'
-  | 'keyboard-200'
-  | 'xiaomi-keyboard';
+  | 'mountain-speaker';
 
-/** 藏品品质：D < C < B < A < S */
+/** 装备品质：D < C < B < A < S */
 export type RelicRarity = 'd' | 'c' | 'b' | 'a' | 's';
 
 export interface RelicEffects {
@@ -39,6 +46,18 @@ export interface RelicEffects {
   produceBonus?: number;
   /** 部署费用倍率（1.3 = +30%）。 */
   costMultiplier?: number;
+  /** 部署冷却时间倍率（0.5 = 减半）。 */
+  cooldownMultiplier?: number;
+  /** 乃琳地刺（第二形态）伤害倍率。 */
+  eileenSpikeDamageMultiplier?: number;
+  /** 乃琳地刺（第二形态）影响范围扩大到以自身为中心的九个格子。 */
+  eileenSpikeAreaNine?: boolean;
+  /** 乃琳第一形态的攻击变为双向。 */
+  eileenBeamBidirectional?: boolean;
+  /** 乃琳第一形态的攻击以自身所在行为中心覆盖三行（保持单向）。 */
+  eileenBeamTripleRow?: boolean;
+  /** 条件增援：当战场上存在指定角色时，为该角色追加一份效果（部署时结算）。 */
+  grants?: Array<{ type: PlantType; effects: RelicEffects }>;
 }
 
 export interface RelicConfig {
@@ -51,9 +70,9 @@ export interface RelicConfig {
   allowedTypes: PlantType[] | null;
   effects: RelicEffects;
   quote: string;
-  /** 联合装配：与指定藏品同时装配时触发强化效果。 */
+  /** 联合装配：与指定装备同时装配时触发强化效果。 */
   synergy?: {
-    /** 联动的另一个藏品ID。 */
+    /** 联动的另一个装备ID。 */
     with: RelicId;
     /** 联合装配时的替代效果（覆盖基础effects）。 */
     effects: RelicEffects;
@@ -81,73 +100,14 @@ export const RARITY_COLOR: Record<RelicRarity, number> = {
 };
 
 export const RELIC_ORDER: RelicId[] = [
-  'melodious-key', 'fan-cheerstick', 'sweet-chocolate', 'star-mic',
-  'zhijiang-umbrella', 'pixel-console', 'tour-ticket', 'glowing-jellyfish',
-  'haoting-key', 'nanting-key', 'bella-hammer', 'bella-pan',
-  'minus-8000-mic', 'keyboard-20', 'keyboard-200', 'xiaomi-keyboard',
+  'bella-hammer', 'bella-pan', 'joker-small', 'joker-big', 'hotpot-base', 'fakao-book',
+  'xiaomi-keyboard', 'pointer-01', 'wish-ticket-a', 'wish-ticket-b',
+  'fan-cheerstick', 'tour-ticket', 'haoting-key', 'nanting-key',
+  'keyboard-200', 'beijixing-weekly', 'naiqilin-weekly', 'jiaxintang-weekly',
+  'minus-8000-mic', 'keyboard-20', 'mountain-speaker',
 ];
 
 export const RELICS: Record<RelicId, RelicConfig> = {
-  'melodious-key': {
-    id: 'melodious-key', name: '好听的钥匙', glyph: '🔑', rarity: 's',
-    allowedTypes: ['beijixing', 'naiqilin', 'jiaxintang'],
-    effects: { hpRegenPerSec: 50 },
-    quote: '枝江传闻：用这把钥匙轻轻敲敲话筒，会传出好听的歌。',
-  },
-  'fan-cheerstick': {
-    id: 'fan-cheerstick', name: '单推应援棒', glyph: '🎇', rarity: 'a',
-    allowedTypes: ['bella', 'diana', 'xingkongtang'],
-    effects: { attackSpeedMultiplier: 1.2 },
-    quote: '就算只单推一个人，也要全力应援。',
-  },
-  'sweet-chocolate': {
-    id: 'sweet-chocolate', name: '甜甜巧克力', glyph: '🍫', rarity: 'a',
-    allowedTypes: ['jiaxintang', 'naiqilin', 'jiaxinnaitang'],
-    effects: { damageMultiplier: 1.25 },
-    quote: '甜甜的，就像台下的大家。',
-  },
-  'star-mic': {
-    id: 'star-mic', name: '星愿麦克风', glyph: '🎤', rarity: 'a',
-    allowedTypes: ['eileen', 'gladys', 'fiona', 'xilanai'],
-    effects: { damageMultiplier: 1.2 },
-    quote: '把大家的星愿，唱给所有人听。',
-  },
-  'zhijiang-umbrella': {
-    id: 'zhijiang-umbrella', name: '枝江小雨伞', glyph: '☂️', rarity: 'b',
-    allowedTypes: ['xiaohainuo', 'beijixing', 'eileen'],
-    effects: { hpMultiplier: 1.5 },
-    quote: '枝江多阵雨，出门记得带伞。',
-  },
-  'pixel-console': {
-    id: 'pixel-console', name: '像素游戏机', glyph: '🎮', rarity: 'b',
-    allowedTypes: null,
-    effects: { attackSpeedMultiplier: 1.15, hpMultiplier: 1.25 },
-    quote: '枝江游戏厅的最高分纪录，保持者不详。',
-  },
-  'tour-ticket': {
-    id: 'tour-ticket', name: '巡演纪念票根', glyph: '🎫', rarity: 'b',
-    allowedTypes: null,
-    effects: { hpMultiplier: 1.3, damageMultiplier: 1.1 },
-    quote: '第一场枝江巡演的入场凭证，值得永久珍藏。',
-  },
-  'glowing-jellyfish': {
-    id: 'glowing-jellyfish', name: '应援海月灯', glyph: '🪼', rarity: 's',
-    allowedTypes: ['beijixing', 'xilanai'],
-    effects: { produceBonus: 15 },
-    quote: '深夜的排练室里，它一直亮着。',
-  },
-  'haoting-key': {
-    id: 'haoting-key', name: '豪庭的钥匙', glyph: '🗝️', rarity: 'a',
-    allowedTypes: null,
-    effects: { hpRegenPerSec: 50 },
-    quote: '豪庭之钥，守护安宁。',
-  },
-  'nanting-key': {
-    id: 'nanting-key', name: '南亭的钥匙', glyph: '🗝️', rarity: 'a',
-    allowedTypes: null,
-    effects: { damageMultiplier: 1.5 },
-    quote: '南亭之钥，锐不可当。',
-  },
   'bella-hammer': {
     id: 'bella-hammer', name: '一个锤子', glyph: '🔨', rarity: 's',
     allowedTypes: ['bella'],
@@ -172,6 +132,128 @@ export const RELICS: Record<RelicId, RelicConfig> = {
     },
     quote: '贝拉专属：一锅在手，天下我有。',
   },
+  'joker-small': {
+    id: 'joker-small', name: '扑克牌-小王', glyph: '🃏', rarity: 's',
+    allowedTypes: ['diana'],
+    effects: { attackSpeedMultiplier: 1.5 },
+    synergy: {
+      with: 'joker-big',
+      effects: { damageMultiplier: 2.0 },
+      description: '同时装配大王时，攻击力 +100%',
+    },
+    quote: '小王在手，节奏我有。',
+  },
+  'joker-big': {
+    id: 'joker-big', name: '扑克牌-大王', glyph: '🎴', rarity: 's',
+    allowedTypes: ['diana'],
+    effects: { damageMultiplier: 2.0 },
+    synergy: {
+      with: 'joker-small',
+      effects: { damageMultiplier: 3.0 },
+      description: '同时装配小王时，攻击力 +200%',
+    },
+    quote: '大王压轴，一锤定音。',
+  },
+  'hotpot-base': {
+    id: 'hotpot-base', name: '大凤沟火锅底料', glyph: '🍲', rarity: 's',
+    allowedTypes: ['eileen'],
+    effects: { eileenSpikeDamageMultiplier: 2 },
+    synergy: {
+      with: 'fakao-book',
+      effects: { eileenSpikeDamageMultiplier: 2, eileenSpikeAreaNine: true },
+      description: '同时装配法考宝典时，地刺影响范围扩大到九个格子',
+    },
+    quote: '大凤沟的配方，辣得很地道。',
+  },
+  'fakao-book': {
+    id: 'fakao-book', name: '枝江法考宝典', glyph: '📖', rarity: 's',
+    allowedTypes: ['eileen'],
+    effects: { eileenBeamBidirectional: true },
+    synergy: {
+      with: 'hotpot-base',
+      effects: { eileenBeamTripleRow: true },
+      description: '同时装配火锅底料时，攻击覆盖三行',
+    },
+    quote: '法考路上，宝典常伴。',
+  },
+  'xiaomi-keyboard': {
+    id: 'xiaomi-keyboard', name: '小爱联名键盘', glyph: '⌨️', rarity: 'a',
+    allowedTypes: null,
+    effects: { hpMultiplier: 2.0 },
+    quote: '小爱同学，随时待命。',
+  },
+  'pointer-01': {
+    id: 'pointer-01', name: '01指针', glyph: '🖱️', rarity: 'a',
+    allowedTypes: ['jiaxintang', 'naiqilin', 'jiaxinnaitang'],
+    effects: { attackSpeedMultiplier: 2.0, damageMultiplier: 1.5 },
+    quote: '01 号指针，指哪打哪。',
+  },
+  'wish-ticket-a': {
+    id: 'wish-ticket-a', name: '愿望券A', glyph: '🎟️', rarity: 'a',
+    allowedTypes: ['eileen'],
+    effects: {
+      damageMultiplier: 0.5,
+      grants: [{ type: 'bella', effects: { damageMultiplier: 2.5 } }],
+    },
+    quote: '把愿望分给贝拉一半。',
+  },
+  'wish-ticket-b': {
+    id: 'wish-ticket-b', name: '愿望券B', glyph: '🎟️', rarity: 'a',
+    allowedTypes: ['bella'],
+    effects: {
+      attackSpeedMultiplier: 0.5,
+      grants: [{ type: 'eileen', effects: { attackSpeedMultiplier: 3.0 } }],
+    },
+    quote: '乃琳的舞台，也想出一份力。',
+  },
+  'fan-cheerstick': {
+    id: 'fan-cheerstick', name: 'Asoul应援棒', glyph: '🎇', rarity: 'b',
+    allowedTypes: null,
+    effects: { attackSpeedMultiplier: 1.5 },
+    quote: '为整个 A-SOUL 应援。',
+  },
+  'tour-ticket': {
+    id: 'tour-ticket', name: '线下演出门票', glyph: '🎫', rarity: 'b',
+    allowedTypes: null,
+    effects: { hpMultiplier: 1.3, damageMultiplier: 1.2 },
+    quote: '线下见，才是真正的见面。',
+  },
+  'haoting-key': {
+    id: 'haoting-key', name: '豪庭的钥匙', glyph: '🗝️', rarity: 'b',
+    allowedTypes: null,
+    effects: { hpRegenPerSec: 50 },
+    quote: '豪庭之钥，守护安宁。',
+  },
+  'nanting-key': {
+    id: 'nanting-key', name: '南亭的钥匙', glyph: '🗝️', rarity: 'b',
+    allowedTypes: null,
+    effects: { damageMultiplier: 1.5 },
+    quote: '南亭之钥，锐不可当。',
+  },
+  'keyboard-200': {
+    id: 'keyboard-200', name: '200块的键盘', glyph: '⌨️', rarity: 'c',
+    allowedTypes: null,
+    effects: { hpMultiplier: 1.3 },
+    quote: '性价比之选。',
+  },
+  'beijixing-weekly': {
+    id: 'beijixing-weekly', name: '贝极星周报', glyph: '📰', rarity: 'c',
+    allowedTypes: ['beijixing'],
+    effects: { produceBonus: 15 },
+    quote: '贝极星 trend，周周更新。',
+  },
+  'naiqilin-weekly': {
+    id: 'naiqilin-weekly', name: '奶淇琳周报', glyph: '📰', rarity: 'c',
+    allowedTypes: ['naiqilin'],
+    effects: { attackSpeedMultiplier: 1.3 },
+    quote: '奶淇琳速报，甜度超标。',
+  },
+  'jiaxintang-weekly': {
+    id: 'jiaxintang-weekly', name: '嘉心糖周报', glyph: '📰', rarity: 'c',
+    allowedTypes: ['jiaxintang'],
+    effects: { damageMultiplier: 1.3 },
+    quote: '嘉心糖快讯，糖分拉满。',
+  },
   'minus-8000-mic': {
     id: 'minus-8000-mic', name: '-8000麦克风', glyph: '🎙️', rarity: 'd',
     allowedTypes: null,
@@ -184,28 +266,36 @@ export const RELICS: Record<RelicId, RelicConfig> = {
     effects: { hpMultiplier: 1.3, costMultiplier: 1.3 },
     quote: '便宜货，但能用。',
   },
-  'keyboard-200': {
-    id: 'keyboard-200', name: '200块的键盘', glyph: '⌨️', rarity: 'c',
+  'mountain-speaker': {
+    id: 'mountain-speaker', name: '群山纹理音响', glyph: '🔊', rarity: 'd',
     allowedTypes: null,
-    effects: { hpMultiplier: 1.3 },
-    quote: '性价比之选。',
+    effects: { cooldownMultiplier: 0.5, hpMultiplier: 0.5, damageMultiplier: 0.5 },
+    quote: '群山回响，功过相抵。',
   },
-  'xiaomi-keyboard': {
-    id: 'xiaomi-keyboard', name: '小爱联名键盘', glyph: '⌨️', rarity: 'a',
-    allowedTypes: null,
-    effects: { hpMultiplier: 1.8 },
-    quote: '小爱同学，随时待命。',
-  },
+};
+
+const percent = (multiplier: number): string => {
+  const delta = Math.round((multiplier - 1) * 100);
+  return delta >= 0 ? `+${delta}%` : `${delta}%`;
 };
 
 /** 效果数值的程序化描述，背包与图鉴共用，避免文案与数值脱节。 */
 export function describeRelicEffects(effects: RelicEffects): string[] {
   const lines: string[] = [];
   if (effects.hpRegenPerSec) lines.push(`装配后每秒回复 ${effects.hpRegenPerSec} 点生命`);
-  if (effects.hpMultiplier && effects.hpMultiplier !== 1) lines.push(`生命值 +${Math.round((effects.hpMultiplier - 1) * 100)}%`);
-  if (effects.damageMultiplier && effects.damageMultiplier !== 1) lines.push(`攻击伤害 +${Math.round((effects.damageMultiplier - 1) * 100)}%`);
-  if (effects.attackSpeedMultiplier && effects.attackSpeedMultiplier !== 1) lines.push(`攻击速度 +${Math.round((effects.attackSpeedMultiplier - 1) * 100)}%`);
+  if (effects.hpMultiplier && effects.hpMultiplier !== 1) lines.push(`生命值 ${percent(effects.hpMultiplier)}`);
+  if (effects.damageMultiplier && effects.damageMultiplier !== 1) lines.push(`攻击伤害 ${percent(effects.damageMultiplier)}`);
+  if (effects.attackSpeedMultiplier && effects.attackSpeedMultiplier !== 1) lines.push(`攻击速度 ${percent(effects.attackSpeedMultiplier)}`);
   if (effects.produceBonus) lines.push(`每次产出应援额外 +${effects.produceBonus}`);
-  if (effects.costMultiplier && effects.costMultiplier !== 1) lines.push(`部署应援消耗 +${Math.round((effects.costMultiplier - 1) * 100)}%`);
+  if (effects.costMultiplier && effects.costMultiplier !== 1) lines.push(`部署应援消耗 ${percent(effects.costMultiplier)}`);
+  if (effects.cooldownMultiplier && effects.cooldownMultiplier !== 1) lines.push(`部署冷却时间 ${percent(effects.cooldownMultiplier)}`);
+  if (effects.eileenSpikeDamageMultiplier) lines.push(`乃琳地刺形态伤害 ×${effects.eileenSpikeDamageMultiplier}`);
+  if (effects.eileenSpikeAreaNine) lines.push('乃琳地刺影响范围扩大到九个格子');
+  if (effects.eileenBeamBidirectional) lines.push('乃琳攻击变为双向');
+  if (effects.eileenBeamTripleRow) lines.push('乃琳攻击以自身行为中心覆盖三行');
+  for (const grant of effects.grants ?? []) {
+    const holder = PLANTS[grant.type]?.name ?? grant.type;
+    lines.push(`若${holder}在场：其${describeRelicEffects(grant.effects).join('，')}`);
+  }
   return lines;
 }

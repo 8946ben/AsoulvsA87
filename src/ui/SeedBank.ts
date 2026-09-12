@@ -3,6 +3,7 @@ import { PALETTE, SEEDBANK_HEIGHT, TEX } from '../config/GameConfig';
 import { PLANTS, type PlantConfig, type PlantType } from '../data/plants';
 import { FRESH } from './FreshTheme';
 import type { UnitRank } from '../core/BattleSession';
+import { getRelicEffects } from '../core/Relics';
 
 const CARD_W = 68;
 const CARD_H = 104;
@@ -21,13 +22,14 @@ export class SeedCard extends Phaser.GameObjects.Container {
   private readonly highlight: Phaser.GameObjects.Graphics;
   private readonly statusDot: Phaser.GameObjects.Arc;
   private cooldownRemaining = 0;
+  private cooldownTotal = 1;
   private selected = false;
   private affordable = false;
   private displayedCost: number;
   private bonusCount: number | null = null;
 
   constructor(scene: Phaser.Scene, x: number, y: number, config: PlantConfig, unitRank: 1 | 2) {
-    super(scene, x, y); this.config = config; this.unitRank = unitRank; this.displayedCost = config.cost;
+    super(scene, x, y); this.config = config; this.unitRank = unitRank; this.displayedCost = config.cost; this.cooldownTotal = config.cooldown;
     const frame = scene.add.image(0, 0, TEX.CARD_FRAME).setDisplaySize(CARD_W, CARD_H);
     const name = scene.add.text(0, -43, config.name, { fontFamily: 'Microsoft YaHei, sans-serif', fontSize: '13px', color: '#42506d', fontStyle: 'bold' }).setOrigin(0.5);
     const rank = scene.add.text(28, -48, unitRank >= 2 ? 'Ⅱ' : 'Ⅰ', { fontFamily: 'Arial', fontSize: '9px', color: '#ffffff', backgroundColor: unitRank >= 2 ? '#e85f91' : '#58bd92', padding: { x: 3, y: 2 }, fontStyle: 'bold' }).setOrigin(1, 0);
@@ -47,8 +49,11 @@ export class SeedCard extends Phaser.GameObjects.Container {
   get isReady(): boolean { return this.cooldownRemaining <= 0; }
   get isSelectable(): boolean { return this.isReady && this.affordable; }
   get plantType(): PlantType { return this.config.type; }
-  startCooldown(): void { this.cooldownRemaining = this.config.cooldown; }
-  setCooldown(ms: number): void { this.cooldownRemaining = ms; }
+    startCooldown(cooldownMultiplier = 1): void {
+      this.cooldownTotal = Math.max(1, Math.round(this.config.cooldown * cooldownMultiplier));
+      this.cooldownRemaining = this.cooldownTotal;
+    }
+    setCooldown(ms: number): void { this.cooldownTotal = Math.max(1, Math.round(this.config.cooldown)); this.cooldownRemaining = ms; }
   setBonusCount(count: number): void {
     this.bonusCount = count;
     this.costText.setText(`免费×${count}`).setFontSize(11);
@@ -63,7 +68,7 @@ export class SeedCard extends Phaser.GameObjects.Container {
     const cooling = this.cooldownRemaining > 0;
     this.cooldownMask.clear();
     if (cooling) {
-      const h = CARD_H * this.cooldownRemaining / this.config.cooldown;
+      const h = CARD_H * this.cooldownRemaining / this.cooldownTotal;
       this.cooldownMask.fillStyle(0x526178, 0.58); this.cooldownMask.fillRoundedRect(-CARD_W / 2, CARD_H / 2 - h, CARD_W, h, 7);
       this.cooldownText.setText(String(Math.ceil(this.cooldownRemaining / 1000))).setVisible(true);
     } else this.cooldownText.setVisible(false);
@@ -125,7 +130,8 @@ export class SeedBank {
       }
       return;
     }
-    card.startCooldown(); this.clearSelection();
+    // 群山纹理音响等冷却倍率装备：部署冷却按倍率缩放。
+    card.startCooldown(getRelicEffects(type)?.cooldownMultiplier ?? 1); this.clearSelection();
   }
   update(delta: number, sunAmount: number, costOf?: (type: PlantType) => number): void {
     for (const card of this.cards) card.update(delta, sunAmount, costOf?.(card.plantType));

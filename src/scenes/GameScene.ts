@@ -3,6 +3,8 @@ import { GAME_HEIGHT, GAME_WIDTH, GRID, HOUSE_LINE_X, LAWNMOWER_X, PLANT_DISPLAY
 import { Grid } from '../core/Grid';
 import { addCoins, isTechUnlocked } from '../core/Coins';
 import { awardStardust } from '../core/Collection';
+import { mergeRelicEffects } from '../core/Relics';
+import type { RelicEffects } from '../data/relics';
 import { isDeveloperMode } from '../core/DeveloperMode';
 import { completeLevel } from '../core/LevelProgress';
 import { COIN_PER_CLEAR, COIN_PER_INTACT_ALPACA } from '../data/techTree';
@@ -96,7 +98,7 @@ export class GameScene extends Phaser.Scene {
     damagePlantsAround: (x, y, radius, damage) => this.damagePlantsAround(x, y, radius, damage),
   };
   private readonly projectileCtx: ProjectileContext = {
-    findTarget: (row, x, ignored) => this.findZombieTarget(row, x, ignored),
+    findTarget: (row, x, ignored, direction) => this.findZombieTarget(row, x, ignored, direction),
     damageSplash: (row, x, radius, damage, primary) => {
       for (const zombie of this.zombies) {
         if (zombie !== primary && zombie.active && zombie.state !== 'dead' && zombie.row === row && Math.abs(zombie.x - x) <= radius) zombie.takeDamage(damage);
@@ -369,7 +371,8 @@ export class GameScene extends Phaser.Scene {
 
   private issueSpawn(type: ZombieType, row: number): void {
     this.spawnZombie(type, row);
-    this.waveHpIssued += ZOMBIES[type].hp;
+    // 波次血量统计与实际生成一致：计入关卡生命加成，保证提前出波的 15% 判定准确。
+    this.waveHpIssued += Math.round(ZOMBIES[type].hp * (this.level.zombieModifiers?.hpMultiplier ?? 1));
     this.lastSpawnAt = this.elapsed;
   }
 
@@ -445,7 +448,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   private spawnZombie(type: ZombieType, row: number, x = ZOMBIE_SPAWN_X): void {
-    const zombie = new Zombie(this, x, this.grid.rowToY(row) - 4, type, row); this.zombies.push(zombie);
+    const zombie = new Zombie(this, x, this.grid.rowToY(row) - 4, type, row, this.level.zombieModifiers); this.zombies.push(zombie);
     if (ZOMBIES[type].boss) this.showBossBanner(ZOMBIES[type]);
   }
 
@@ -527,9 +530,14 @@ export class GameScene extends Phaser.Scene {
     }
     return best;
   }
-  private findZombieTarget(row: number, x: number, ignored = new Set<Zombie>()): Zombie | null {
+  private findZombieTarget(row: number, x: number, ignored = new Set<Zombie>(), direction: 1 | -1 = 1): Zombie | null {
     let best: Zombie | null = null;
-    for (const z of this.zombies) if (z.targetable && !ignored.has(z) && z.active && z.state !== 'dead' && z.row === row && x >= z.x - 28 && x <= z.x + 30 && (!best || z.x < best.x)) best = z;
+    for (const z of this.zombies) {
+      if (!z.targetable || ignored.has(z) || !z.active || z.state === 'dead' || z.row !== row) continue;
+      const inRange = direction === 1 ? x >= z.x - 28 && x <= z.x + 30 : x <= z.x + 28 && x >= z.x - 30;
+      if (!inRange) continue;
+      if (!best || z.x < best.x) best = z;
+    }
     return best;
   }
 
@@ -592,7 +600,7 @@ export class GameScene extends Phaser.Scene {
     if (this.grid.get(row, col) === plant) this.grid.remove(row, col);
     plant.destroy();
     if (!type || this.grid.isOccupied(row, col)) return;
-    const { x, y } = this.grid.cellToWorld(row, col); const next = new Plant(this, x, y - 5, type, row, col, this.getPlantRank(type, true));
+    const { x, y } = this.grid.cellToWorld(row, col); const next = new Plant(this, x, y - 5, type, row, col, this.getPlantRank(type, true), this.fieldRelicGrants(type));
     this.applyPlantHpModifier(next);
     this.grid.place(next, row, col); this.plants.push(next);
     this.showToast(`${sourceName}留下了${PLANTS[type].name}！`, PLANTS[type].accent);
@@ -624,6 +632,18 @@ export class GameScene extends Phaser.Scene {
   private getPlantRank(type: PlantType, summoned = false): 1 | 2 {
     const rank = getUnitRank(this.battleSession, type);
     return rank >= 2 ? 2 : rank === 1 || summoned ? 1 : 1;
+  }
+
+  /** 部署时结算条件增援：收集场上已部署角色装备中、面向该角色的 grants 效果。 */
+  private fieldRelicGrants(type: PlantType): RelicEffects | undefined {
+    const list: RelicEffects[] = [];
+    for (const plant of this.plants) {
+      if (!plant.active) continue;
+      for (const grant of plant.relicGrants) {
+        if (grant.type === type) list.push(grant.effects);
+      }
+    }
+    return list.length > 0 ? mergeRelicEffects(list) : undefined;
   }
 
   private applyPlantHpModifier(plant: Plant): void {
@@ -678,7 +698,7 @@ export class GameScene extends Phaser.Scene {
       existing.destroy();
     }
     const resultType = fusion ?? type;
-    const plant = new Plant(this, x, y - 5, resultType, row, col, this.getPlantRank(resultType));
+    const plant = new Plant(this, x, y - 5, resultType, row, col, this.getPlantRank(resultType), this.fieldRelicGrants(resultType));
     this.applyPlantHpModifier(plant);
     if (resultType === 'jiaxintang' && this.countActivePlants('diana', 2) > 0) { plant.hp *= 2; plant.maxHp *= 2; }
     this.grid.place(plant, row, col); this.plants.push(plant);
@@ -826,8 +846,8 @@ export class GameScene extends Phaser.Scene {
     const route = this.makeButton(
       GAME_WIDTH / 2 + 88,
       GAME_HEIGHT / 2 + 92,
-      rogueMode ? '返回主界面' : nextLevel ? '下一关' : '返回选关',
-      () => rogueMode ? this.scene.start('MenuScene') : nextLevel ? this.scene.start('LoadoutScene', { level: nextLevel, battleSession: CAMPAIGN_BATTLE }) : this.scene.start('LevelSelectScene'),
+      rogueMode ? '返回上级页面' : nextLevel ? '下一关' : '返回选关',
+      () => rogueMode ? this.scene.start('RogueMapScene') : nextLevel ? this.scene.start('LoadoutScene', { level: nextLevel, battleSession: CAMPAIGN_BATTLE }) : this.scene.start('LevelSelectScene'),
       223,
     );
     retry.setAlpha(0); route.setAlpha(0);

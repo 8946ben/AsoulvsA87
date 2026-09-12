@@ -1,4 +1,4 @@
-﻿import Phaser from 'phaser';
+import Phaser from 'phaser';
 import { GAME_HEIGHT, GAME_WIDTH } from '../config/GameConfig';
 import { ADVANCE_COST, advancePlant, getCollectedPlants, getCollectionRank, getStardust, isAdvanceable, isPlantCollected, revertPlant } from '../core/Collection';
 import { equipRelic, getEquippedRelics, getOwnedRelics, getRelicEffects, getRelicHolder, isRelicOwned, unequipRelic } from '../core/Relics';
@@ -7,6 +7,7 @@ import { describeRelicEffects, RARITY_COLOR, RARITY_LABEL, RELICS, RELIC_ORDER, 
 import { CODEX_PLANT_ORDER, PLANTS, type PlantType } from '../data/plants';
 import { RelicDrawScene } from './RelicDrawScene';
 import { createFreshBackdrop, FRESH } from '../ui/FreshTheme';
+import { type ParentSceneData, openChildScene, returnToParentScene } from '../core/SceneNavigation';
 
 type BackpackTab = 'characters' | 'relics';
 
@@ -29,11 +30,13 @@ export class BackpackScene extends Phaser.Scene {
   private detailLabel!: Phaser.GameObjects.Text;
   private characterTab!: Phaser.GameObjects.Text;
   private relicTab!: Phaser.GameObjects.Text;
+  private returnScene?: string;
 
   constructor() { super(BackpackScene.KEY); }
 
-  init(data: { tab?: BackpackTab }): void {
+  init(data: { tab?: BackpackTab } & ParentSceneData): void {
     this.activeTab = data?.tab === 'relics' ? 'relics' : 'characters';
+    this.returnScene = data?.returnScene;
   }
 
   create(): void {
@@ -47,7 +50,7 @@ export class BackpackScene extends Phaser.Scene {
     this.detailLayer = this.add.container(0, 0);
     this.createBackButton();
     this.refresh();
-    this.input.keyboard?.on('keydown-ESC', () => this.scene.start('MenuScene'));
+    this.input.keyboard?.on('keydown-ESC', () => returnToParentScene(this, this.returnScene));
     this.input.keyboard?.on('keydown-TAB', (event: KeyboardEvent) => {
       event.preventDefault();
       if (event.repeat) return;
@@ -59,7 +62,7 @@ export class BackpackScene extends Phaser.Scene {
   private createHeader(): void {
     this.add.text(42, 28, '角色背包', { fontFamily: 'Microsoft YaHei', fontSize: '35px', color: '#42506d', fontStyle: 'bold' });
     this.subtitleText = this.add.text(43, 76, 'ZHIJIANG OPERATOR ARCHIVE', { fontFamily: 'Arial', fontSize: '13px', color: '#e85f91', fontStyle: 'bold', letterSpacing: 2 });
-    this.add.text(42, 110, '收录角色，采购枝江装备并为角色装配，使用星愿徽记完成进阶。战斗中始终展示对应的 Q 版模型。', { fontFamily: 'Microsoft YaHei', fontSize: '13px', color: '#60758a' });
+    this.add.text(42, 110, '收录角色，获取枝江装备并为角色装配，使用星愿徽记完成进阶。战斗中始终展示对应的 Q 版模型。', { fontFamily: 'Microsoft YaHei', fontSize: '13px', color: '#60758a' });
     this.countText = this.add.text(GAME_WIDTH - 42, 39, '', { fontFamily: 'Microsoft YaHei', fontSize: '15px', color: '#52667d', fontStyle: 'bold' }).setOrigin(1, 0);
     this.stardustText = this.add.text(GAME_WIDTH - 42, 73, '', { fontFamily: 'Microsoft YaHei', fontSize: '14px', color: '#a66b25', fontStyle: 'bold' }).setOrigin(1, 0);
     const rule = this.add.graphics(); rule.lineStyle(2, FRESH.BLUE, 0.28); rule.beginPath(); rule.moveTo(34, 128); rule.lineTo(GAME_WIDTH - 34, 128); rule.strokePath();
@@ -86,12 +89,12 @@ export class BackpackScene extends Phaser.Scene {
   }
 
   private createBackButton(): void {
-    const back = sharpenText(this.add.text(42, GAME_HEIGHT - 26, '← 返回主界面  ESC', {
+    const back = sharpenText(this.add.text(42, GAME_HEIGHT - 26, '← 返回上级页面  ESC', {
       fontFamily: 'Microsoft YaHei', fontSize: '14px', color: '#42506d', backgroundColor: '#e6f5f4', padding: { x: 15, y: 9 }, fontStyle: 'bold',
     })).setOrigin(0, 1).setInteractive({ useHandCursor: true });
     back.on('pointerover', () => back.setBackgroundColor('#d1eeee'));
     back.on('pointerout', () => back.setBackgroundColor('#e6f5f4'));
-    back.on('pointerdown', () => this.scene.start('MenuScene'));
+    back.on('pointerdown', () => returnToParentScene(this, this.returnScene));
     this.add.text(GAME_WIDTH - 42, GAME_HEIGHT - 28, '战役结算获得星愿徽记用于进阶 · 藏品经答题与抽卡转盘获得', {
       fontFamily: 'Microsoft YaHei', fontSize: '12px', color: '#71809a',
     }).setOrigin(1, 1);
@@ -247,15 +250,30 @@ export class BackpackScene extends Phaser.Scene {
     const slotObjects: Phaser.GameObjects.GameObject[] = [this.add.text(852, slotY, '装备', {
       fontFamily: 'Microsoft YaHei', fontSize: '12px', color: '#71809a', fontStyle: 'bold',
     }).setOrigin(0, 0.5)];
+    // 已装备槽位的悬浮信息框：悬停时展示名称、稀有度与效果明细。
+    const slotTooltip = this.add.text(0, 0, '', {
+      fontFamily: 'Microsoft YaHei', fontSize: '11px', color: '#42506d', backgroundColor: '#fffaf1f2',
+      padding: { x: 10, y: 7 }, align: 'left', lineSpacing: 4,
+    }).setOrigin(0, 1).setDepth(400).setVisible(false);
+    slotObjects.push(slotTooltip);
     for (let i = 0; i < maxSlots; i++) {
       const slotX = 884 + slotSize / 2 + i * (slotSize + slotSpacing);
       const equipped = equippedRelics[i];
       if (equipped) {
-        // 已装备：显示藏品图标，点击卸下
+        // 已装备：显示藏品图标，悬停展示名词信息，点击卸下
         const slotBg = this.add.rectangle(slotX, slotY, slotSize, slotSize, 0xe8f5f2, 0.99).setStrokeStyle(2, 0x4eb3cf, 0.6).setInteractive({ useHandCursor: true });
         const slotText = this.add.text(slotX, slotY, equipped.glyph, { fontSize: '22px' }).setOrigin(0.5);
-        slotBg.on('pointerover', () => slotBg.setStrokeStyle(2, 0x4eb3cf, 0.9));
-        slotBg.on('pointerout', () => slotBg.setStrokeStyle(2, 0x4eb3cf, 0.6));
+        const effectLines = describeRelicEffects(equipped.effects).join('，') || '无数值效果';
+        const tooltipLines = [`${equipped.glyph} ${equipped.name} · ${RARITY_LABEL[equipped.rarity]}`, effectLines];
+        if (equipped.specialEffect) tooltipLines.push(equipped.specialEffect);
+        slotBg.on('pointerover', () => {
+          slotBg.setStrokeStyle(2, 0x4eb3cf, 0.9);
+          slotTooltip.setText(tooltipLines.join('\n')).setVisible(true).setPosition(slotX - 4, slotY - slotSize / 2 - 6);
+        });
+        slotBg.on('pointerout', () => {
+          slotBg.setStrokeStyle(2, 0x4eb3cf, 0.6);
+          slotTooltip.setVisible(false);
+        });
         slotBg.on('pointerdown', () => { unequipRelic(equipped.id); this.refresh(); });
         slotObjects.push(slotBg, slotText);
       } else {
@@ -302,10 +320,11 @@ export class BackpackScene extends Phaser.Scene {
 
   private renderRelicList(): void {
     this.listLayer.removeAll(true);
-    const cardW = 164; const cardH = 58; const colX = [136, 308];
+    // 21 件装备：紧凑双列（46px 行距），确保完整落在左侧面板内。
+    const cardW = 164; const cardH = 42; const colX = [136, 308];
     RELIC_ORDER.forEach((id, index) => {
       const relic = RELICS[id]; const col = index % 2; const row = Math.floor(index / 2);
-      const x = colX[col]; const y = 199 + row * 68;
+      const x = colX[col]; const y = 185 + row * 46;
       const owned = isRelicOwned(id); const selected = id === this.selectedRelic;
       const holder = getRelicHolder(id);
       if (!owned && !selected) {
@@ -318,12 +337,12 @@ export class BackpackScene extends Phaser.Scene {
       const card = this.add.rectangle(x, y, cardW, cardH, fill, owned ? 0.99 : 0.86)
         .setStrokeStyle(2, owned ? accent : 0xaebbb8, selected ? 0.95 : 0.3)
         .setInteractive({ useHandCursor: true });
-      const glyph = this.add.text(x - 56, y, relic.glyph, { fontSize: '22px' }).setOrigin(0.5).setAlpha(owned ? 1 : 0.3);
-      const name = this.add.text(x - 27, y - 14, relic.name, {
-        fontFamily: 'Microsoft YaHei', fontSize: '12px', color: '#42506d', fontStyle: 'bold',
+      const glyph = this.add.text(x - 56, y, relic.glyph, { fontSize: '17px' }).setOrigin(0.5).setAlpha(owned ? 1 : 0.3);
+      const name = this.add.text(x - 27, y - 9, relic.name, {
+        fontFamily: 'Microsoft YaHei', fontSize: '11px', color: '#42506d', fontStyle: 'bold',
       });
-      const state = this.add.text(x - 27, y + 8, !owned ? '？？？' : holder ? `装配 · ${PLANTS[holder].name}` : '待装配', {
-        fontFamily: 'Microsoft YaHei', fontSize: '10px', color: !owned ? '#9aa8a4' : holder ? '#d7527c' : '#348c72',
+      const state = this.add.text(x - 27, y + 9, !owned ? '？？？' : holder ? `装配 · ${PLANTS[holder].name}` : '待装配', {
+        fontFamily: 'Microsoft YaHei', fontSize: '9px', color: !owned ? '#9aa8a4' : holder ? '#d7527c' : '#348c72',
       });
       card.on('pointerover', () => card.setStrokeStyle(2, owned ? accent : 0xaebbb8, 0.86));
       card.on('pointerout', () => card.setStrokeStyle(2, owned ? accent : 0xaebbb8, selected ? 0.95 : 0.3));
@@ -400,7 +419,7 @@ export class BackpackScene extends Phaser.Scene {
       }).setOrigin(0.5).setInteractive({ useHandCursor: true });
       action.on('pointerover', () => action.setScale(1.035));
       action.on('pointerout', () => action.setScale(1));
-      action.on('pointerdown', () => this.scene.start(RelicDrawScene.KEY));
+      action.on('pointerdown', () => openChildScene(this, RelicDrawScene.KEY));
     } else {
       action = this.add.text(1124, 640, holder ? '已装配' : '已入库', {
         fontFamily: 'Microsoft YaHei', fontSize: '15px', color: '#ffffff', backgroundColor: '#aab8b2', padding: { x: 21, y: 11 }, fontStyle: 'bold',

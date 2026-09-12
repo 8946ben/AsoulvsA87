@@ -1,4 +1,4 @@
-﻿import Phaser from 'phaser';
+import Phaser from 'phaser';
 import { GAME_HEIGHT, GAME_WIDTH } from '../config/GameConfig';
 import { getStardust, spendStardust } from '../core/Collection';
 import {
@@ -9,6 +9,7 @@ import {
 import { describeRelicEffects, RARITY_COLOR, RARITY_LABEL, RELICS, RELIC_ORDER, type RelicConfig, type RelicRarity } from '../data/relics';
 import { sharpenSceneText, sharpenText } from '../core/TextQuality';
 import { createFreshBackdrop, FRESH } from '../ui/FreshTheme';
+import { type ParentSceneData, openChildScene, returnToParentScene } from '../core/SceneNavigation';
 
 const WHEEL_X = 400;
 const WHEEL_Y = 396;
@@ -34,8 +35,11 @@ export class RelicDrawScene extends Phaser.Scene {
   private drawTenButton!: Phaser.GameObjects.Text;
   private poolMarks: Phaser.GameObjects.Text[] = [];
   private spinning = false;
+  private returnScene?: string;
 
   constructor() { super(RelicDrawScene.KEY); }
+
+  init(data: ParentSceneData): void { this.returnScene = data?.returnScene; }
 
   create(): void {
     createFreshBackdrop(this, 'sunny');
@@ -47,7 +51,7 @@ export class RelicDrawScene extends Phaser.Scene {
     this.resultLayer = this.add.container(0, 0).setDepth(300);
     this.createBackButton();
     this.refresh();
-    this.input.keyboard?.on('keydown-ESC', () => this.scene.start('MenuScene'));
+    this.input.keyboard?.on('keydown-ESC', () => returnToParentScene(this, this.returnScene));
     sharpenSceneText(this);
   }
 
@@ -77,8 +81,8 @@ export class RelicDrawScene extends Phaser.Scene {
       sectors.lineStyle(2, RARITY_COLOR[relic.rarity], 0.42);
       sectors.slice(0, 0, WHEEL_R, start, end, false); sectors.strokePath();
       const mid = start + Phaser.Math.DegToRad(SECTOR / 2);
-      const glyphR = WHEEL_R * 0.66;
-      const glyph = this.add.text(Math.cos(mid) * glyphR, Math.sin(mid) * glyphR, relic.glyph, { fontSize: '34px' })
+      const glyphR = WHEEL_R * 0.72;
+      const glyph = this.add.text(Math.cos(mid) * glyphR, Math.sin(mid) * glyphR, relic.glyph, { fontSize: '24px' })
         .setOrigin(0.5).setRotation(mid + Math.PI / 2);
       this.wheel.add(glyph);
     });
@@ -108,7 +112,7 @@ export class RelicDrawScene extends Phaser.Scene {
     this.add.text(732, 142, '抽取说明', { fontFamily: 'Microsoft YaHei', fontSize: '16px', color: '#42506d', fontStyle: 'bold' });
     this.add.text(732, 172, '优先消耗答题券，不足时消耗 3 ✦ 星愿徽记。', { fontFamily: 'Microsoft YaHei', fontSize: '12px', color: '#60758a' });
     this.add.text(732, 194, '每件藏品仅可入库一次，重复获得自动兑换星愿徽记。', { fontFamily: 'Microsoft YaHei', fontSize: '12px', color: '#60758a' });
-    const quizButton = this.makeAction('去答题赢抽奖券（10 题对 8 题）', '#58bd92', () => this.scene.start('QuizScene'));
+    const quizButton = this.makeAction('去答题赢抽奖券（10 题对 8 题）', '#58bd92', () => openChildScene(this, 'QuizScene'));
     quizButton.setPosition(panelX + 267, 236).setFontSize('13px');
 
     this.add.text(732, 280, '奖池概率', { fontFamily: 'Microsoft YaHei', fontSize: '16px', color: '#42506d', fontStyle: 'bold' });
@@ -145,12 +149,12 @@ export class RelicDrawScene extends Phaser.Scene {
   }
 
   private createBackButton(): void {
-    const back = sharpenText(this.add.text(42, GAME_HEIGHT - 24, '← 返回主界面  ESC', {
+    const back = sharpenText(this.add.text(42, GAME_HEIGHT - 24, '← 返回上级页面  ESC', {
       fontFamily: 'Microsoft YaHei', fontSize: '14px', color: '#42506d', backgroundColor: '#e6f5f4', padding: { x: 15, y: 9 }, fontStyle: 'bold',
     })).setOrigin(0, 1).setInteractive({ useHandCursor: true });
     back.on('pointerover', () => back.setBackgroundColor('#d1eeee'));
     back.on('pointerout', () => back.setBackgroundColor('#e6f5f4'));
-    back.on('pointerdown', () => this.scene.start('MenuScene'));
+    back.on('pointerdown', () => returnToParentScene(this, this.returnScene));
   }
 
   private refresh(): void {

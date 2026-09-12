@@ -42,10 +42,15 @@ function readState(): RelicState {
     if (raw) {
       const parsed = JSON.parse(raw) as Partial<RelicState>;
       const owned = Array.isArray(parsed.owned) ? parsed.owned.filter((id) => id in RELICS) : [];
+      // 版本更迭后已下架的装备不再出现在存档引用中。
+      const equipped: Partial<Record<RelicId, PlantType>> = {};
+      for (const [id, holder] of Object.entries(parsed.equipped ?? {})) {
+        if (id in RELICS) equipped[id as RelicId] = holder as PlantType;
+      }
       return {
         version: 1,
         owned,
-        equipped: parsed.equipped ?? {},
+        equipped,
         tickets: Math.max(0, Math.floor(parsed.tickets ?? 0)),
       };
     }
@@ -139,26 +144,57 @@ export function getEquippedRelic(type: PlantType): RelicConfig | null {
   return getEquippedRelics(type)[0] ?? null;
 }
 
-/** 战斗侧入口：返回该角色由藏品带来的数值加成（多藏品叠加，支持联合装配）。 */
-export function getRelicEffects(type: PlantType): RelicEffects | null {
-  const relics = getEquippedRelics(type);
-  if (relics.length === 0) return null;
+/** 合并多份效果（倍率相乘、增量相加、布尔取或）。 */
+export function mergeRelicEffects(list: RelicEffects[]): RelicEffects {
   const merged: RelicEffects = {};
+  const apply = (effects: RelicEffects): void => {
+    if (effects.hpRegenPerSec) merged.hpRegenPerSec = (merged.hpRegenPerSec ?? 0) + effects.hpRegenPerSec;
+    if (effects.hpMultiplier) merged.hpMultiplier = (merged.hpMultiplier ?? 1) * effects.hpMultiplier;
+    if (effects.damageMultiplier) merged.damageMultiplier = (merged.damageMultiplier ?? 1) * effects.damageMultiplier;
+    if (effects.attackSpeedMultiplier) merged.attackSpeedMultiplier = (merged.attackSpeedMultiplier ?? 1) * effects.attackSpeedMultiplier;
+    if (effects.produceBonus) merged.produceBonus = (merged.produceBonus ?? 0) + effects.produceBonus;
+    if (effects.costMultiplier) merged.costMultiplier = (merged.costMultiplier ?? 1) * effects.costMultiplier;
+    if (effects.cooldownMultiplier) merged.cooldownMultiplier = (merged.cooldownMultiplier ?? 1) * effects.cooldownMultiplier;
+    if (effects.eileenSpikeDamageMultiplier) merged.eileenSpikeDamageMultiplier = (merged.eileenSpikeDamageMultiplier ?? 1) * effects.eileenSpikeDamageMultiplier;
+    if (effects.eileenSpikeAreaNine) merged.eileenSpikeAreaNine = true;
+    if (effects.eileenBeamBidirectional) merged.eileenBeamBidirectional = true;
+    if (effects.eileenBeamTripleRow) merged.eileenBeamTripleRow = true;
+    if (effects.grants) merged.grants = [...(merged.grants ?? []), ...effects.grants];
+  };
+  for (const effects of list) apply(effects);
+  return merged;
+}
+
+/** 战斗侧入口：返回该角色由装备带来的数值加成（多装备叠加，支持联合装配）。
+ *  extra 用于部署时追加的条件增援效果（见装备的 grants 字段）。 */
+export function getRelicEffects(type: PlantType, extra?: RelicEffects): RelicEffects | null {
+  const relics = getEquippedRelics(type);
+  if (relics.length === 0 && !extra) return null;
+  const merged: RelicEffects = {};
+  const apply = (effects: RelicEffects): void => {
+    if (effects.hpRegenPerSec) merged.hpRegenPerSec = (merged.hpRegenPerSec ?? 0) + effects.hpRegenPerSec;
+    if (effects.hpMultiplier) merged.hpMultiplier = (merged.hpMultiplier ?? 1) * effects.hpMultiplier;
+    if (effects.damageMultiplier) merged.damageMultiplier = (merged.damageMultiplier ?? 1) * effects.damageMultiplier;
+    if (effects.attackSpeedMultiplier) merged.attackSpeedMultiplier = (merged.attackSpeedMultiplier ?? 1) * effects.attackSpeedMultiplier;
+    if (effects.produceBonus) merged.produceBonus = (merged.produceBonus ?? 0) + effects.produceBonus;
+    if (effects.costMultiplier) merged.costMultiplier = (merged.costMultiplier ?? 1) * effects.costMultiplier;
+    if (effects.cooldownMultiplier) merged.cooldownMultiplier = (merged.cooldownMultiplier ?? 1) * effects.cooldownMultiplier;
+    if (effects.eileenSpikeDamageMultiplier) merged.eileenSpikeDamageMultiplier = (merged.eileenSpikeDamageMultiplier ?? 1) * effects.eileenSpikeDamageMultiplier;
+    if (effects.eileenSpikeAreaNine) merged.eileenSpikeAreaNine = true;
+    if (effects.eileenBeamBidirectional) merged.eileenBeamBidirectional = true;
+    if (effects.eileenBeamTripleRow) merged.eileenBeamTripleRow = true;
+    if (effects.grants) merged.grants = [...(merged.grants ?? []), ...effects.grants];
+  };
   const relicIds = new Set(relics.map((r) => r.id));
   for (const relic of relics) {
-    // 检查联合装配：若联动藏品也已装配，使用联合效果
+    // 检查联合装配：若联动装备也已装配，使用联合效果
     let effects = relic.effects;
     if (relic.synergy && relicIds.has(relic.synergy.with)) {
       effects = relic.synergy.effects;
     }
-    const e = effects;
-    if (e.hpRegenPerSec) merged.hpRegenPerSec = (merged.hpRegenPerSec ?? 0) + e.hpRegenPerSec;
-    if (e.hpMultiplier) merged.hpMultiplier = (merged.hpMultiplier ?? 1) * e.hpMultiplier;
-    if (e.damageMultiplier) merged.damageMultiplier = (merged.damageMultiplier ?? 1) * e.damageMultiplier;
-    if (e.attackSpeedMultiplier) merged.attackSpeedMultiplier = (merged.attackSpeedMultiplier ?? 1) * e.attackSpeedMultiplier;
-    if (e.produceBonus) merged.produceBonus = (merged.produceBonus ?? 0) + e.produceBonus;
-    if (e.costMultiplier) merged.costMultiplier = (merged.costMultiplier ?? 1) * e.costMultiplier;
+    apply(effects);
   }
+  if (extra) apply(extra);
   return merged;
 }
 

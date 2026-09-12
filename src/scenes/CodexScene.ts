@@ -1,10 +1,11 @@
-﻿import Phaser from 'phaser';
+import Phaser from 'phaser';
 import { GAME_HEIGHT, GAME_WIDTH } from '../config/GameConfig';
 import { sharpenSceneText, sharpenText } from '../core/TextQuality';
 import { CODEX_PLANT_ORDER, PLANTS, type PlantConfig } from '../data/plants';
 import { describeRelicEffects, RARITY_COLOR, RARITY_LABEL, RELICS, RELIC_ORDER, type RelicConfig } from '../data/relics';
 import { ZOMBIES, type ZombieConfig, type ZombieType } from '../data/zombies';
 import { createFreshBackdrop, FRESH } from '../ui/FreshTheme';
+import { type ParentSceneData, returnToParentScene } from '../core/SceneNavigation';
 
 type CodexTab = 'allies' | 'enemies' | 'relics';
 const COLUMNS = 4;
@@ -33,9 +34,12 @@ export class CodexScene extends Phaser.Scene {
   private pageText!: Phaser.GameObjects.Text;
   private prevButton!: Phaser.GameObjects.Text;
   private nextButton!: Phaser.GameObjects.Text;
+  private returnScene?: string;
   private readonly pageByTab: Record<CodexTab, number> = { allies: 0, enemies: 0, relics: 0 };
 
   constructor() { super(CodexScene.KEY); }
+
+  init(data: ParentSceneData): void { this.returnScene = data?.returnScene; }
 
   create(): void {
     this.createBackground();
@@ -43,7 +47,7 @@ export class CodexScene extends Phaser.Scene {
     this.content = this.add.container(0, 0);
     this.createNavigation();
     this.switchTab('allies');
-    this.input.keyboard?.on('keydown-ESC', () => this.scene.start('MenuScene'));
+    this.input.keyboard?.on('keydown-ESC', () => returnToParentScene(this, this.returnScene));
     this.input.keyboard?.on('keydown-TAB', (event: KeyboardEvent) => {
       event.preventDefault();
       if (event.repeat) return;
@@ -83,13 +87,13 @@ export class CodexScene extends Phaser.Scene {
   }
 
   private createNavigation(): void {
-    const back = sharpenText(this.add.text(44, GAME_HEIGHT - 26, '← 返回主界面  ESC', {
+    const back = sharpenText(this.add.text(44, GAME_HEIGHT - 26, '← 返回上级页面  ESC', {
       fontFamily: 'Microsoft YaHei', fontSize: '14px', color: '#42506d',
       backgroundColor: '#e6f5f4', padding: { x: 15, y: 9 },
     })).setOrigin(0, 1).setInteractive({ useHandCursor: true });
     back.on('pointerover', () => back.setBackgroundColor('#d1eeee'));
     back.on('pointerout', () => back.setBackgroundColor('#e6f5f4'));
-    back.on('pointerdown', () => this.scene.start('MenuScene'));
+    back.on('pointerdown', () => returnToParentScene(this, this.returnScene));
     this.prevButton = sharpenText(this.add.text(GAME_WIDTH / 2 - 92, GAME_HEIGHT - 25, '← 上一页', {
       fontFamily: 'Microsoft YaHei', fontSize: '13px', color: '#42506d',
       backgroundColor: '#e6f5f4', padding: { x: 13, y: 8 },

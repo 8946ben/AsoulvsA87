@@ -4,6 +4,16 @@ import type { ZombieType } from './zombies';
 export interface ZombieSpawnEntry { type: ZombieType; count: number; gap: number; row?: number; }
 export interface Wave { delay: number; isHuge?: boolean; title?: string; spawns: ZombieSpawnEntry[]; }
 
+/** 本关所有敌人的全局属性加成（background.md 关卡表「通关奖励」列标注的数值）。 */
+export interface ZombieStatModifiers {
+  /** 生命值倍率（1.1 = +10%）。 */
+  hpMultiplier?: number;
+  /** 攻击力倍率。 */
+  damageMultiplier?: number;
+  /** 移动速度倍率。 */
+  speedMultiplier?: number;
+}
+
 export interface LevelConfig {
   id: number;
   name: string;
@@ -14,6 +24,8 @@ export interface LevelConfig {
   reward: string;
   accent: number;
   waves: Wave[];
+  /** 第 3 幕起敌人获得的属性加成；未配置表示本关无加成。 */
+  zombieModifiers?: ZombieStatModifiers;
 }
 
 const spawn = (type: ZombieType, count: number, gap: number, row?: number): ZombieSpawnEntry => ({ type, count, gap, row });
@@ -58,7 +70,7 @@ export const ALL_LEVELS: LevelConfig[] = [
   },
   {
     id: 3, name: '第三幕 · 铁门骑士', description: '铁门网提供厚重盾牌，需要持续火力击破。',
-    startingSun: 225, availablePlants: P3, featuredEnemies: ['basic', 'phone', 'screen', 'flag'], reward: '解锁角色卡 · 心球仪', accent: 0x73e4d3,
+    startingSun: 225, availablePlants: P3, featuredEnemies: ['basic', 'phone', 'screen', 'flag'], reward: '解锁角色卡 · 心球仪', accent: 0x73e4d3, zombieModifiers: { hpMultiplier: 1.1 },
     waves: [
       wave(5500, '常规推进', [spawn('basic', 3, 2500)]),
       wave(12500, '骑士的盾', [spawn('basic', 3, 2200), spawn('screen', 1, 0)]),
@@ -72,7 +84,7 @@ export const ALL_LEVELS: LevelConfig[] = [
   },
   {
     id: 4, name: '第四幕 · 逾山越海', description: '梯子 A87 会绕过第一次遇到的植物障碍。',
-    startingSun: 225, availablePlants: P4, featuredEnemies: ['basic', 'screen', 'ladder', 'flag'], reward: '解锁角色卡 · 贝拉', accent: 0xff8eba,
+    startingSun: 225, availablePlants: P4, featuredEnemies: ['basic', 'screen', 'ladder', 'flag'], reward: '解锁角色卡 · 贝拉', accent: 0xff8eba, zombieModifiers: { damageMultiplier: 1.1, hpMultiplier: 1.1 },
     waves: [
       wave(5500, '白虫铺场', [spawn('basic', 4, 2200)]),
       wave(12000, '梯子初现', [spawn('basic', 3, 2100), spawn('ladder', 1, 0)]),
@@ -88,7 +100,7 @@ export const ALL_LEVELS: LevelConfig[] = [
   },
   {
     id: 5, name: '第五幕 · A8 区能飞', description: '气球 A87 会飞越植物，必须在抵达舞台前击落。',
-    startingSun: 250, availablePlants: P5, featuredEnemies: ['basic', 'phone', 'screen', 'balloon', 'flag'], reward: '解锁角色卡 · 乃琳', accent: 0xbf86ff,
+    startingSun: 250, availablePlants: P5, featuredEnemies: ['basic', 'phone', 'screen', 'balloon', 'flag'], reward: '解锁角色卡 · 乃琳', accent: 0xbf86ff, zombieModifiers: { damageMultiplier: 1.1, hpMultiplier: 1.3 },
     waves: [
       wave(5500, '白虫集结', [spawn('basic', 4, 2200)]),
       wave(12500, '手机护卫', [spawn('basic', 4, 2000), spawn('phone', 2, 3400)]),
@@ -104,7 +116,7 @@ export const ALL_LEVELS: LevelConfig[] = [
   },
   {
     id: 6, name: '第六幕 · 冲锋号角', description: '橄榄球与撑杆 A87 发起高速冲锋，近线防御迎来考验。',
-    startingSun: 250, availablePlants: P6, featuredEnemies: ['basic', 'pole', 'football', 'bucket'], reward: '解锁角色卡 · 嘉然', accent: 0xff668d,
+    startingSun: 250, availablePlants: P6, featuredEnemies: ['basic', 'pole', 'football', 'bucket'], reward: '解锁角色卡 · 嘉然', accent: 0xff668d, zombieModifiers: { damageMultiplier: 1.3, speedMultiplier: 1.3 },
     waves: [
       wave(5000, '白虫先锋', [spawn('basic', 4, 2200)]),
       wave(12000, '撑杆先遣', [spawn('basic', 3, 2000), spawn('pole', 2, 3200)]),
@@ -120,7 +132,7 @@ export const ALL_LEVELS: LevelConfig[] = [
   },
   {
     id: 7, name: '第七幕 · 橄榄球手', description: '新旧特化敌人连续登场，波次间隔进一步缩短。',
-    startingSun: 275, availablePlants: P7, featuredEnemies: ['screen', 'ladder', 'football', 'sled', 'flag'], reward: '解锁角色卡 · 思诺', accent: 0xffa15d,
+    startingSun: 275, availablePlants: P7, featuredEnemies: ['screen', 'ladder', 'football', 'sled', 'flag'], reward: '解锁角色卡 · 思诺', accent: 0xffa15d, zombieModifiers: { damageMultiplier: 1.5, hpMultiplier: 1.5 },
     waves: [
       wave(5000, '密集白虫', [spawn('basic', 5, 1900)]),
       wave(12000, '铁门列队', [spawn('basic', 3, 1900), spawn('screen', 3, 2800)]),
@@ -138,7 +150,7 @@ export const ALL_LEVELS: LevelConfig[] = [
   },
   {
     id: 8, name: '第八幕 · 飞驰区生', description: '矿工遁地绕后、气球飞越防线，空地夹击考验防线纵深。',
-    startingSun: 275, availablePlants: P8, featuredEnemies: ['balloon', 'miner', 'sled', 'flag'], reward: '解锁角色卡 · 心宜', accent: 0x8e8cff,
+    startingSun: 275, availablePlants: P8, featuredEnemies: ['balloon', 'miner', 'sled', 'flag'], reward: '解锁角色卡 · 心宜', accent: 0x8e8cff, zombieModifiers: { damageMultiplier: 1.8, hpMultiplier: 1.8 },
     waves: [
       wave(5000, '装甲开场', [spawn('basic', 5, 1900), spawn('bucket', 2, 3200)]),
       wave(12000, '梯子穿插', [spawn('basic', 4, 1800), spawn('ladder', 3, 2600)]),
@@ -156,7 +168,7 @@ export const ALL_LEVELS: LevelConfig[] = [
   },
   {
     id: 9, name: '第九幕 · 隐藏踪迹', description: '全员到齐，在高密度波次中完成最终彩排。',
-    startingSun: 300, availablePlants: P9, featuredEnemies: ['football', 'sled', 'miner', 'ladder'], reward: '解锁第 10 幕 · 跃跃欲试', accent: 0xff6fba,
+    startingSun: 300, availablePlants: P9, featuredEnemies: ['football', 'sled', 'miner', 'ladder'], reward: '解锁第 10 幕 · 跃跃欲试', accent: 0xff6fba, zombieModifiers: { damageMultiplier: 2, hpMultiplier: 2 },
     waves: [
       wave(4800, '高密前奏', [spawn('basic', 6, 1700)]),
       wave(11500, '铁门方阵', [spawn('basic', 4, 1700), spawn('screen', 4, 2500)], true),
@@ -174,7 +186,7 @@ export const ALL_LEVELS: LevelConfig[] = [
   },
   {
     id: 10, name: '第十幕 · 跃跃欲试', description: '全部 A87 倾巢而出，守住最后的灯光。',
-    startingSun: 325, availablePlants: P9, featuredEnemies: ['basic', 'screen', 'balloon', 'sled'], reward: '解锁番外篇 · 沸反盈天', accent: 0xd76aff,
+    startingSun: 325, availablePlants: P9, featuredEnemies: ['basic', 'screen', 'balloon', 'sled'], reward: '解锁番外篇 · 沸反盈天', accent: 0xd76aff, zombieModifiers: { damageMultiplier: 2, hpMultiplier: 2.5 },
     waves: [
       wave(4500, '终局前奏', [spawn('basic', 6, 1700)]),
       wave(11500, '盾墙压境', [spawn('basic', 5, 1500), spawn('screen', 3, 2500)]),
@@ -194,7 +206,7 @@ export const ALL_LEVELS: LevelConfig[] = [
   },
   {
     id: 11, name: '第十一幕 · 沸反盈天', description: '番外篇开幕：夜幕降临，A87 残部发起三面旗帜的总攻。',
-    startingSun: 350, availablePlants: P9, featuredEnemies: ['screen', 'miner', 'sled', 'football'], reward: '解锁最终幕 · 舞台之争', accent: 0x5d8cff,
+    startingSun: 350, availablePlants: P9, featuredEnemies: ['screen', 'miner', 'sled', 'football'], reward: '解锁最终幕 · 舞台之争', accent: 0x5d8cff, zombieModifiers: { damageMultiplier: 2, hpMultiplier: 3 },
     waves: [
       wave(4500, '夜幕先锋', [spawn('basic', 6, 1600)]),
       wave(11500, '铁门夜巡', [spawn('basic', 4, 1500), spawn('screen', 4, 2400)]),
@@ -214,7 +226,7 @@ export const ALL_LEVELS: LevelConfig[] = [
   },
   {
     id: 12, name: '第十二幕 · 舞台之争', description: 'Boss 关：神区化龙亲率全部阵容发起总攻。',
-    startingSun: 350, availablePlants: P9, featuredEnemies: ['sled', 'miner', 'balloon', 'screen', 'dragon'], reward: '全篇章通关 · 枝江星光奖杯', accent: 0xffd76a,
+    startingSun: 350, availablePlants: P9, featuredEnemies: ['sled', 'miner', 'balloon', 'screen', 'dragon'], reward: '全篇章通关 · 枝江星光奖杯', accent: 0xffd76a, zombieModifiers: { damageMultiplier: 3, hpMultiplier: 4 },
     waves: [
       wave(4500, '安可前奏', [spawn('basic', 6, 1600)]),
       wave(11500, '盾墙再临', [spawn('screen', 4, 2400), spawn('ladder', 2, 2600)], true),

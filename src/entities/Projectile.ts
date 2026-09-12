@@ -8,6 +8,8 @@ export interface ProjectileOptions {
   splash?: number;
   empowered?: boolean;
   lobbed?: boolean;
+  /** 反向飞行（朝画面左侧，用于乃琳的双向攻击）。 */
+  backwards?: boolean;
   arcTargetX?: number;
   arcTargetY?: number;
   onHit?: (damageDealt: number, target: Zombie) => void;
@@ -16,7 +18,7 @@ export interface ProjectileOptions {
 }
 
 export interface ProjectileContext {
-  findTarget(row: number, x: number, ignored?: Set<Zombie>): Zombie | null;
+  findTarget(row: number, x: number, ignored?: Set<Zombie>, direction?: 1 | -1): Zombie | null;
   damageSplash(row: number, x: number, radius: number, damage: number, primary: Zombie): void;
   spawnCandyBurst(x: number, y: number, count: number, damage: number, explosive: boolean): void;
 }
@@ -56,16 +58,18 @@ export class Projectile extends Phaser.GameObjects.Sprite {
 
   update(_time: number, delta: number, ctx: ProjectileContext): void {
     if (!this.active) return;
-    this.x += this.speed * delta / 1000;
+    const direction = this.options.backwards ? -1 : 1;
+    if (this.options.backwards) this.setFlipX(true);
+    this.x += this.speed * direction * delta / 1000;
     if (this.options.lobbed) {
       const progress = Phaser.Math.Clamp((this.x - this.launchX) / this.arcDistance, 0, 1);
       const baselineY = Phaser.Math.Linear(this.launchY, this.arcTargetY, progress);
       this.y = baselineY - 4 * this.arcHeight * progress * (1 - progress);
       this.angle += delta * 0.18;
     }
-    if (this.x > GAME_WIDTH + 40) { this.destroy(); return; }
+    if (this.x > GAME_WIDTH + 40 || this.x < -40) { this.destroy(); return; }
 
-    const target = ctx.findTarget(this.row, this.x, this.hit);
+    const target = ctx.findTarget(this.row, this.x, this.hit, direction);
     if (!target) return;
     this.hit.add(target);
     const hpBefore = target.hp;

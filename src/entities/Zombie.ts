@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { GAME_WIDTH, GRID, HOUSE_LINE_X, TEX } from '../config/GameConfig';
 import { ZOMBIES, type ZombieConfig, type ZombieType } from '../data/zombies';
+import type { ZombieStatModifiers } from '../data/levels';
 import type { Plant } from './Plant';
 
 export type ZombieState = 'walking' | 'eating' | 'dead';
@@ -14,6 +15,10 @@ export interface ZombieContext {
 
 export class Zombie extends Phaser.GameObjects.Sprite {
   readonly config: ZombieConfig;
+  /** 应用关卡加成后的移动速度。 */
+  private readonly speed: number;
+  /** 应用关卡加成后的攻击力。 */
+  readonly attackDps: number;
   /** 化龙会换道、珈乐会游走，行号可变。 */
   row: number;
   hp: number;
@@ -42,11 +47,15 @@ export class Zombie extends Phaser.GameObjects.Sprite {
   private direction: -1 | 1 = -1;
   private surfaced = false;
 
-  constructor(scene: Phaser.Scene, x: number, y: number, type: ZombieType, row: number) {
+  constructor(scene: Phaser.Scene, x: number, y: number, type: ZombieType, row: number, stats?: ZombieStatModifiers) {
     const config = ZOMBIES[type];
     const spawnY = y - (config.flying ? 34 : 0);
     super(scene, x, spawnY, config.texture);
-    this.config = config; this.row = row; this.hp = config.hp; this.maxHp = config.hp;
+    // 关卡属性加成（background.md 关卡表）：生命/攻击/移速按倍率缩放。
+    this.speed = config.speed * (stats?.speedMultiplier ?? 1);
+    this.attackDps = config.attackDps * (stats?.damageMultiplier ?? 1);
+    const hp = Math.round(config.hp * (stats?.hpMultiplier ?? 1));
+    this.config = config; this.row = row; this.hp = hp; this.maxHp = hp;
     this.baseY = spawnY;
     this.crawlPhase = Phaser.Math.FloatBetween(0, Math.PI * 2);
     this.charging = Boolean(config.charge);
@@ -112,12 +121,12 @@ export class Zombie extends Phaser.GameObjects.Sprite {
           this.biteTimer += delta;
           if (this.biteTimer >= 1000) {
             this.biteTimer -= 1000;
-            this.target.takeSpecialHit(this.config.attackDps * Math.pow(0.7, this.soulDebuffStacks));
+            this.target.takeSpecialHit(this.attackDps * Math.pow(0.7, this.soulDebuffStacks));
           }
           return;
         }
         this.biteTimer = 0;
-        this.target.takeDamage(this.config.attackDps * Math.pow(0.7, this.soulDebuffStacks) * dt);
+        this.target.takeDamage(this.attackDps * Math.pow(0.7, this.soulDebuffStacks) * dt);
         return;
       }
       this.target = null; this.biteTimer = 0; this.state = 'walking'; this.setScale(this.config.scale ?? 1);
@@ -163,7 +172,7 @@ export class Zombie extends Phaser.GameObjects.Sprite {
     const modifier = (this.charging ? 1.45 : 1) * rageModifier * postVaultModifier * (this.slowRemaining > 0 ? 0.48 : 1) * soulSpeedModifier;
     // 蠕动时交替“收缩蓄力—伸展滑行”，不再保持匀速平移。
     const stride = 0.68 + 0.58 * (0.5 + 0.5 * Math.cos(this.crawlPhase));
-    this.x += this.direction * this.config.speed * modifier * stride * dt;
+    this.x += this.direction * this.speed * modifier * stride * dt;
     if (underground && leadX <= GRID.OFFSET_X - 15) {
       this.surfaced = true;
       this.direction = 1;
@@ -281,7 +290,7 @@ export class Zombie extends Phaser.GameObjects.Sprite {
     const dist = Math.hypot(dx, dy);
     if (dist < 8) { this.roamPause = 1600; return; }
     // 游走时使用 8 倍基础移速（5.5 是设计文档中接近防线的速度，游走需要更快的巡航）。
-    const step = this.config.speed * 8 * dt * (this.slowRemaining > 0 ? 0.48 : 1) * Math.pow(0.5, this.soulDebuffStacks);
+    const step = this.speed * 8 * dt * (this.slowRemaining > 0 ? 0.48 : 1) * Math.pow(0.5, this.soulDebuffStacks);
     this.x += (dx / dist) * step;
     this.y += (dy / dist) * step;
     const row = Phaser.Math.Clamp(Math.floor((this.y + 4 - GRID.OFFSET_Y) / GRID.CELL_H), 0, GRID.ROWS - 1);

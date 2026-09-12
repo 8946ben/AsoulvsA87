@@ -1,11 +1,15 @@
 import Phaser from 'phaser';
 import { GAME_HEIGHT, GAME_WIDTH } from '../config/GameConfig';
 import { sharpenSceneText } from '../core/TextQuality';
+import { type ParentSceneData, returnToParentScene } from '../core/SceneNavigation';
 import { createFreshBackdrop, FRESH } from '../ui/FreshTheme';
 
 export class ModeSelectScene extends Phaser.Scene {
   static readonly KEY = 'ModeSelectScene';
+  private returnScene?: string;
   constructor() { super(ModeSelectScene.KEY); }
+
+  init(data: ParentSceneData): void { this.returnScene = data?.returnScene; }
 
   create(): void {
     createFreshBackdrop(this, 'garden');
@@ -13,9 +17,9 @@ export class ModeSelectScene extends Phaser.Scene {
     this.add.text(GAME_WIDTH / 2, 108, '每一次守护舞台，都有不同的故事', { fontFamily: 'Microsoft YaHei', fontSize: '15px', color: '#60758a' }).setOrigin(0.5);
     this.createModeCard(355, 365, '闯关模式', 'CAMPAIGN', '按章节推进固定关卡\n解锁角色、金币与融合科技', '进入章节选择', FRESH.BLUE, () => this.scene.start('ChapterSelectScene'));
     this.createModeCard(925, 365, '肉鸽模式', 'ROGUELIKE', '随机路线、招募进阶与收藏品\n失败会结束本次巡演，但每局路线不同', '开始探索', FRESH.PINK, () => this.scene.start('RogueHubScene'));
-    const back = this.add.text(52, GAME_HEIGHT - 43, '← 返回主界面  ESC', { fontFamily: 'Microsoft YaHei', fontSize: '14px', color: '#52667d', backgroundColor: '#edf7f5', padding: { x: 16, y: 10 } }).setInteractive({ useHandCursor: true });
-    back.on('pointerdown', () => this.scene.start('MenuScene'));
-    this.input.keyboard?.on('keydown-ESC', () => this.scene.start('MenuScene'));
+    const back = this.add.text(52, GAME_HEIGHT - 43, '← 返回上级页面  ESC', { fontFamily: 'Microsoft YaHei', fontSize: '14px', color: '#52667d', backgroundColor: '#edf7f5', padding: { x: 16, y: 10 } }).setInteractive({ useHandCursor: true });
+    back.on('pointerdown', () => returnToParentScene(this, this.returnScene));
+    this.input.keyboard?.on('keydown-ESC', () => returnToParentScene(this, this.returnScene));
     sharpenSceneText(this);
   }
 

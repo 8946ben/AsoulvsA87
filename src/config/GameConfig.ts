@@ -90,6 +90,7 @@ export const TEX = {
   ZOMBIE_BUCKET: 'zombie_bucket',
   ZOMBIE_POLE: 'zombie_pole',
   ZOMBIE_DRAGON: 'zombie_dragon',
+  MENU_DRAGON: 'menu_dragon',
   ZOMBIE_KNIGHT: 'zombie_knight',
   ZOMBIE_CAROL: 'zombie_carol',
   CANDY: 'projectile_candy',
@@ -168,6 +169,8 @@ export const ASSETS: Record<string, string> = {
   [TEX.ZOMBIE_BUCKET]: 'images/a87-bucket-v2.png',
   [TEX.ZOMBIE_POLE]: 'images/a87-pole-v2.png',
   [TEX.ZOMBIE_DRAGON]: 'images/a87-dragon-v2.png',
+  // 首页 BOSS 使用原图，避免战场规格归一化后再放大造成模糊。
+  [TEX.MENU_DRAGON]: 'images/a87-dragon-v2.png',
   [TEX.ZOMBIE_CAROL]: 'images/carol-corrupted-v2.png',
   [TEX.INJURY_BANDAGE]: 'images/injury-bandage.png',
   [TEX.SUN]: 'images/sun.png',

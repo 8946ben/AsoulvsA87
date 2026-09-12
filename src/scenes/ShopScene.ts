@@ -6,6 +6,7 @@ import { sharpenSceneText, sharpenText } from '../core/TextQuality';
 import { PLANTS } from '../data/plants';
 import { COIN_PER_CLEAR, COIN_PER_INTACT_ALPACA, TECH_NODES, type TechNode } from '../data/techTree';
 import { createFreshBackdrop, FRESH } from '../ui/FreshTheme';
+import { type ParentSceneData, returnToParentScene } from '../core/SceneNavigation';
 
 const FORMULAS: Record<string, string> = {
   xingkongtang: '贝极星 ＋ 嘉心糖',
@@ -16,15 +17,18 @@ const FORMULAS: Record<string, string> = {
 
 export class ShopScene extends Phaser.Scene {
   static readonly KEY = 'ShopScene';
+  private returnScene?: string;
 
   constructor() { super(ShopScene.KEY); }
+
+  init(data: ParentSceneData): void { this.returnScene = data?.returnScene; }
 
   create(): void {
     this.createBackground();
     this.createHeader();
     this.createNodes();
     this.createNavigation();
-    this.input.keyboard?.on('keydown-ESC', () => this.scene.start('MenuScene'));
+    this.input.keyboard?.on('keydown-ESC', () => returnToParentScene(this, this.returnScene));
     sharpenSceneText(this);
   }
 
@@ -123,12 +127,12 @@ export class ShopScene extends Phaser.Scene {
   }
 
   private createNavigation(): void {
-    const back = sharpenText(this.add.text(42, GAME_HEIGHT - 23, '← 返回主界面  ESC', {
+    const back = sharpenText(this.add.text(42, GAME_HEIGHT - 23, '← 返回上级页面  ESC', {
       fontFamily: 'Microsoft YaHei', fontSize: '14px', color: '#42506d',
       backgroundColor: '#e6f5f4', padding: { x: 16, y: 9 },
     })).setOrigin(0, 1).setInteractive({ useHandCursor: true });
     back.on('pointerover', () => back.setBackgroundColor('#d1eeee'));
     back.on('pointerout', () => back.setBackgroundColor('#e6f5f4'));
-    back.on('pointerdown', () => this.scene.start('MenuScene'));
+    back.on('pointerdown', () => returnToParentScene(this, this.returnScene));
   }
 }

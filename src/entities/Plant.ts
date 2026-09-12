@@ -30,6 +30,8 @@ export class Plant extends Phaser.GameObjects.Sprite {
   maxHp: number;
   /** 背包装配的枝江装备带来的数值加成；未装配时为 null。 */
   private readonly relic: RelicEffects | null;
+  /** 该角色装备携带的条件增援效果；部署时由 GameScene 结算给后部署的对应角色。 */
+  get relicGrants(): Array<{ type: PlantType; effects: RelicEffects }> { return this.relic?.grants ?? []; }
   private attackTimer = 0;
   private produceTimer = 0;
   private specialTimer = 0;
@@ -45,14 +47,14 @@ export class Plant extends Phaser.GameObjects.Sprite {
   private readonly dispW: number;
   private readonly dispH: number;
 
-  constructor(scene: Phaser.Scene, x: number, y: number, type: PlantType, row: number, col: number, rank: 1 | 2 = 2) {
+  constructor(scene: Phaser.Scene, x: number, y: number, type: PlantType, row: number, col: number, rank: 1 | 2 = 2, extraRelic?: RelicEffects) {
     const config = PLANTS[type];
     super(scene, x, y, config.texture);
     const src = scene.textures.get(config.texture).getSourceImage() as HTMLImageElement;
     const srcW = src?.width || 78; const srcH = src?.height || 94;
     this.baseScale = Math.min(PLANT_DISPLAY.MAX_W / srcW, PLANT_DISPLAY.MAX_H / srcH);
     this.dispW = srcW * this.baseScale; this.dispH = srcH * this.baseScale;
-    this.relic = getRelicEffects(type);
+    this.relic = getRelicEffects(type, extraRelic);
     const maxHp = Math.round(config.hp * (this.relic?.hpMultiplier ?? 1));
     this.config = config; this.rank = rank; this.row = row; this.col = col; this.hp = maxHp; this.maxHp = maxHp;
     this.baseY = y;
@@ -216,14 +218,29 @@ export class Plant extends Phaser.GameObjects.Sprite {
       this.attackTimer += delta;
       if (this.attackTimer >= this.attackIntervalWith(1900)) {
         this.attackTimer = 0;
-        this.fire(ctx, { piercing: true }, false); this.recoil();
+        this.fire(ctx, { piercing: true }, false);
+        // 枝江法考宝典：攻击变为双向；联合火锅底料时改为单向覆盖三行。
+        if (this.relic?.eileenBeamBidirectional) this.fire(ctx, { piercing: true, backwards: true }, false);
+        if (this.relic?.eileenBeamTripleRow) {
+          for (const row of [this.row - 1, this.row + 1]) {
+            if (row >= 0 && row < GRID.ROWS) this.fire(ctx, { piercing: true }, false, row);
+          }
+        }
+        this.recoil();
       }
       return;
     }
     this.attackTimer += delta;
     if (!this.transformed) this.enterSpikeForm();
     if (this.attackTimer >= 850) {
-      this.attackTimer = 0; nearby.takeDamage(this.scaleDamage(26)); nearby.stunFor(520);
+      this.attackTimer = 0;
+      // 大凤沟火锅底料：地刺伤害翻倍；联合法考宝典时影响范围扩大到九个格子。
+      const spikeDamage = Math.round(this.scaleDamage(26) * (this.relic?.eileenSpikeDamageMultiplier ?? 1));
+      if (this.relic?.eileenSpikeAreaNine) {
+        ctx.damageGridArea(this.row, this.col, spikeDamage, 520);
+      } else {
+        nearby.takeDamage(spikeDamage); nearby.stunFor(520);
+      }
       const spike = this.scene.add.triangle(nearby.x, nearby.y + 30, 0, 28, 9, 0, 18, 28, 0xa76cff, 0.9).setDepth(33);
       this.scene.tweens.add({ targets: spike, y: spike.y - 20, alpha: 0, duration: 350, onComplete: () => spike.destroy() });
     }
@@ -385,9 +402,9 @@ export class Plant extends Phaser.GameObjects.Sprite {
     });
   }
 
-  private fire(ctx: PlantContext, options: ProjectileOptions, lobbed: boolean): void {
+  private fire(ctx: PlantContext, options: ProjectileOptions, lobbed: boolean, row = this.row): void {
     const damage = Math.round(this.attackDamage * ctx.getDamageMultiplier(this.config.type));
-    ctx.spawnProjectile(this.x + this.dispW * 0.3, this.y - 12, this.config.projectile ?? 'projectile_candy', damage, this.row, { ...options, lobbed });
+    ctx.spawnProjectile(this.x + this.dispW * 0.3, this.y - 12, this.config.projectile ?? 'projectile_candy', damage, row, { ...options, lobbed });
   }
   private fireBurst(ctx: PlantContext): void {
     const count = this.config.burstCount ?? 1;
