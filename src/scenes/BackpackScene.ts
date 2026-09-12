@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { GAME_HEIGHT, GAME_WIDTH } from '../config/GameConfig';
 import { ADVANCE_COST, advancePlant, getCollectedPlants, getCollectionRank, getStardust, isAdvanceable, isPlantCollected, revertPlant } from '../core/Collection';
-import { equipRelic, getEquippedRelics, getOwnedRelics, getRelicHolder, isRelicOwned, unequipRelic } from '../core/Relics';
+import { equipRelic, getEquippedRelics, getOwnedRelics, getRelicEffects, getRelicHolder, isRelicOwned, unequipRelic } from '../core/Relics';
 import { sharpenSceneText, sharpenText } from '../core/TextQuality';
 import { describeRelicEffects, RARITY_COLOR, RARITY_LABEL, RELICS, RELIC_ORDER, type RelicId } from '../data/relics';
 import { CODEX_PLANT_ORDER, PLANTS, type PlantType } from '../data/plants';
@@ -212,7 +212,12 @@ export class BackpackScene extends Phaser.Scene {
     const quote = this.add.text(852, 354, owned && config.quote ? `“${config.quote}”` : '', {
       fontFamily: 'Microsoft YaHei', fontSize: '12px', color: '#8190a0', fontStyle: 'italic', wordWrap: { width: 384, useAdvancedWrap: true },
     });
-    const stats = this.add.text(852, 412, owned ? `生命  ${config.hp}     部署应援  ${config.cost || '融合'}     冷却  ${config.cooldown ? `${(config.cooldown / 1000).toFixed(1)} 秒` : '即时'}` : '档案数据将在收录后开放', {
+    const stats = this.add.text(852, 412, owned ? (() => {
+      const relicEffects = getRelicEffects(type);
+      const hp = Math.round(config.hp * (relicEffects?.hpMultiplier ?? 1));
+      const cost = Math.round(config.cost * (relicEffects?.costMultiplier ?? 1));
+      return `生命  ${hp}     部署应援  ${cost || '融合'}     冷却  ${config.cooldown ? `${(config.cooldown / 1000).toFixed(1)} 秒` : '即时'}`;
+    })() : '档案数据将在收录后开放', {
       fontFamily: 'Microsoft YaHei', fontSize: '13px', color: owned ? '#a66b25' : '#8b9997', fontStyle: 'bold',
     });
     const advanceable = owned && isAdvanceable(type);
