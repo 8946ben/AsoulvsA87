@@ -456,9 +456,9 @@ export class BackpackScene extends Phaser.Scene {
     return chips;
   }
 
-  /** 显示藏品选择器：列出所有已持有且可装配给当前角色的藏品。 */
+  /** 显示藏品选择器：分页列出所有已持有且可装配给当前角色的藏品（每页 6 件）。 */
   private showRelicPicker(type: PlantType): void {
-    // 创建遮罩层
+    const pickerRoot = this.add.container(0, 0).setDepth(300);
     const overlay = this.add.rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2, GAME_WIDTH, GAME_HEIGHT, 0x000000, 0.5);
     const panel = this.add.rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2, 500, 400, 0xfffffb, 0.98).setStrokeStyle(2, 0x4eb3cf, 0.6);
     const title = sharpenText(this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 170, '选择要装配的藏品', {
@@ -469,9 +469,9 @@ export class BackpackScene extends Phaser.Scene {
     }).setOrigin(0.5).setInteractive({ useHandCursor: true }));
     closeBtn.on('pointerover', () => closeBtn.setColor('#d7527c'));
     closeBtn.on('pointerout', () => closeBtn.setColor('#71809a'));
-    closeBtn.on('pointerdown', () => { overlay.destroy(); panel.destroy(); title.destroy(); closeBtn.destroy(); relicListContainer.destroy(); });
+    closeBtn.on('pointerdown', () => pickerRoot.destroy());
+    pickerRoot.add([overlay, panel, title, closeBtn]);
 
-    const relicListContainer = this.add.container(0, 0);
     const ownedRelics = getOwnedRelics().filter((id) => {
       const relic = RELICS[id];
       return !relic.allowedTypes || relic.allowedTypes.includes(type);
@@ -481,31 +481,57 @@ export class BackpackScene extends Phaser.Scene {
       const emptyText = sharpenText(this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2, '暂无可用藏品\n请前往「枝江藏品」页或抽卡转盘获取', {
         fontFamily: 'Microsoft YaHei', fontSize: '14px', color: '#9aa8a4', align: 'center',
       }).setOrigin(0.5));
-      relicListContainer.add(emptyText);
-    } else {
-      ownedRelics.forEach((id, index) => {
+      pickerRoot.add(emptyText);
+      return;
+    }
+
+    const pageSize = 6;
+    const pageCount = Math.ceil(ownedRelics.length / pageSize);
+    let page = 0;
+    const pageContainer = this.add.container(0, 0);
+    const pageText = sharpenText(this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 + 162, '', {
+      fontFamily: 'Arial', fontSize: '13px', color: '#71809a', fontStyle: 'bold',
+    }).setOrigin(0.5));
+    const prevBtn = this.add.text(GAME_WIDTH / 2 - 150, GAME_HEIGHT / 2 + 162, '‹ 上一页', {
+      fontFamily: 'Microsoft YaHei', fontSize: '13px', color: '#42506d', backgroundColor: '#e8f5f2', padding: { x: 10, y: 5 }, fontStyle: 'bold',
+    }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+    const nextBtn = this.add.text(GAME_WIDTH / 2 + 150, GAME_HEIGHT / 2 + 162, '下一页 ›', {
+      fontFamily: 'Microsoft YaHei', fontSize: '13px', color: '#42506d', backgroundColor: '#e8f5f2', padding: { x: 10, y: 5 }, fontStyle: 'bold',
+    }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+    pickerRoot.add([pageContainer, prevBtn, pageText, nextBtn]);
+
+    const renderPage = (): void => {
+      pageContainer.removeAll(true);
+      const start = page * pageSize;
+      ownedRelics.slice(start, start + pageSize).forEach((id, index) => {
         const relic = RELICS[id];
         const col = index % 2; const row = Math.floor(index / 2);
-        const x = GAME_WIDTH / 2 - 110 + col * 220; const y = GAME_HEIGHT / 2 - 100 + row * 80;
+        const x = GAME_WIDTH / 2 - 110 + col * 220; const y = GAME_HEIGHT / 2 - 112 + row * 76;
         const itemBg = this.add.rectangle(x, y, 200, 64, 0xe8f5f2, 0.99).setStrokeStyle(2, 0x4eb3cf, 0.4).setInteractive({ useHandCursor: true });
         const itemText = sharpenText(this.add.text(x, y - 10, `${relic.glyph} ${relic.name}`, {
           fontFamily: 'Microsoft YaHei', fontSize: '13px', color: '#42506d', fontStyle: 'bold',
         }).setOrigin(0.5));
         const effectDesc = describeRelicEffects(relic.effects).join('，');
         const itemEffect = sharpenText(this.add.text(x, y + 12, effectDesc, {
-          fontFamily: 'Microsoft YaHei', fontSize: '10px', color: '#71809a',
+          fontFamily: 'Microsoft YaHei', fontSize: '10px', color: '#71809a', wordWrap: { width: 188, useAdvancedWrap: true },
         }).setOrigin(0.5));
         itemBg.on('pointerover', () => itemBg.setStrokeStyle(2, 0x4eb3cf, 0.8));
         itemBg.on('pointerout', () => itemBg.setStrokeStyle(2, 0x4eb3cf, 0.4));
         itemBg.on('pointerdown', () => {
           if (equipRelic(id, type)) {
-            overlay.destroy(); panel.destroy(); title.destroy(); closeBtn.destroy(); relicListContainer.destroy();
+            pickerRoot.destroy();
             this.refresh();
           }
         });
-        relicListContainer.add([itemBg, itemText, itemEffect]);
+        pageContainer.add([itemBg, itemText, itemEffect]);
       });
-    }
+      pageText.setText(`${page + 1} / ${pageCount}`);
+      prevBtn.setAlpha(page > 0 ? 1 : 0.3);
+      nextBtn.setAlpha(page < pageCount - 1 ? 1 : 0.3);
+    };
+    prevBtn.on('pointerdown', () => { if (page > 0) { page -= 1; renderPage(); } });
+    nextBtn.on('pointerdown', () => { if (page < pageCount - 1) { page += 1; renderPage(); } });
+    renderPage();
   }
 
   private tryAdvance(type: PlantType): void {
