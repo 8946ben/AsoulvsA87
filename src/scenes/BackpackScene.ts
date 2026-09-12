@@ -426,7 +426,6 @@ export class BackpackScene extends Phaser.Scene {
       this.time.delayedCall(1150, () => this.refresh());
       return;
     }
-    if (result.ok) this.cameras.main.flash(150, 255, 214, 232, false);
     this.refresh();
   }
 
