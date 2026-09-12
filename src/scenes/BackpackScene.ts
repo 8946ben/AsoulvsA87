@@ -290,11 +290,11 @@ export class BackpackScene extends Phaser.Scene {
       const card = this.add.rectangle(x, y, cardW, cardH, fill, owned ? 0.99 : 0.86)
         .setStrokeStyle(2, owned ? accent : 0xaebbb8, selected ? 0.95 : 0.3)
         .setInteractive({ useHandCursor: true });
-      const glyph = this.add.text(x - 56, y, relic.glyph, { fontSize: '22px' }).setOrigin(0.5);
+      const glyph = this.add.text(x - 56, y, relic.glyph, { fontSize: '22px' }).setOrigin(0.5).setAlpha(owned ? 1 : 0.3);
       const name = this.add.text(x - 27, y - 14, relic.name, {
         fontFamily: 'Microsoft YaHei', fontSize: '12px', color: '#42506d', fontStyle: 'bold',
       });
-      const state = this.add.text(x - 27, y + 8, !owned ? '未入库' : holder ? `装配 · ${PLANTS[holder].name}` : '待装配', {
+      const state = this.add.text(x - 27, y + 8, !owned ? '？？？' : holder ? `装配 · ${PLANTS[holder].name}` : '待装配', {
         fontFamily: 'Microsoft YaHei', fontSize: '10px', color: !owned ? '#9aa8a4' : holder ? '#d7527c' : '#348c72',
       });
       card.on('pointerover', () => card.setStrokeStyle(2, owned ? accent : 0xaebbb8, 0.86));
@@ -322,10 +322,10 @@ export class BackpackScene extends Phaser.Scene {
     const rarityTag = this.add.text(630, 524, `${RARITY_LABEL[relic.rarity]}藏品`, {
       fontFamily: 'Microsoft YaHei', fontSize: '12px', color: owned ? '#ffffff' : '#f5f2ea', backgroundColor: accentText, padding: { x: 14, y: 7 }, fontStyle: 'bold',
     }).setOrigin(0.5).setAlpha(owned ? 1 : 0.45);
-    const holderText = this.add.text(630, 566, !owned ? '尚未入库' : holder ? `当前持有 · ${PLANTS[holder].name}` : '尚未装配给任何角色', {
+    const holderText = this.add.text(630, 566, !owned ? '？？？' : holder ? `当前持有 · ${PLANTS[holder].name}` : '尚未装配给任何角色', {
       fontFamily: 'Microsoft YaHei', fontSize: '12px', color: holder ? '#d7527c' : '#71809a', fontStyle: 'bold',
     }).setOrigin(0.5);
-    const quote = this.add.text(630, 612, `“${relic.quote}”`, {
+    const quote = this.add.text(630, 612, owned ? `“${relic.quote}”` : '“？？？”', {
       fontFamily: 'Microsoft YaHei', fontSize: '11px', color: '#8190a0', fontStyle: 'italic', align: 'center', wordWrap: { width: 300, useAdvancedWrap: true },
     }).setOrigin(0.5, 0);
 
@@ -333,7 +333,7 @@ export class BackpackScene extends Phaser.Scene {
     const index = RELIC_ORDER.indexOf(relic.id) + 1;
     const code = this.add.text(852, 166, `NO. ${String(index).padStart(2, '0')}`, { fontFamily: 'Arial', fontSize: '12px', color: '#71809a', fontStyle: 'bold' });
     const title = this.add.text(852, 190, relic.name, { fontFamily: 'Microsoft YaHei', fontSize: '30px', color: '#42506d', fontStyle: 'bold' });
-    const meta = this.add.text(854, 240, owned ? `${RARITY_LABEL[relic.rarity]} · 已入库` : `${RARITY_LABEL[relic.rarity]} · 转盘抽取`, {
+    const meta = this.add.text(854, 240, owned ? `${RARITY_LABEL[relic.rarity]} · 已入库` : `${RARITY_LABEL[relic.rarity]} · ？？？`, {
       fontFamily: 'Microsoft YaHei', fontSize: '13px', color: owned ? '#348c72' : '#a66b25', fontStyle: 'bold',
     });
     const line = this.add.graphics(); line.lineStyle(2, accent, 0.38); line.beginPath(); line.moveTo(852, 266); line.lineTo(1236, 266); line.strokePath();
@@ -342,11 +342,13 @@ export class BackpackScene extends Phaser.Scene {
     const effectLines = describeRelicEffects(relic.effects).map((text, i) => this.add.text(852, 316 + i * 24, `· ${text}`, {
       fontFamily: 'Microsoft YaHei', fontSize: '13px', color: '#52667d',
     }));
+    effectLines.forEach((line) => line.setAlpha(owned ? 1 : 0.3));
     const effectBottom = 316 + effectLines.length * 24;
 
     const allowTitle = this.add.text(852, effectBottom + 14, '可装配角色', { fontFamily: 'Microsoft YaHei', fontSize: '15px', color: '#42506d', fontStyle: 'bold' });
     const chips = this.createRelicChips(relic.id, effectBottom + 44);
-    const holderHint = this.add.text(852, 624, !owned ? '通过抽卡转盘获得后即可装配' : holder ? '再次点击持有者的名字可卸下藏品' : '点击角色名即完成装配', {
+    chips.forEach((chip) => chip.setAlpha(owned ? 1 : 0.3));
+    const holderHint = this.add.text(852, 624, !owned ? '？？？' : holder ? '再次点击持有者的名字可卸下藏品' : '点击角色名即完成装配', {
       fontFamily: 'Microsoft YaHei', fontSize: '11px', color: '#8b9997', wordWrap: { width: 180, useAdvancedWrap: true },
     });
 

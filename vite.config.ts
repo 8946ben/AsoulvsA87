@@ -5,6 +5,11 @@ export default defineConfig({
   server: {
     port: 5173,
     open: true,
+    watch: {
+      // 编辑器/agent 的原子写入会产生 .xxx.tmpdir/ 临时目录，监听这些被锁定的临时文件
+      // 在 Windows 上会抛 EBUSY 并直接杀死 dev server，一律忽略。
+      ignored: ['**/.*.tmpdir/**', '**/*.tmp', '**/*.tmp/**'],
+    },
     // 本地联调入场券限流服务：python server/game_gate.py 后，dev 页面走 /api/* 反代
     proxy: {
       '/api': {

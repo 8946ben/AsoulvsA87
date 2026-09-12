@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { GAME_HEIGHT, GAME_WIDTH } from '../config/GameConfig';
 import { pickQuizRound, type QuizQuestion } from '../core/Quiz';
 import { awardDrawTickets } from '../core/Relics';
+import { RelicDrawScene } from './RelicDrawScene';
 import { sharpenSceneText } from '../core/TextQuality';
 import { createFreshBackdrop, FRESH } from '../ui/FreshTheme';
 
@@ -10,7 +11,7 @@ const ROUND_SIZE = 10;
 const PASS_COUNT = 8;
 
 /**
- * 枝江答题：每轮 10 题（1 A-SOUL + 8 常识 + 1 AI），每题 15 秒。
+ * 枝江答题：每轮 10 题（3~5 道 A-SOUL + 其余常识/AI），每题 15 秒。
  * 答错或超时会展示正确答案；答对 8 题及以上奖励 1 张抽卡券。
  */
 export class QuizScene extends Phaser.Scene {
@@ -152,7 +153,7 @@ export class QuizScene extends Phaser.Scene {
     const stats = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 16, `本轮答对 ${this.correctCount} / ${this.questions.length} 题（需 ${PASS_COUNT} 题）`, { fontFamily: 'Microsoft YaHei', fontSize: '16px', color: '#5e6f84' }).setOrigin(0.5);
     const reward = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 + 26, passed ? '🎟 获得 1 张抽卡券！' : '🎟 未达到 8 题，本轮没有奖励', { fontFamily: 'Microsoft YaHei', fontSize: '18px', color: passed ? '#2f9a75' : '#9aa8a4', fontStyle: 'bold' }).setOrigin(0.5);
     const again = this.makeButton(GAME_WIDTH / 2 - 130, GAME_HEIGHT / 2 + 104, '再来一轮', () => this.scene.restart(), '#4eb3cf');
-    const back = this.makeButton(GAME_WIDTH / 2 + 130, GAME_HEIGHT / 2 + 104, '返回抽卡转盘', () => this.scene.start('RelicDrawScene'), '#e85f91');
+    const back = this.makeButton(GAME_WIDTH / 2 + 130, GAME_HEIGHT / 2 + 104, '返回抽卡转盘', () => this.scene.start(RelicDrawScene.KEY), '#e85f91');
     this.layer.add([overlay, card, kicker, title, stats, reward, again, back]);
     sharpenSceneText(this);
   }

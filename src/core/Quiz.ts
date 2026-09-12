@@ -9,6 +9,9 @@ export interface QuizQuestion {
 
 export type QuizCategory = 'asoul' | 'common' | 'ai';
 
+const ASOUL_MIN = 3;
+const ASOUL_MAX = 5;
+
 const bank = quizBank.categories as Record<QuizCategory, QuizQuestion[]>;
 
 export function getQuizBankStats(): Record<QuizCategory, number> {
@@ -25,11 +28,16 @@ function sample(list: QuizQuestion[], count: number): QuizQuestion[] {
 }
 
 /**
- * 组一轮答题：固定 10 题，按 1 : 8 : 1 抽取 A-SOUL / 常识 / AI 三个子题库并打乱顺序。
+ * 组一轮答题：固定 10 题，A-SOUL 题目数量保证在 3~5 道之间，
+ * 其余由常识与 AI 题库按 4:1 比例补足，最后打乱顺序。
  * 任一子题库题量不足时用其他题库补足，保证单轮题数不变。
  */
 export function pickQuizRound(count = 10): QuizQuestion[] {
-  const quota: Array<[QuizCategory, number]> = [['asoul', 1], ['common', count - 2], ['ai', 1]];
+  const asoulCount = Math.min(ASOUL_MAX, Math.max(ASOUL_MIN, count - 5));
+  const restCount = count - asoulCount;
+  const aiCount = Math.max(1, Math.round(restCount * 0.2));
+  const commonCount = restCount - aiCount;
+  const quota: Array<[QuizCategory, number]> = [['asoul', asoulCount], ['common', commonCount], ['ai', aiCount]];
   const picked: QuizQuestion[] = [];
   for (const [category, need] of quota) {
     picked.push(...sample(bank[category], need));
