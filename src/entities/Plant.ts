@@ -7,7 +7,9 @@ import type { ProjectileOptions } from './Projectile';
 import type { Zombie } from './Zombie';
 interface VisibleBounds { width: number; height: number; }
 const visibleBoundsCache = new WeakMap<object, VisibleBounds>();
-const DIANA_RAPID_FORM_SPEED = 3;
+const DIANA_RAPID_FORM_SPEED = 5;
+/** 从角色中心到正前方相邻格远侧边界的距离。 */
+const DIANA_ADJACENT_CELL_ENTRY = GRID.CELL_W * 1.5;
 
 /** Returns the opaque content size, excluding transparent padding baked into an asset canvas. */
 function getVisibleBounds(source: CanvasImageSource & { width: number; height: number }): VisibleBounds {
@@ -121,18 +123,28 @@ export class Plant extends Phaser.GameObjects.Sprite {
           this.pulse(1.18, 230);
         }
         break;
-      case 'shooter':
-        this.attackTimer += delta;
-        if (target && this.attackTimer >= this.attackIntervalWith(Infinity)) {
-          this.attackTimer = 0; this.fire(ctx, {}, false); this.recoil();
+    case 'shooter':
+      this.attackTimer += delta;
+      if (target && this.attackTimer >= this.attackIntervalWith(Infinity)) {
+        this.attackTimer = 0;
+        // 嘉心糖周报：每次攻击连发两枚子弹（extraShots 为额外枚数）。
+        const shots = 1 + (this.relic?.extraShots ?? 0);
+        const damage = Math.round(this.attackDamage * ctx.getDamageMultiplier(this.config.type));
+        for (let i = 0; i < shots; i++) {
+          const offsetX = (i - (shots - 1) / 2) * 8;
+          ctx.spawnProjectile(this.x + this.dispW * 0.3 + offsetX, this.y - 12, this.config.projectile ?? 'projectile_candy', damage, this.row, {});
         }
-        break;
+        this.recoil();
+      }
+      break;
       case 'lobber':
         this.attackTimer += delta;
         if (target && this.attackTimer >= this.attackIntervalWith(Infinity)) {
           this.attackTimer = 0;
-          const cream = Math.random() < (this.config.stunChance ?? 0) + ctx.getCreamChanceBonus();
-          ctx.spawnProjectile(this.x + 24, this.y - 18, cream ? 'projectile_cream' : (this.config.projectile ?? 'projectile_chocolate'), this.attackDamage, this.row, { lobbed: true, stunMs: cream ? this.config.stunMs : undefined, splash: 35 });
+      const cream = Math.random() < (this.config.stunChance ?? 0) + ctx.getCreamChanceBonus();
+      // 奶淇琳周报：奶油停顿时间翻倍。
+      const stunMs = Math.round((this.config.stunMs ?? 0) * (this.relic?.creamStunMultiplier ?? 1));
+      ctx.spawnProjectile(this.x + 24, this.y - 18, cream ? 'projectile_cream' : (this.config.projectile ?? 'projectile_chocolate'), this.attackDamage, this.row, { lobbed: true, stunMs: cream ? stunMs : undefined, splash: 35 });
           this.pulse(1.1, 150);
         }
         break;
@@ -153,9 +165,11 @@ export class Plant extends Phaser.GameObjects.Sprite {
       case 'rapid':
         if (target) {
           this.attackTimer += delta;
-          const distance = Math.max(0, target.x - this.x);
+          // 与僵尸接敌一致，按左侧身体前缘而不是贴图中心计算距离；
+          // 敌人身体前缘一进入嘉然正前方相邻格，即进入最高攻速形态。
+          const distance = Math.max(0, target.leadingEdgeX - this.x);
           const baseInterval = this.attackIntervalWith(950);
-          const distanceRatio = Phaser.Math.Clamp((distance - GRID.CELL_W) / (GRID.CELL_W * 7), 0, 1);
+          const distanceRatio = Phaser.Math.Clamp((distance - DIANA_ADJACENT_CELL_ENTRY) / (GRID.CELL_W * 6.5), 0, 1);
           const speedMultiplier = Phaser.Math.Linear(5, 1, distanceRatio);
           const totalSpeedMultiplier = speedMultiplier * (this.relic?.attackSpeedMultiplier ?? 1);
           this.setDianaRapidForm(totalSpeedMultiplier >= DIANA_RAPID_FORM_SPEED);
@@ -225,7 +239,7 @@ export class Plant extends Phaser.GameObjects.Sprite {
     if (!target) return;
     this.attackTimer += delta;
     if (this.attackTimer >= this.attackIntervalWith(2700)) {
-      this.attackTimer = 0; this.fire(ctx, { lobbed: true, splash: 42 }, true); this.pulse(1.08, 150);
+      this.attackTimer = 0; this.fire(ctx, { lobbed: true, splash: GRID.CELL_W * 1.5 }, true); this.pulse(1.08, 150);
     }
   }
 
@@ -336,7 +350,7 @@ export class Plant extends Phaser.GameObjects.Sprite {
     this.attackTimer += delta;
     if (this.attackTimer < this.attackIntervalWith(2100)) return;
     this.attackTimer = 0;
-    const specialChance = this.rank >= 2 ? (ctx.hasActivePlant('bella') && ctx.hasActivePlant('eileen') ? 0.3 : 0.15) : 0;
+    const specialChance = this.rank >= 2 ? (ctx.hasActivePlant('bella') && ctx.hasActivePlant('eileen') ? 0.8 : 0.3) : 0;
     ctx.spawnProjectile(
       this.x + this.dispW * 0.3, this.y - 16,
       this.config.projectile ?? 'projectile_star_candy', this.attackDamage, this.row,

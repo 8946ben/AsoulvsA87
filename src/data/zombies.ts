@@ -100,7 +100,7 @@ export const ZOMBIES: Record<ZombieType, ZombieConfig> = {
   },
   dragon: {
     type: 'dragon', name: '神区化龙 A87', quote: '每当有人质疑它的地位时，它就会掏出一张奇怪的扑克牌，一边是A，一边却是8，中间涂着象征地位的黄色。',
-    hp: 3200, speed: 6.5, attackDps: 85, texture: TEX.ZOMBIE_DRAGON, scale: 1.06, boss: true,
+    hp: 6400, speed: 6.5, attackDps: 85, texture: TEX.ZOMBIE_DRAGON, scale: 1.06, boss: true,
     summonInterval: 5000, summonType: 'phone', laneChangeInterval: 20000,
   },
   knight: {

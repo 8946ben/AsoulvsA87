@@ -49,6 +49,9 @@ export class Zombie extends Phaser.GameObjects.Sprite {
   private direction: -1 | 1 = -1;
   private surfaced = false;
 
+  /** 行进方向上的可见身体前缘，用于与角色/格子做视觉距离判定。 */
+  get leadingEdgeX(): number { return this.x + this.direction * this.displayWidth * 0.31; }
+
   constructor(scene: Phaser.Scene, x: number, y: number, type: ZombieType, row: number, stats?: ZombieStatModifiers, spawnWave = 0) {
     const config = ZOMBIES[type];
     const spawnY = y - (config.flying ? 34 : 0);
@@ -136,7 +139,7 @@ export class Zombie extends Phaser.GameObjects.Sprite {
 
     if (this.vaulting) return;
     // 素材头部位于画面左侧，用头部前缘而非图片中心做接敌判定。
-    const leadX = this.x + this.direction * this.displayWidth * 0.31;
+    const leadX = this.leadingEdgeX;
     const underground = Boolean(this.config.tunneling && !this.surfaced);
     const blocker = (this.config.flying || underground) ? null : ctx.getBlockingPlant(this.row, this.x, leadX, this.direction, Boolean(this.config.crushPlants));
     if (blocker) {

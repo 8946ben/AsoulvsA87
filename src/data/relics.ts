@@ -47,6 +47,10 @@ export interface RelicEffects {
   produceBonus?: number;
   /** 部署费用倍率（1.3 = +30%）。 */
   costMultiplier?: number;
+  /** 额外发射的子弹数（嘉心糖周报：连发两枚）。 */
+  extraShots?: number;
+  /** 奶油停顿时间倍率（奶淇琳周报：翻倍）。 */
+  creamStunMultiplier?: number;
   /** 部署冷却时间倍率（0.5 = 减半）。 */
   cooldownMultiplier?: number;
   /** 乃琳地刺（第二形态）伤害倍率。 */
@@ -242,19 +246,19 @@ export const RELICS: Record<RelicId, RelicConfig> = {
   'beijixing-weekly': {
     id: 'beijixing-weekly', name: '贝极星周报', glyph: '📰', rarity: 'c',
     allowedTypes: ['beijixing'],
-    effects: { produceBonus: 15 },
+    effects: { produceBonus: 15, hpMultiplier: 2.0 },
     quote: '贝极星 trend，周周更新。',
   },
   'naiqilin-weekly': {
     id: 'naiqilin-weekly', name: '奶淇琳周报', glyph: '📰', rarity: 'c',
     allowedTypes: ['naiqilin'],
-    effects: { attackSpeedMultiplier: 1.3 },
+    effects: { attackSpeedMultiplier: 1.3, creamStunMultiplier: 2.0 },
     quote: '奶淇琳速报，甜度超标。',
   },
   'jiaxintang-weekly': {
     id: 'jiaxintang-weekly', name: '嘉心糖周报', glyph: '📰', rarity: 'c',
     allowedTypes: ['jiaxintang'],
-    effects: { damageMultiplier: 1.3 },
+    effects: { damageMultiplier: 1.3, extraShots: 1 },
     quote: '嘉心糖快讯，糖分拉满。',
   },
   'minus-8000-mic': {
@@ -291,6 +295,8 @@ export function describeRelicEffects(effects: RelicEffects): string[] {
   if (effects.attackSpeedMultiplier && effects.attackSpeedMultiplier !== 1) lines.push(`攻击速度 ${percent(effects.attackSpeedMultiplier)}`);
   if (effects.produceBonus) lines.push(`每次产出应援额外 +${effects.produceBonus}`);
   if (effects.costMultiplier && effects.costMultiplier !== 1) lines.push(`部署应援消耗 ${percent(effects.costMultiplier)}`);
+  if (effects.extraShots) lines.push(`每次攻击连发 ${(effects.extraShots + 1)} 枚子弹`);
+  if (effects.creamStunMultiplier && effects.creamStunMultiplier !== 1) lines.push(`奶油停顿时间 ×${effects.creamStunMultiplier}`);
   if (effects.cooldownMultiplier && effects.cooldownMultiplier !== 1) lines.push(`部署冷却时间 ${percent(effects.cooldownMultiplier)}`);
   if (effects.eileenSpikeDamageMultiplier) lines.push(`乃琳地刺形态伤害 ×${effects.eileenSpikeDamageMultiplier}`);
   if (effects.eileenSpikeAreaNine) lines.push('乃琳地刺影响范围扩大到九个格子');

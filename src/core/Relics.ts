@@ -154,6 +154,8 @@ export function mergeRelicEffects(list: RelicEffects[]): RelicEffects {
     if (effects.attackSpeedMultiplier) merged.attackSpeedMultiplier = (merged.attackSpeedMultiplier ?? 1) * effects.attackSpeedMultiplier;
     if (effects.produceBonus) merged.produceBonus = (merged.produceBonus ?? 0) + effects.produceBonus;
     if (effects.costMultiplier) merged.costMultiplier = (merged.costMultiplier ?? 1) * effects.costMultiplier;
+    if (effects.extraShots) merged.extraShots = (merged.extraShots ?? 0) + effects.extraShots;
+    if (effects.creamStunMultiplier) merged.creamStunMultiplier = (merged.creamStunMultiplier ?? 1) * effects.creamStunMultiplier;
     if (effects.cooldownMultiplier) merged.cooldownMultiplier = (merged.cooldownMultiplier ?? 1) * effects.cooldownMultiplier;
     if (effects.eileenSpikeDamageMultiplier) merged.eileenSpikeDamageMultiplier = (merged.eileenSpikeDamageMultiplier ?? 1) * effects.eileenSpikeDamageMultiplier;
     if (effects.eileenSpikeAreaNine) merged.eileenSpikeAreaNine = true;
@@ -178,6 +180,8 @@ export function getRelicEffects(type: PlantType, extra?: RelicEffects): RelicEff
     if (effects.attackSpeedMultiplier) merged.attackSpeedMultiplier = (merged.attackSpeedMultiplier ?? 1) * effects.attackSpeedMultiplier;
     if (effects.produceBonus) merged.produceBonus = (merged.produceBonus ?? 0) + effects.produceBonus;
     if (effects.costMultiplier) merged.costMultiplier = (merged.costMultiplier ?? 1) * effects.costMultiplier;
+    if (effects.extraShots) merged.extraShots = (merged.extraShots ?? 0) + effects.extraShots;
+    if (effects.creamStunMultiplier) merged.creamStunMultiplier = (merged.creamStunMultiplier ?? 1) * effects.creamStunMultiplier;
     if (effects.cooldownMultiplier) merged.cooldownMultiplier = (merged.cooldownMultiplier ?? 1) * effects.cooldownMultiplier;
     if (effects.eileenSpikeDamageMultiplier) merged.eileenSpikeDamageMultiplier = (merged.eileenSpikeDamageMultiplier ?? 1) * effects.eileenSpikeDamageMultiplier;
     if (effects.eileenSpikeAreaNine) merged.eileenSpikeAreaNine = true;

@@ -81,7 +81,7 @@ export interface PlantConfig {
 export const PLANTS: Record<PlantType, PlantConfig> = {
   beijixing: {
     type: 'beijixing', name: '贝极星', role: '应援补给', cost: 50, cooldown: 5000,
-    hp: 1000, behavior: 'producer', texture: TEX.PLANT_BEIJIXING, portrait: TEX.ADVANCED_PORTRAIT_BEIJIXING,
+    hp: 500, behavior: 'producer', texture: TEX.PLANT_BEIJIXING, portrait: TEX.ADVANCED_PORTRAIT_BEIJIXING,
     desc: '每 9 秒产生 25 点应援', stageTraits: ['产生阳光，每 9 秒产出 25 点应援'], quote: '需要浇水', accent: 0x63d9ff,
     produceInterval: 9000, produceAmount: 25,
     injuryOverlay: { x: 0.5, y: 0.3, scale: 0.16 },
@@ -116,7 +116,7 @@ export const PLANTS: Record<PlantType, PlantConfig> = {
     type: 'bella', name: '贝拉', role: '锤击变阵', cost: 150, cooldown: 10000,
     hp: 1000, behavior: 'bella', texture: TEX.PLANT_BELLA, portrait: TEX.PORTRAIT_BELLA, advancedPortrait: TEX.ADVANCED_PORTRAIT_BELLA,
     desc: '远投锤子；近敌时化为地雷；在场时贝极星产量加倍',
-    stageTraits: ['远程投掷高伤害的锤子，敌人靠近一格后变为土豆雷，近距离引爆造成 1050 点伤害'],
+    stageTraits: ['远程投掷高伤害的锤子，附带 1.5 格溅射伤害；敌人靠近一格后变为土豆雷，近距离引爆造成 1050 点伤害'],
     advanceTraits: ['场上若部署了贝拉，贝极星的阳光产量加倍'], quote: 'Asoul的队长以及武道担当，Bellllla！', accent: 0xe54955,
     attackInterval: 2700, attackDamage: 102, projectile: TEX.HAMMER,
   },
@@ -164,8 +164,8 @@ export const PLANTS: Record<PlantType, PlantConfig> = {
     type: 'xilanai', name: '喜拉乃', role: '星巧融合投手', cost: 0, cooldown: 0,
     hp: 1000, behavior: 'sunlobber', texture: TEX.PLANT_XILANAI, portrait: TEX.PORTRAIT_XILANAI, advancedPortrait: TEX.ADVANCED_PORTRAIT_XILANAI,
     desc: '贝极星＋奶淇琳；产阳光并投掷星形巧克力',
-    stageTraits: ['每 20 秒产出 50 点阳光；投掷星形巧克力，15% 概率在敌人位置生成特殊贝极星'],
-    advanceTraits: ['贝拉和乃琳在场时，生成特殊贝极星的概率提升至 30%'], quote: '喜拉乃会自己找糖吃', accent: 0xf4c25e,
+    stageTraits: ['每 20 秒产出 50 点阳光；投掷星形巧克力，30% 概率在敌人位置生成特殊贝极星'],
+    advanceTraits: ['贝拉和乃琳在场时，生成特殊贝极星的概率提升至 80%'], quote: '喜拉乃会自己找糖吃', accent: 0xf4c25e,
     produceInterval: 20000, produceAmount: 50,
     attackInterval: 2100, attackDamage: 40, projectile: TEX.STAR_CANDY,
   },
