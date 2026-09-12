@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { GRID, PLANT_DISPLAY, TEX } from '../config/GameConfig';
 import { PLANTS, type PlantConfig, type PlantType } from '../data/plants';
 import type { RelicEffects } from '../data/relics';
-import { getRelicEffects } from '../core/Relics';
+import { getRelicEffects, hasRelicSynergy } from '../core/Relics';
 import type { ProjectileOptions } from './Projectile';
 import type { Zombie } from './Zombie';
 
@@ -169,7 +169,21 @@ export class Plant extends Phaser.GameObjects.Sprite {
       // 与阻挡判定保持同一接敌宽度；大型虫的图片中心很远，但头部已碰到贝拉。
       const contact = ctx.getNearbyZombie(this.row, this.x, 43);
       if (contact) {
-        ctx.damageArea(this.x, this.y, 100, 1050, 300); this.burst(0xff554f); ctx.replacePlant(this, null);
+        // 贝拉爆炸：基础半径100，装配锤子扩大1.5倍，同时装配锤子+平底锅扩大3倍
+        let explosionRadius = 100;
+        let explosionDamage = 1050;
+        const hasHammer = hasRelicSynergy('bella', 'bella-hammer', 'bella-hammer');
+        const hasPan = hasRelicSynergy('bella', 'bella-pan', 'bella-pan');
+        const hasBoth = hasRelicSynergy('bella', 'bella-hammer', 'bella-pan');
+        if (hasBoth) {
+          explosionRadius = 100 * 3;
+          explosionDamage = Math.round(1050 * 3);
+        } else if (hasHammer) {
+          explosionRadius = Math.round(100 * 1.5);
+        } else if (hasPan) {
+          explosionDamage = Math.round(1050 * 2.5);
+        }
+        ctx.damageArea(this.x, this.y, explosionRadius, explosionDamage, 300); this.burst(0xff554f); ctx.replacePlant(this, null);
       }
       return;
     }

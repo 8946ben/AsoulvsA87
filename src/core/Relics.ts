@@ -13,8 +13,8 @@ const STORAGE_KEY = 'asoul-relic-inventory-v1';
 /** 星愿徽记抽卡定价（答题券抽卡固定消耗 1 张）。 */
 export const RELIC_DRAW_STARDUST_COST = 3;
 
-/** 抽卡时各稀有度的权重：稀有更容易出，传说最稀有。 */
-export const RARITY_DRAW_WEIGHT: Record<RelicRarity, number> = { rare: 45, epic: 35, legend: 20 };
+/** 抽卡时各稀有度的权重：C级最容易出，S级最稀有。 */
+export const RARITY_DRAW_WEIGHT: Record<RelicRarity, number> = { c: 40, b: 30, a: 20, s: 10 };
 
 interface RelicState {
   version: 1;
@@ -126,20 +126,34 @@ export function getEquippedRelic(type: PlantType): RelicConfig | null {
   return getEquippedRelics(type)[0] ?? null;
 }
 
-/** 战斗侧入口：返回该角色由藏品带来的数值加成（多藏品叠加）。 */
+/** 战斗侧入口：返回该角色由藏品带来的数值加成（多藏品叠加，支持联合装配）。 */
 export function getRelicEffects(type: PlantType): RelicEffects | null {
   const relics = getEquippedRelics(type);
   if (relics.length === 0) return null;
   const merged: RelicEffects = {};
+  const relicIds = new Set(relics.map((r) => r.id));
   for (const relic of relics) {
-    const e = relic.effects;
+    // 检查联合装配：若联动藏品也已装配，使用联合效果
+    let effects = relic.effects;
+    if (relic.synergy && relicIds.has(relic.synergy.with)) {
+      effects = relic.synergy.effects;
+    }
+    const e = effects;
     if (e.hpRegenPerSec) merged.hpRegenPerSec = (merged.hpRegenPerSec ?? 0) + e.hpRegenPerSec;
     if (e.hpMultiplier) merged.hpMultiplier = (merged.hpMultiplier ?? 1) * e.hpMultiplier;
     if (e.damageMultiplier) merged.damageMultiplier = (merged.damageMultiplier ?? 1) * e.damageMultiplier;
     if (e.attackSpeedMultiplier) merged.attackSpeedMultiplier = (merged.attackSpeedMultiplier ?? 1) * e.attackSpeedMultiplier;
     if (e.produceBonus) merged.produceBonus = (merged.produceBonus ?? 0) + e.produceBonus;
+    if (e.costMultiplier) merged.costMultiplier = (merged.costMultiplier ?? 1) * e.costMultiplier;
   }
   return merged;
+}
+
+/** 检查角色是否同时装配了指定两件藏品（联合装配）。 */
+export function hasRelicSynergy(type: PlantType, relicA: RelicId, relicB: RelicId): boolean {
+  const relics = getEquippedRelics(type);
+  const ids = new Set(relics.map((r) => r.id));
+  return ids.has(relicA) && ids.has(relicB);
 }
 
 export function unequipRelic(id: RelicId): void {

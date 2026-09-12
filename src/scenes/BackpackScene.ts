@@ -365,6 +365,19 @@ export class BackpackScene extends Phaser.Scene {
     const effectLines = describeRelicEffects(relic.effects).map((text, i) => this.add.text(852, 316 + i * 24, `· ${text}`, {
       fontFamily: 'Microsoft YaHei', fontSize: '13px', color: '#52667d',
     }));
+    // 特殊效果（非数值型）
+    if (relic.specialEffect) {
+      effectLines.push(this.add.text(852, 316 + effectLines.length * 24, `· ${relic.specialEffect}`, {
+        fontFamily: 'Microsoft YaHei', fontSize: '13px', color: '#d7527c', fontStyle: 'bold',
+      }));
+    }
+    // 联合装配效果
+    if (relic.synergy) {
+      const synergyRelic = RELICS[relic.synergy.with];
+      effectLines.push(this.add.text(852, 316 + effectLines.length * 24, `· 联动【${synergyRelic.name}】: ${relic.synergy.description}`, {
+        fontFamily: 'Microsoft YaHei', fontSize: '12px', color: '#e8a020', fontStyle: 'bold',
+      }));
+    }
     effectLines.forEach((line) => line.setAlpha(owned ? 1 : 0.3));
     const effectBottom = 316 + effectLines.length * 24;
 
