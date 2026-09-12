@@ -79,21 +79,21 @@ export interface PlantConfig {
 export const PLANTS: Record<PlantType, PlantConfig> = {
   beijixing: {
     type: 'beijixing', name: '贝极星', role: '应援补给', cost: 50, cooldown: 5000,
-    hp: 1000, behavior: 'producer', texture: TEX.PLANT_BEIJIXING, advancedPortrait: TEX.ADVANCED_PORTRAIT_BEIJIXING,
+    hp: 1000, behavior: 'producer', texture: TEX.PLANT_BEIJIXING, portrait: TEX.ADVANCED_PORTRAIT_BEIJIXING,
     desc: '每 9 秒产生 25 点应援', stageTraits: ['产生阳光，每 9 秒产出 25 点应援'], quote: '需要浇水', accent: 0x63d9ff,
     produceInterval: 9000, produceAmount: 25,
     injuryOverlay: { x: 0.5, y: 0.3, scale: 0.16 },
   },
   jiaxintang: {
     type: 'jiaxintang', name: '嘉心糖', role: '糖果射手', cost: 100, cooldown: 6500,
-    hp: 300, behavior: 'shooter', texture: TEX.PLANT_JIAXINTANG, advancedPortrait: TEX.ADVANCED_PORTRAIT_JIAXINTANG,
+    hp: 300, behavior: 'shooter', texture: TEX.PLANT_JIAXINTANG, portrait: TEX.ADVANCED_PORTRAIT_JIAXINTANG,
     desc: '发射糖果炮弹攻击本行', stageTraits: ['攻击产生糖果炮弹'], quote: '好多糖', accent: 0xff7fab,
     attackInterval: 1350, attackDamage: 22, projectile: TEX.CANDY,
     injuryOverlay: { x: 0.605, y: 0.8, scale: 0.11 },
   },
   naiqilin: {
     type: 'naiqilin', name: '奶淇琳', role: '甜点投手', cost: 125, cooldown: 8500,
-    hp: 300, behavior: 'lobber', texture: TEX.PLANT_NAIQILIN, advancedPortrait: TEX.ADVANCED_PORTRAIT_NAIQILIN,
+    hp: 300, behavior: 'lobber', texture: TEX.PLANT_NAIQILIN, portrait: TEX.ADVANCED_PORTRAIT_NAIQILIN,
     desc: '投巧克力；25% 奶油定身', stageTraits: ['投掷巧克力，25% 概率投掷可停顿敌人 1.2 秒的奶油'], quote: '不能吃，会变成国家保护动物哦', accent: 0xd8b3ff,
     attackInterval: 2100, attackDamage: 34, projectile: TEX.CHOCOLATE,
     stunChance: 0.25, stunMs: 1200,
@@ -101,12 +101,12 @@ export const PLANTS: Record<PlantType, PlantConfig> = {
   },
   xiaohainuo: {
     type: 'xiaohainuo', name: '小海诺', role: '舞台屏障', cost: 75, cooldown: 15000,
-    hp: 2500, behavior: 'wall', texture: TEX.PLANT_XIAOHAINUO, advancedPortrait: TEX.ADVANCED_PORTRAIT_XIAOHAINUO,
+    hp: 2500, behavior: 'wall', texture: TEX.PLANT_XIAOHAINUO, portrait: TEX.ADVANCED_PORTRAIT_XIAOHAINUO,
     desc: '以高耐久抵挡 A87', stageTraits: ['以高耐久阻挡敌人前进'], quote: '它在网上冲浪的头像都很相似', accent: 0x50d7ce,
   },
   xinqiuyi: {
     type: 'xinqiuyi', name: '心球仪', role: '共鸣爆破', cost: 150, cooldown: 24000,
-    hp: 999, behavior: 'bomb', texture: TEX.PLANT_XINQIUYI, advancedPortrait: TEX.ADVANCED_PORTRAIT_XINQIUYI,
+    hp: 999, behavior: 'bomb', texture: TEX.PLANT_XINQIUYI, portrait: TEX.ADVANCED_PORTRAIT_XINQIUYI,
     desc: '短暂蓄力后造成 3×3 范围爆炸', stageTraits: ['蓄力 0.5 秒后爆炸，造成 1500 点 3×3 范围伤害'], quote: '阳光开朗，但容易爆炸', accent: 0xff5a91,
     attackDamage: 1500,
   },

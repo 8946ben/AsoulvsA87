@@ -159,8 +159,7 @@ export class BackpackScene extends Phaser.Scene {
       traitTexts.push(stage1);
       if (advanceable) {
         const reached = rank >= 2;
-        const advancedDescription = config.advanceTraits?.length ? config.advanceTraits.join('；') : '解锁Ⅱ阶专属立绘';
-        traitTexts.push(this.add.text(852, 488 + stage1.height + 8, `Ⅱ 阶 · ${advancedDescription}${reached ? '' : '（进阶解锁）'}`, {
+        traitTexts.push(this.add.text(852, 488 + stage1.height + 8, `Ⅱ 阶 · ${(config.advanceTraits ?? []).join('；')}${reached ? '' : '（进阶解锁）'}`, {
           fontFamily: 'Microsoft YaHei', fontSize: '12px', color: reached ? accentText : '#9aa8a4', wordWrap: { width: 384, useAdvancedWrap: true }, lineSpacing: 4, fontStyle: reached ? 'bold' : undefined,
         }));
       }

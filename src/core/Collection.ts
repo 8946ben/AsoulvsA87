@@ -9,12 +9,9 @@ export const ADVANCE_COST = 6;
 
 export type CollectionRank = 0 | 1 | 2;
 
-/**
- * 只要角色已配置Ⅱ阶立绘即可在背包进阶。没有额外战斗特性的角色，进阶只解锁外观；
- * 有 advanceTraits 的角色仍照常获得既有Ⅱ阶效果。
- */
+/** 是否拥有Ⅱ阶进阶机制（由角色配置的Ⅱ阶特性决定）。 */
 export function isAdvanceable(type: PlantType): boolean {
-  return !!PLANTS[type].advancedPortrait;
+  return !!PLANTS[type].advanceTraits?.length;
 }
 
 interface CollectionState {
