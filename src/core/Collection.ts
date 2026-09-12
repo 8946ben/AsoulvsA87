@@ -91,6 +91,16 @@ export function awardStardust(amount: number): number {
   return state.stardust;
 }
 
+/** 扣减星愿徽记（进阶与藏品采购共用）；余额不足时不扣减并返回 false。开发者模式不校验。 */
+export function spendStardust(amount: number): boolean {
+  if (isDeveloperMode()) return true;
+  const state = readState();
+  if (state.stardust < amount) return false;
+  state.stardust -= amount;
+  writeState(state);
+  return true;
+}
+
 export function advancePlant(type: PlantType): AdvanceResult {
   const state = readState();
   if (!isPlantCollected(type)) return { ok: false, reason: 'locked', stardust: state.stardust };
