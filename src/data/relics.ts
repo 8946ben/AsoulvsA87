@@ -191,7 +191,7 @@ export const RELICS: Record<RelicId, RelicConfig> = {
   },
   'pointer-01': {
     id: 'pointer-01', name: '01指针', glyph: '🖱️', rarity: 'a',
-    allowedTypes: ['jiaxintang', 'naiqilin', 'jiaxinnaitang'],
+    allowedTypes: ['xingkongtang', 'xilanai', 'jiaxinnaitang'],
     effects: { attackSpeedMultiplier: 2.0, damageMultiplier: 1.5 },
     quote: '01 号指针，指哪打哪。',
   },
