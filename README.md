@@ -55,7 +55,7 @@ Windows 首次运行未知来源的程序时，可能显示安全提示。请确
 
 ### 意见反馈系统
 
-主界面底部「💬 意见反馈」进入反馈页，填写建议（500 字以内）和可选的联系方式后提交，内容会送到开发者的阿里云服务器记录下来。
+主界面底部「💬 意见反馈」进入反馈页，填写建议（500 字以内）后提交，内容会送到开发者的阿里云服务器记录下来。
 
 - **送达路径**：页面 `POST api/feedback` → nginx 反代 `/game/api/` → 服务器 `127.0.0.1:8793` 上的 `game_gate.py` → 追加写入 `/opt/game-gate/feedback.jsonl`（一行一条 JSON）。
 - **离线兜底**：服务器不可达时（断网、限流服务正在重启、Electron 桌面版走 `file://`），反馈先存进浏览器 `localStorage`，下次打开反馈页自动补交；同一条反馈带同一个 `id`，服务器会去重，不会重复入库。
@@ -69,7 +69,7 @@ tail -n 20 /opt/game-gate/feedback.jsonl   # 最新 20 条
 wc -l /opt/game-gate/feedback.jsonl        # 总条数
 ```
 
-每行字段：`id`（去重键）、`time` / `ts`（提交时间）、`content`（正文）、`contact`、`ip`（经 nginx 取 `X-Forwarded-For` 首段）、`ua`、`online`（提交时在线人数）。
+每行字段：`id`（去重键）、`time` / `ts`（提交时间）、`content`（正文）、`contact`（页面暂未采集，恒为空串）、`ip`（经 nginx 取 `X-Forwarded-For` 首段）、`ua`、`online`（提交时在线人数）。
 
 反馈文件是独立落盘的，更新 `game_gate.py` 触发服务重启只会清空在线名单，已记录的反馈不受影响。
 

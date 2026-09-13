@@ -7,6 +7,7 @@
 - 游戏侧既有珈乐项仍保留未动，等待 ben 决策：`background.md:170` 彩蛋 Boss「珈乐(黑化)」、`README.md:238` 的相关描述。
 - 待办：A-SOUL 子题库补题约 14 道以恢复 1:8:1 抽题比例；「A-SOUL 一共有几名成员 → 5 名」保留未动，隐含珈乐仍在成员序列。
 - 不做粉丝伤痛事件（成员休眠风波、728、血色新春、BW 握手会），不进擦边荤梗，不指涉真实社区 A8/A87。
+- **用字规范**：乃琳的粉丝名唯一正字是 **奶淇琳**，`乃淇琳` / `奶琪琳` / `乃琪琳` 都是错别字。2026-09-13 排查过一次全项目：`src/**/*.ts` 一直是对的，错的是 `src/data/quiz.generated.json`（旧题库把「乃淇琳」当正确答案）与 `dist/` 旧构建；已跑 `quiz:sync` 修正。改文案/出题时别写错。
 
 ## 系统现状
 
@@ -17,6 +18,7 @@
 - **玩家反馈系统**（2026-09-13 实装）：主界面底部「💬 意见反馈」（与「开发者模式」并排）→ `src/scenes/FeedbackScene.ts` → `src/core/Feedback.ts` → `POST api/feedback` → `server/game_gate.py` → 服务器 `/opt/game-gate/feedback.jsonl`（一行一条 JSON）。
   - 自由文本输入必须用原生 DOM 控件（`src/ui/DomField.ts`）：Phaser 的键盘事件收不到中文输入法。**没有**启用 Phaser `dom.createContainer`，别再试图改全局 game config。
   - 服务器不可达时反馈落 `localStorage` 待补交，靠记录里的 `id` 在服务端去重。
+  - **只收正文**：2026-09-13 按 ben 要求删掉了联系方式输入框与页面右上角说明，`Feedback.ts` 里 `contact?` 仍保留（可选，服务端写空串）。
   - 发布：更新 `server/game_gate.py` 后跑 `python scripts/publish-web.py --build`（会重启 `game-gate` 服务，只清空在线名单，不动已落库反馈）。
   - 查反馈：`tail -n 20 /opt/game-gate/feedback.jsonl`。
 - **主界面底部布局已满**：4 卡图标栏（间距 148，居中）已经是最宽，再加第 5 卡会压住 x=314 的角色立绘。新的系统级入口一律走「开发者模式」那一排胶囊按钮。

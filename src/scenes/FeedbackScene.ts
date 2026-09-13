@@ -1,7 +1,6 @@
 import Phaser from 'phaser';
 import { GAME_WIDTH } from '../config/GameConfig';
 import {
-  FEEDBACK_MAX_CONTACT,
   FEEDBACK_MAX_CONTENT,
   flushPending,
   pendingCount,
@@ -12,10 +11,9 @@ import { sharpenSceneText, sharpenText } from '../core/TextQuality';
 import { createDomField, type DomField } from '../ui/DomField';
 import { createFreshBackdrop, createFreshPanel, FRESH } from '../ui/FreshTheme';
 
-const PANEL = { x: GAME_WIDTH / 2, y: 400, w: 980, h: 420 } as const;
+const PANEL = { x: GAME_WIDTH / 2, y: 410, w: 980, h: 440 } as const;
 const LABEL_X = 190;
-const CONTENT_RECT = { x: LABEL_X, y: 292, width: 900, height: 160 } as const;
-const CONTACT_RECT = { x: LABEL_X, y: 502, width: 420, height: 38 } as const;
+const CONTENT_RECT = { x: LABEL_X, y: 292, width: 900, height: 236 } as const;
 
 /** 主界面「意见反馈」入口：填写建议并提交到服务器，失败时转存本地待补交。 */
 export class FeedbackScene extends Phaser.Scene {
@@ -23,7 +21,6 @@ export class FeedbackScene extends Phaser.Scene {
 
   private returnScene?: string;
   private contentField?: DomField;
-  private contactField?: DomField;
   private counter!: Phaser.GameObjects.Text;
   private status!: Phaser.GameObjects.Text;
   private submitButton!: Phaser.GameObjects.Text;
@@ -56,7 +53,6 @@ export class FeedbackScene extends Phaser.Scene {
     this.events.once('shutdown', () => {
       this.alive = false;
       this.contentField?.destroy();
-      this.contactField?.destroy();
     });
 
     sharpenSceneText(this);
@@ -70,12 +66,6 @@ export class FeedbackScene extends Phaser.Scene {
     this.add.text(43, 72, 'FEEDBACK', {
       fontFamily: 'Arial', fontSize: '13px', color: '#e85f91', fontStyle: 'bold', letterSpacing: 2,
     });
-    this.add.text(GAME_WIDTH - 42, 30, '每条建议都会记录到开发者的服务器', {
-      fontFamily: 'Microsoft YaHei', fontSize: '13px', color: '#71809a',
-    }).setOrigin(1, 0);
-    this.add.text(GAME_WIDTH - 42, 54, '线上版本为即时送达；离线时先存在本机，联网后自动补交', {
-      fontFamily: 'Microsoft YaHei', fontSize: '12px', color: '#9aa8b8',
-    }).setOrigin(1, 0);
   }
 
   private createPanel(): void {
@@ -89,15 +79,12 @@ export class FeedbackScene extends Phaser.Scene {
     this.add.text(LABEL_X, 278, '你的建议　*', {
       fontFamily: 'Microsoft YaHei', fontSize: '14px', color: '#42506d', fontStyle: 'bold',
     });
-    this.counter = sharpenText(this.add.text(CONTENT_RECT.x + CONTENT_RECT.width, 458, `0 / ${FEEDBACK_MAX_CONTENT}`, {
-      fontFamily: 'Microsoft YaHei', fontSize: '12px', color: '#9aa8b8',
-    }).setOrigin(1, 0));
-    this.add.text(LABEL_X, 488, '联系方式（可选）', {
-      fontFamily: 'Microsoft YaHei', fontSize: '14px', color: '#42506d', fontStyle: 'bold',
-    });
-    this.add.text(626, 521, 'QQ / 邮箱 / 其他，方便我们回复你', {
-      fontFamily: 'Microsoft YaHei', fontSize: '12px', color: '#9aa8b8',
-    }).setOrigin(0, 0.5);
+    this.counter = sharpenText(this.add.text(
+      CONTENT_RECT.x + CONTENT_RECT.width,
+      CONTENT_RECT.y + CONTENT_RECT.height + 8,
+      `0 / ${FEEDBACK_MAX_CONTENT}`,
+      { fontFamily: 'Microsoft YaHei', fontSize: '12px', color: '#9aa8b8' },
+    ).setOrigin(1, 0));
   }
 
   private createFields(): void {
@@ -108,21 +95,14 @@ export class FeedbackScene extends Phaser.Scene {
       placeholder: '在这里写下你的想法…（支持中文输入法，Ctrl+Enter 提交）',
       onInput: (value) => this.counter.setText(`${value.length} / ${FEEDBACK_MAX_CONTENT}`),
     });
-    this.contactField = createDomField(this, {
-      rect: CONTACT_RECT,
-      kind: 'input',
-      maxLength: FEEDBACK_MAX_CONTACT,
-      placeholder: '留空也可以',
-    });
   }
 
   private setFieldsVisible(visible: boolean): void {
     this.contentField?.setVisible(visible);
-    this.contactField?.setVisible(visible);
   }
 
   private createButtons(): void {
-    this.submitButton = sharpenText(this.add.text(556, 576, '提交', {
+    this.submitButton = sharpenText(this.add.text(556, 582, '提交', {
       fontFamily: 'Microsoft YaHei', fontSize: '16px', color: '#ffffff', backgroundColor: '#e85f91',
       padding: { x: 36, y: 13 }, fontStyle: 'bold',
     })).setOrigin(0.5).setInteractive({ useHandCursor: true });
@@ -130,7 +110,7 @@ export class FeedbackScene extends Phaser.Scene {
     this.submitButton.on('pointerout', () => { if (!this.submitting) this.submitButton.setBackgroundColor('#e85f91').setScale(1); });
     this.submitButton.on('pointerdown', () => void this.onSubmit());
 
-    const back = sharpenText(this.add.text(772, 576, '返回', {
+    const back = sharpenText(this.add.text(772, 582, '返回', {
       fontFamily: 'Microsoft YaHei', fontSize: '16px', color: '#52667d', backgroundColor: '#e6f4ef',
       padding: { x: 36, y: 13 },
     })).setOrigin(0.5).setInteractive({ useHandCursor: true });
@@ -138,7 +118,7 @@ export class FeedbackScene extends Phaser.Scene {
     back.on('pointerout', () => back.setBackgroundColor('#e6f4ef').setScale(1));
     back.on('pointerdown', () => this.goBack());
 
-    this.status = sharpenText(this.add.text(GAME_WIDTH / 2, 644, '', {
+    this.status = sharpenText(this.add.text(GAME_WIDTH / 2, 648, '', {
       fontFamily: 'Microsoft YaHei', fontSize: '14px', color: '#71809a',
     })).setOrigin(0.5);
   }
@@ -154,14 +134,13 @@ export class FeedbackScene extends Phaser.Scene {
     this.submitting = true;
     this.submitButton.setText('提交中…').setBackgroundColor('#d9b7c5').disableInteractive();
 
-    const result = await submitFeedback({ content, contact: this.contactField?.value().trim() ?? '' });
+    const result = await submitFeedback({ content });
     if (!this.alive) return;
 
     this.submitting = false;
     this.submitButton.setText('提交').setBackgroundColor('#e85f91').setInteractive({ useHandCursor: true });
     if (result.ok) {
       this.contentField?.setValue('');
-      this.contactField?.setValue('');
       this.cameras.main.flash(180, 255, 214, 232, false);
       const rest = pendingCount();
       this.setStatus(rest > 0 ? `${result.message}（另有 ${rest} 条待补交）` : result.message, '#2f8066');
