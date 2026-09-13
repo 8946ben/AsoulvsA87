@@ -51,6 +51,27 @@ Windows 首次运行未知来源的程序时，可能显示安全提示。请确
 - `Esc`：取消当前角色卡或铲子选择；在选关、选卡、图鉴等页面返回上一层。
 - `Enter`：在选卡页面确认阵容并开始战斗。
 - 图鉴中使用 `Tab` 切换我方/敌方，使用左右方向键翻页。
+- 意见反馈：主界面底部的「💬 意见反馈」，写建议后点「提交」，或按 `Ctrl+Enter` 快速提交。
+
+### 意见反馈系统
+
+主界面底部「💬 意见反馈」进入反馈页，填写建议（500 字以内）和可选的联系方式后提交，内容会送到开发者的阿里云服务器记录下来。
+
+- **送达路径**：页面 `POST api/feedback` → nginx 反代 `/game/api/` → 服务器 `127.0.0.1:8793` 上的 `game_gate.py` → 追加写入 `/opt/game-gate/feedback.jsonl`（一行一条 JSON）。
+- **离线兜底**：服务器不可达时（断网、限流服务正在重启、Electron 桌面版走 `file://`），反馈先存进浏览器 `localStorage`，下次打开反馈页自动补交；同一条反馈带同一个 `id`，服务器会去重，不会重复入库。
+- **服务端约束**：正文去掉控制字符并截断到 500 字（换行保留）；同一 `cid` 10 秒内只能提交一次；`GET /api/feedback` 只返回条数、不回放内容——该路径公网可达，不能让访客读到别人的反馈。
+- **输入框**：反馈页用原生 DOM 输入框叠在画布上，因此中文输入法、粘贴、移动端键盘都正常；Phaser 自己的键盘事件收不到输入法候选，不适用于自由文本。
+
+在服务器上查看反馈：
+
+```bash
+tail -n 20 /opt/game-gate/feedback.jsonl   # 最新 20 条
+wc -l /opt/game-gate/feedback.jsonl        # 总条数
+```
+
+每行字段：`id`（去重键）、`time` / `ts`（提交时间）、`content`（正文）、`contact`、`ip`（经 nginx 取 `X-Forwarded-For` 首段）、`ua`、`online`（提交时在线人数）。
+
+反馈文件是独立落盘的，更新 `game_gate.py` 触发服务重启只会清空在线名单，已记录的反馈不受影响。
 
 ### 开发者模式
 
@@ -115,7 +136,7 @@ asoulVsA87/
 ├─ public/images/          游戏正式图片资源
 ├─ electron/main.cjs       Windows 桌面程序入口
 ├─ scripts/                便携版打包与网页版发布脚本
-├─ server/                 网页版入场券限流服务（部署到云端，最大同时在线限制）
+├─ server/                 网页版后端：入场券限流 + 玩家反馈落库（部署到云端）
 ├─ background.md           玩法、角色和关卡设计设定
 ├─ package.json            npm 命令和依赖配置
 └─ vite.config.ts          Web 构建配置
@@ -210,6 +231,13 @@ out/AsoulvsA87-win32-x64/AsoulvsA87.exe
 6. 实测本次修改涉及的角色或敌人机制。
 
 ## 更新日志
+
+### 意见反馈系统（2026-09-13）
+
+- 主界面新增「💬 意见反馈」入口与反馈页：原生 DOM 输入框，支持中文输入法，`Ctrl+Enter` 快速提交
+- 后端 `server/game_gate.py` 新增 `POST /api/feedback`，把建议追加写入 `/opt/game-gate/feedback.jsonl`；含内容校验、按 `cid` 限频、按 `id` 去重
+- 离线兜底：服务器不可达时反馈转存 `localStorage`，下次打开反馈页自动补交
+- 顺带修正 `createFreshPanel` 的 `accent` 参数类型（`FRESH` 用 `as const` 导致默认值把参数类型推成字面量，传别的主题色会报类型错误）
 
 ### 网页版在线服务（2026-09-10）
 

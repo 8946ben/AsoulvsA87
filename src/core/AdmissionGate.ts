@@ -36,7 +36,8 @@ interface AcquireResponse {
   reason?: string;
 }
 
-function clientId(): string {
+/** 本标签页的匿名标识（sessionStorage）；反馈上报也复用它做限频键。 */
+export function clientId(): string {
   try {
     let cid = sessionStorage.getItem('asoul-cid');
     if (!cid) {

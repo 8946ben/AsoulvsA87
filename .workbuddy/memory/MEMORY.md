@@ -14,6 +14,13 @@
 - 关键约束：`RelicEffects` 只有 6 个数值字段（hpRegenPerSec / hpMultiplier / damageMultiplier / attackSpeedMultiplier / produceBonus / costMultiplier）；概率、弹射、光环等新机制必须走 `specialEffect`，并在 `src/entities/Plant.ts` 消费。
 - 装备槽位：`getCollectionRank` ≥ 2 时 2 件，否则 1 件。
 - 抽卡：`RARITY_DRAW_WEIGHT`（S2/A8/B20/C40/D30）、`RARITY_DUPLICATE_REFUND`（S15/A8/B4/C2/D1）、`RELIC_DRAW_STARDUST_COST = 3`。
+- **玩家反馈系统**（2026-09-13 实装）：主界面底部「💬 意见反馈」（与「开发者模式」并排）→ `src/scenes/FeedbackScene.ts` → `src/core/Feedback.ts` → `POST api/feedback` → `server/game_gate.py` → 服务器 `/opt/game-gate/feedback.jsonl`（一行一条 JSON）。
+  - 自由文本输入必须用原生 DOM 控件（`src/ui/DomField.ts`）：Phaser 的键盘事件收不到中文输入法。**没有**启用 Phaser `dom.createContainer`，别再试图改全局 game config。
+  - 服务器不可达时反馈落 `localStorage` 待补交，靠记录里的 `id` 在服务端去重。
+  - 发布：更新 `server/game_gate.py` 后跑 `python scripts/publish-web.py --build`（会重启 `game-gate` 服务，只清空在线名单，不动已落库反馈）。
+  - 查反馈：`tail -n 20 /opt/game-gate/feedback.jsonl`。
+- **主界面底部布局已满**：4 卡图标栏（间距 148，居中）已经是最宽，再加第 5 卡会压住 x=314 的角色立绘。新的系统级入口一律走「开发者模式」那一排胶囊按钮。
+- **本地 UI 验证**：用系统 Edge headless 截图，详见当日工作日志的「本地 UI 验证方法」——要点是非沙箱运行、轮询 30~70s 等落盘、vite 要 `--host 127.0.0.1`、每个实例独立 `--user-data-dir`、本地把 `GAME_MAX_SLOTS` 调大。
 
 ## 文档漂移（待修）
 

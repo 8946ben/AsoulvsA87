@@ -5,7 +5,10 @@ release/
 .portable-app/
 generated-images/
 /*.png
+# 本地 UI 截图/调试产物（浏览器实测用，不入库）
+.shots/
 .vite/
 *.log
 .DS_Store
 Thumbs.db
+.shots/ 

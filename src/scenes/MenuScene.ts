@@ -7,6 +7,7 @@ import { CodexScene } from './CodexScene';
 import { BackpackScene } from './BackpackScene';
 import { RelicDrawScene } from './RelicDrawScene';
 import { ShopScene } from './ShopScene';
+import { FeedbackScene } from './FeedbackScene';
 import { openChildScene } from '../core/SceneNavigation';
 
 export class MenuScene extends Phaser.Scene {
@@ -17,7 +18,7 @@ export class MenuScene extends Phaser.Scene {
   constructor() { super(MenuScene.KEY); }
 
   create(): void {
-    this.createBackground(); this.createCast(); this.createTitle(); this.createStartButton(); this.createIconBar(); this.createDeveloperButton();
+    this.createBackground(); this.createCast(); this.createTitle(); this.createStartButton(); this.createIconBar(); this.createDeveloperButton(); this.createFeedbackButton();
     this.add.text(GAME_WIDTH / 2, GAME_HEIGHT - 30, 'AI辅助创作 · 版权归A-SOUL官方及社区素材原作者所有', { fontFamily: 'Microsoft YaHei', fontSize: '12px', color: '#60758a' }).setOrigin(0.5);
     sharpenSceneText(this);
   }
@@ -99,7 +100,8 @@ export class MenuScene extends Phaser.Scene {
   }
 
   private createDeveloperButton(): void {
-    this.developerButton = this.add.text(GAME_WIDTH / 2, 594, '', {
+    // 与「意见反馈」并排成一行系统入口；两者都会在启用/提交后改变自身宽度。
+    this.developerButton = this.add.text(GAME_WIDTH / 2 - 150, 594, '', {
       fontFamily: 'Microsoft YaHei', fontSize: '13px', color: '#52667d',
       padding: { x: 20, y: 8 }, fontStyle: 'bold',
     }).setOrigin(0.5).setInteractive({ useHandCursor: true }).setDepth(5);
@@ -119,6 +121,17 @@ export class MenuScene extends Phaser.Scene {
       }
       this.openDeveloperLogin();
     });
+  }
+
+  /** 玩家意见反馈入口：写下的建议会送到服务器记录下来。 */
+  private createFeedbackButton(): void {
+    const button = this.add.text(GAME_WIDTH / 2 + 150, 594, '💬 意见反馈', {
+      fontFamily: 'Microsoft YaHei', fontSize: '13px', color: '#6b57a8',
+      backgroundColor: '#f0ecfb', padding: { x: 20, y: 8 }, fontStyle: 'bold',
+    }).setOrigin(0.5).setInteractive({ useHandCursor: true }).setDepth(5);
+    button.on('pointerover', () => button.setScale(1.03).setBackgroundColor('#e3dbf8'));
+    button.on('pointerout', () => button.setScale(1).setBackgroundColor('#f0ecfb'));
+    button.on('pointerdown', () => openChildScene(this, FeedbackScene.KEY));
   }
 
   private refreshDeveloperButton(): void {

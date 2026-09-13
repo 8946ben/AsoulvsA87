@@ -60,7 +60,9 @@ export function createFreshPanel(
   y: number,
   width: number,
   height: number,
-  accent = FRESH.BLUE,
+  // FRESH 是 as const，默认值的字面量类型会被推成参数类型，导致传别的主题色报错，
+  // 因此这里显式标注 number。
+  accent: number = FRESH.BLUE,
   alpha = 0.94,
 ): Phaser.GameObjects.Rectangle {
   return scene.add.rectangle(x, y, width, height, FRESH.PAPER, alpha).setStrokeStyle(2, accent, 0.42);
