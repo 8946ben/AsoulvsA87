@@ -9,7 +9,7 @@ import { createFreshBackdrop, FRESH } from '../ui/FreshTheme';
 import { createRelicIcon } from '../ui/RelicIcon';
 import { CAMPAIGN_BATTLE, getUnitRank, type BattleSession } from '../core/BattleSession';
 import { getEquippedRelics } from '../core/Relics';
-import { openChildScene } from '../core/SceneNavigation';
+import { openChildScene, refreshOnWake } from '../core/SceneNavigation';
 
 const MAX_LOADOUT = 8;
 
@@ -34,6 +34,8 @@ export class LoadoutScene extends Phaser.Scene {
 
   create(): void {
     this.createBackground(); this.createHeader(); this.createPanels(); this.createControls(); this.createQuickEntries(); this.refresh();
+    // 从商店/转盘等子页面返回时，已收录角色与装配图标需立即刷新。
+    refreshOnWake(this, () => this.refresh());
     this.input.keyboard?.on('keydown-ESC', () => this.goBack());
     this.input.keyboard?.on('keydown-ENTER', () => this.startBattle());
     sharpenSceneText(this);

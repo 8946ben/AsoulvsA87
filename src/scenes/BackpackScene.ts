@@ -8,7 +8,7 @@ import { CODEX_PLANT_ORDER, PLANTS, type PlantType } from '../data/plants';
 import { RelicDrawScene } from './RelicDrawScene';
 import { createFreshBackdrop, FRESH } from '../ui/FreshTheme';
 import { createRelicIcon } from '../ui/RelicIcon';
-import { type ParentSceneData, openChildScene, returnToParentScene } from '../core/SceneNavigation';
+import { type ParentSceneData, openChildScene, refreshOnWake, returnToParentScene } from '../core/SceneNavigation';
 
 type BackpackTab = 'characters' | 'relics';
 
@@ -53,6 +53,8 @@ export class BackpackScene extends Phaser.Scene {
     this.detailLayer = this.add.container(0, 0);
     this.createBackButton();
     this.refresh();
+    // 从抽卡转盘等子页面返回时，收录与装配状态需立即刷新。
+    refreshOnWake(this, () => this.refresh());
     this.input.keyboard?.on('keydown-ESC', () => returnToParentScene(this, this.returnScene));
     this.input.keyboard?.on('keydown-TAB', (event: KeyboardEvent) => {
       event.preventDefault();

@@ -10,7 +10,7 @@ import { describeRelicEffects, RARITY_COLOR, RARITY_LABEL, RELICS, RELIC_ORDER, 
 import { sharpenSceneText, sharpenText } from '../core/TextQuality';
 import { createFreshBackdrop, FRESH } from '../ui/FreshTheme';
 import { createRelicIcon } from '../ui/RelicIcon';
-import { type ParentSceneData, openChildScene, returnToParentScene } from '../core/SceneNavigation';
+import { type ParentSceneData, openChildScene, refreshOnWake, returnToParentScene } from '../core/SceneNavigation';
 
 const WHEEL_X = 400;
 const WHEEL_Y = 396;
@@ -58,6 +58,8 @@ export class RelicDrawScene extends Phaser.Scene {
     this.resultLayer = this.add.container(0, 0).setDepth(300);
     this.createBackButton();
     this.refresh();
+    // 答题结算页关闭唤醒本页时，答题券与灵境币需立即刷新。
+    refreshOnWake(this, () => this.refresh());
     this.input.keyboard?.on('keydown-ESC', () => returnToParentScene(this, this.returnScene));
     sharpenSceneText(this);
   }

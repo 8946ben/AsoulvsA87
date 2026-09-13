@@ -10,10 +10,11 @@ import { LoadoutScene } from './LoadoutScene';
 import { ShopScene } from './ShopScene';
 import { BackpackScene } from './BackpackScene';
 import { createFreshBackdrop, FRESH } from '../ui/FreshTheme';
-import { openChildScene } from '../core/SceneNavigation';
+import { openChildScene, refreshOnWake } from '../core/SceneNavigation';
 
 export class LevelSelectScene extends Phaser.Scene {
   static readonly KEY = 'LevelSelectScene';
+  private currencyFooter!: Phaser.GameObjects.Text;
 
   constructor() { super(LevelSelectScene.KEY); }
 
@@ -22,6 +23,8 @@ export class LevelSelectScene extends Phaser.Scene {
     this.createHeader();
     this.createLevelCards();
     this.createNavigation();
+    // 从商店/背包等子页面返回时，底栏灵境币余额需立即刷新。
+    refreshOnWake(this, () => this.currencyFooter.setText(this.currencyLabel()));
     this.input.keyboard?.on('keydown-ESC', () => this.scene.start('ChapterSelectScene'));
     sharpenSceneText(this);
   }
@@ -132,12 +135,18 @@ export class LevelSelectScene extends Phaser.Scene {
     backpack.on('pointerout', () => backpack.setBackgroundColor('#fcebf2'));
     backpack.on('pointerdown', () => openChildScene(this, BackpackScene.KEY));
 
-    const tech = sharpenText(this.add.text(GAME_WIDTH - 42, GAME_HEIGHT - 23, `商店  ·  ✦ 灵境币 ${Number.isFinite(getStardust()) ? getStardust() : '∞'}`, {
+    const tech = sharpenText(this.add.text(GAME_WIDTH - 42, GAME_HEIGHT - 23, this.currencyLabel(), {
       fontFamily: 'Microsoft YaHei', fontSize: '14px', color: '#8d6221',
       backgroundColor: '#fff1bd', padding: { x: 16, y: 9 }, fontStyle: 'bold',
     })).setOrigin(1, 1).setInteractive({ useHandCursor: true });
     tech.on('pointerover', () => tech.setBackgroundColor('#ffe69a'));
     tech.on('pointerout', () => tech.setBackgroundColor('#fff1bd'));
     tech.on('pointerdown', () => openChildScene(this, ShopScene.KEY));
+    this.currencyFooter = tech;
+  }
+
+  private currencyLabel(): string {
+    const stardust = getStardust();
+    return `商店  ·  ✦ 灵境币 ${Number.isFinite(stardust) ? stardust : '∞'}`;
   }
 }

@@ -19,3 +19,9 @@ export function returnToParentScene(scene: Phaser.Scene, returnScene?: string, f
   }
   scene.scene.start(fallback);
 }
+
+/** 被唤醒的页面不会重跑 create，注册 wake 刷新以同步子页面期间变化的持久化数据。 */
+export function refreshOnWake(scene: Phaser.Scene, onWake: () => void): void {
+  scene.events.on('wake', onWake);
+  scene.events.once('shutdown', () => scene.events.off('wake', onWake));
+}
