@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { GAME_HEIGHT, GAME_WIDTH } from '../config/GameConfig';
-import { getCoins } from '../core/Coins';
+import { getStardust } from '../core/Collection';
 import { isDeveloperMode } from '../core/DeveloperMode';
 import { sharpenSceneText, sharpenText } from '../core/TextQuality';
 import { getLevelProgress } from '../core/LevelProgress';
@@ -132,7 +132,7 @@ export class LevelSelectScene extends Phaser.Scene {
     backpack.on('pointerout', () => backpack.setBackgroundColor('#fcebf2'));
     backpack.on('pointerdown', () => openChildScene(this, BackpackScene.KEY));
 
-    const tech = sharpenText(this.add.text(GAME_WIDTH - 42, GAME_HEIGHT - 23, `枝江商店  ·  金币 ${getCoins()}`, {
+    const tech = sharpenText(this.add.text(GAME_WIDTH - 42, GAME_HEIGHT - 23, `商店  ·  ✦ 灵境币 ${Number.isFinite(getStardust()) ? getStardust() : '∞'}`, {
       fontFamily: 'Microsoft YaHei', fontSize: '14px', color: '#8d6221',
       backgroundColor: '#fff1bd', padding: { x: 16, y: 9 }, fontStyle: 'bold',
     })).setOrigin(1, 1).setInteractive({ useHandCursor: true });

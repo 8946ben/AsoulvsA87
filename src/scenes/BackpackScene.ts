@@ -32,6 +32,8 @@ export class BackpackScene extends Phaser.Scene {
   private characterTab!: Phaser.GameObjects.Text;
   private relicTab!: Phaser.GameObjects.Text;
   private returnScene?: string;
+  private characterPage = 0;
+  private relicListPage = 0;
 
   constructor() { super(BackpackScene.KEY); }
 
@@ -63,7 +65,7 @@ export class BackpackScene extends Phaser.Scene {
   private createHeader(): void {
     this.add.text(42, 28, '角色背包', { fontFamily: 'Microsoft YaHei', fontSize: '35px', color: '#42506d', fontStyle: 'bold' });
     this.subtitleText = this.add.text(43, 76, 'ZHIJIANG OPERATOR ARCHIVE', { fontFamily: 'Arial', fontSize: '13px', color: '#e85f91', fontStyle: 'bold', letterSpacing: 2 });
-    this.add.text(42, 110, '收录角色，获取枝江装备并为角色装配，使用星愿徽记完成进阶。战斗中始终展示对应的 Q 版模型。', { fontFamily: 'Microsoft YaHei', fontSize: '13px', color: '#60758a' });
+    this.add.text(42, 110, '收录角色，获取枝江装备并为角色装配，使用灵境币完成进阶。战斗中始终展示对应的 Q 版模型。', { fontFamily: 'Microsoft YaHei', fontSize: '13px', color: '#60758a' });
     this.countText = this.add.text(GAME_WIDTH - 42, 39, '', { fontFamily: 'Microsoft YaHei', fontSize: '15px', color: '#52667d', fontStyle: 'bold' }).setOrigin(1, 0);
     this.stardustText = this.add.text(GAME_WIDTH - 42, 73, '', { fontFamily: 'Microsoft YaHei', fontSize: '14px', color: '#a66b25', fontStyle: 'bold' }).setOrigin(1, 0);
     const rule = this.add.graphics(); rule.lineStyle(2, FRESH.BLUE, 0.28); rule.beginPath(); rule.moveTo(34, 128); rule.lineTo(GAME_WIDTH - 34, 128); rule.strokePath();
@@ -96,7 +98,7 @@ export class BackpackScene extends Phaser.Scene {
     back.on('pointerover', () => back.setBackgroundColor('#d1eeee'));
     back.on('pointerout', () => back.setBackgroundColor('#e6f5f4'));
     back.on('pointerdown', () => returnToParentScene(this, this.returnScene));
-    this.add.text(GAME_WIDTH - 42, GAME_HEIGHT - 28, '战役结算获得星愿徽记用于进阶 · 藏品经答题与抽卡转盘获得', {
+    this.add.text(GAME_WIDTH - 42, GAME_HEIGHT - 28, '战役结算获得灵境币用于进阶 · 藏品经答题与抽卡转盘获得', {
       fontFamily: 'Microsoft YaHei', fontSize: '12px', color: '#71809a',
     }).setOrigin(1, 1);
   }
@@ -123,7 +125,7 @@ export class BackpackScene extends Phaser.Scene {
       this.renderRelicDetail();
     }
     const stardust = getStardust();
-    this.stardustText.setText(`✦ 星愿徽记  ${Number.isFinite(stardust) ? stardust : '∞'}`);
+    this.stardustText.setText(`✦ 灵境币  ${Number.isFinite(stardust) ? stardust : '∞'}`);
     sharpenSceneText(this);
   }
 
@@ -139,7 +141,12 @@ export class BackpackScene extends Phaser.Scene {
   private renderCharacterList(): void {
     this.listLayer.removeAll(true);
     const cardW = 164; const cardH = 58; const colX = [136, 308];
-    CODEX_PLANT_ORDER.forEach((type, index) => {
+    // 分页：每页 7 行 × 2 列，超出部分翻页展示，避免溢出面板。
+    const perPage = 14;
+    const pageCount = Math.max(1, Math.ceil(CODEX_PLANT_ORDER.length / perPage));
+    this.characterPage = Math.min(this.characterPage, pageCount - 1);
+    const start = this.characterPage * perPage;
+    CODEX_PLANT_ORDER.slice(start, start + perPage).forEach((type, index) => {
       const config = PLANTS[type]; const col = index % 2; const row = Math.floor(index / 2);
       const x = colX[col]; const y = 199 + row * 68;
       const owned = isPlantCollected(type); const selected = type === this.selectedType;
@@ -166,6 +173,21 @@ export class BackpackScene extends Phaser.Scene {
       card.on('pointerdown', () => { this.selectedType = type; this.refresh(); });
       this.listLayer.add([card, icon, name, state]);
     });
+    this.renderListPagination(this.listLayer, 222, 654, this.characterPage, pageCount, (p) => { this.characterPage = p; this.renderCharacterList(); });
+  }
+
+  /** 列表分页控件：单页时不显示。 */
+  private renderListPagination(layer: Phaser.GameObjects.Container, x: number, y: number, page: number, pageCount: number, onChange: (page: number) => void): void {
+    if (pageCount <= 1) return;
+    const style = { fontFamily: 'Microsoft YaHei', fontSize: '12px', color: '#42506d', backgroundColor: '#e6f5f4', padding: { x: 9, y: 4 }, fontStyle: 'bold' };
+    const prev = this.add.text(x - 80, y, '‹ 上一页', style).setOrigin(0.5).setInteractive({ useHandCursor: true });
+    const label = this.add.text(x, y, `${page + 1} / ${pageCount}`, { fontFamily: 'Arial', fontSize: '12px', color: '#52667d', fontStyle: 'bold' }).setOrigin(0.5);
+    const next = this.add.text(x + 80, y, '下一页 ›', style).setOrigin(0.5).setInteractive({ useHandCursor: true });
+    prev.setAlpha(page > 0 ? 1 : 0.35);
+    next.setAlpha(page < pageCount - 1 ? 1 : 0.35);
+    prev.on('pointerdown', () => onChange(page - 1));
+    next.on('pointerdown', () => onChange(page + 1));
+    layer.add([prev, label, next]);
   }
 
   private renderCharacterDetail(): void {
@@ -326,11 +348,15 @@ export class BackpackScene extends Phaser.Scene {
 
   private renderRelicList(): void {
     this.listLayer.removeAll(true);
-    // 21 件装备：紧凑双列（46px 行距），确保完整落在左侧面板内。
+    // 21 件装备：紧凑双列并分页（每页 10 行 × 2 列），避免溢出面板。
     const cardW = 164; const cardH = 42; const colX = [136, 308];
-    RELIC_ORDER.forEach((id, index) => {
+    const perPage = 20;
+    const pageCount = Math.max(1, Math.ceil(RELIC_ORDER.length / perPage));
+    this.relicListPage = Math.min(this.relicListPage, pageCount - 1);
+    const start = this.relicListPage * perPage;
+    RELIC_ORDER.slice(start, start + perPage).forEach((id, index) => {
       const relic = RELICS[id]; const col = index % 2; const row = Math.floor(index / 2);
-      const x = colX[col]; const y = 185 + row * 46;
+      const x = colX[col]; const y = 186 + row * 46;
       const owned = isRelicOwned(id); const selected = id === this.selectedRelic;
       const holder = getRelicHolder(id);
       if (!owned && !selected) {
@@ -355,6 +381,7 @@ export class BackpackScene extends Phaser.Scene {
       card.on('pointerdown', () => { this.selectedRelic = id; this.refresh(); });
       this.listLayer.add([card, glyph, name, state]);
     });
+    this.renderListPagination(this.listLayer, 222, 650, this.relicListPage, pageCount, (p) => { this.relicListPage = p; this.renderRelicList(); });
   }
 
   private renderRelicDetail(): void {
@@ -565,7 +592,7 @@ export class BackpackScene extends Phaser.Scene {
   private tryAdvance(type: PlantType): void {
     const result = advancePlant(type);
     if (!result.ok && result.reason === 'insufficient-stardust') {
-      this.stardustText.setColor('#d7527c').setText(`星愿徽记不足 · 还需 ${ADVANCE_COST - result.stardust}`);
+      this.stardustText.setColor('#d7527c').setText(`灵境币不足 · 还需 ${ADVANCE_COST - result.stardust}`);
       this.time.delayedCall(1150, () => this.refresh());
       return;
     }

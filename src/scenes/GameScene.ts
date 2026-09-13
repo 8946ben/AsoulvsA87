@@ -1,13 +1,12 @@
 import Phaser from 'phaser';
 import { GAME_HEIGHT, GAME_WIDTH, GRID, HOUSE_LINE_X, LAWNMOWER_X, PLANT_DISPLAY, SUN_RULES, TEX, WAVE_RULES, ZOMBIE_SPAWN_X } from '../config/GameConfig';
 import { Grid } from '../core/Grid';
-import { addCoins, isTechUnlocked } from '../core/Coins';
-import { awardStardust } from '../core/Collection';
+import { isTechUnlocked } from '../core/Coins';
 import { mergeRelicEffects } from '../core/Relics';
+import { awardStardust } from '../core/Collection';
 import type { RelicEffects } from '../data/relics';
 import { isDeveloperMode } from '../core/DeveloperMode';
 import { completeLevel } from '../core/LevelProgress';
-import { COIN_PER_CLEAR, COIN_PER_INTACT_ALPACA } from '../data/techTree';
 import { sharpenSceneText, sharpenText } from '../core/TextQuality';
 import { getNextLevel, LEVEL_1, type LevelConfig } from '../data/levels';
 import { PLANTS, type PlantType } from '../data/plants';
@@ -848,11 +847,10 @@ export class GameScene extends Phaser.Scene {
     } else if (win && !isDeveloperMode()) {
       completeLevel(this.level.id);
       const intactAlpacas = this.alpacas.filter(Boolean).length;
-      const coinTotal = COIN_PER_CLEAR + COIN_PER_INTACT_ALPACA * intactAlpacas;
-      const stardustEarned = 2 + intactAlpacas;
-      addCoins(coinTotal);
+      // 灵境币与关卡挂钩：第 N 幕固定 +2N，每保留一只完整羊驼额外 +1。
+      const stardustEarned = this.level.id * 2 + intactAlpacas;
       awardStardust(stardustEarned);
-      coinSummary = `金币 +${coinTotal}（通关 ${COIN_PER_CLEAR} ＋ 完整羊驼 ${intactAlpacas}×${COIN_PER_INTACT_ALPACA}） · 星愿徽记 +${stardustEarned}`;
+      coinSummary = `灵境币 +${stardustEarned}（第 ${this.level.id} 幕固定 +${this.level.id * 2} ＋ 完整羊驼 ${intactAlpacas}×1）`;
     }
     this.gameState = win ? 'win' : 'lose'; this.seedBank.clearSelection(); this.preview?.setVisible(false); this.previewRect.clear();
     const overlay = this.add.rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2, GAME_WIDTH, GAME_HEIGHT, FRESH.INK, 0.45).setDepth(220).setAlpha(0);

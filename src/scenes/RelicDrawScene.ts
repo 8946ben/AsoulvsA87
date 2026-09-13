@@ -6,7 +6,7 @@ import {
   RARITY_DRAW_WEIGHT, RARITY_DUPLICATE_REFUND, RELIC_DRAW_STARDUST_COST,
   type RelicDrawResult,
 } from '../core/Relics';
-import { describeRelicEffects, RARITY_COLOR, RARITY_LABEL, RELICS, RELIC_ORDER, type RelicConfig, type RelicRarity } from '../data/relics';
+import { describeRelicEffects, RARITY_COLOR, RARITY_LABEL, RELICS, RELIC_ORDER, type RelicConfig, type RelicId, type RelicRarity } from '../data/relics';
 import { sharpenSceneText, sharpenText } from '../core/TextQuality';
 import { createFreshBackdrop, FRESH } from '../ui/FreshTheme';
 import { createRelicIcon } from '../ui/RelicIcon';
@@ -22,7 +22,7 @@ const RARITY_ORDER: RelicRarity[] = ['s', 'a', 'b', 'c', 'd'];
 
 /**
  * 枝江装备抽卡转盘：放回抽取——每次都从完整奖池按概率随机，
- * 优先消耗答题券，不足时消耗星愿徽记；重复获得的藏品自动兑换星愿徽记。
+ * 优先消耗答题券，不足时消耗灵境币；重复获得的藏品自动兑换灵境币。
  * 答题入口也在此场景，QuizScene 结算后返回这里。
  */
 export class RelicDrawScene extends Phaser.Scene {
@@ -35,6 +35,12 @@ export class RelicDrawScene extends Phaser.Scene {
   private drawOnceButton!: Phaser.GameObjects.Text;
   private drawTenButton!: Phaser.GameObjects.Text;
   private poolMarks: Phaser.GameObjects.Text[] = [];
+  private poolGrid!: Phaser.GameObjects.Container;
+  private poolPrev!: Phaser.GameObjects.Text;
+  private poolNext!: Phaser.GameObjects.Text;
+  private poolPageText!: Phaser.GameObjects.Text;
+  private poolPage = 0;
+  private poolPageCount = 1;
   private spinning = false;
   private returnScene?: string;
 
@@ -59,7 +65,7 @@ export class RelicDrawScene extends Phaser.Scene {
   private createHeader(): void {
     this.add.text(42, 26, '枝江装备 · 抽卡转盘', { fontFamily: 'Microsoft YaHei', fontSize: '32px', color: '#42506d', fontStyle: 'bold' });
     this.add.text(43, 70, 'ZHIJIANG RELIC ROULETTE', { fontFamily: 'Arial', fontSize: '13px', color: '#e85f91', fontStyle: 'bold', letterSpacing: 2 });
-    this.add.text(42, 100, '每次抽取优先消耗答题券，不足时消耗 3 ✦；重复藏品自动兑换星愿徽记。', { fontFamily: 'Microsoft YaHei', fontSize: '13px', color: '#60758a' });
+    this.add.text(42, 100, '每次抽取优先消耗答题券，不足时消耗 3 ✦；重复藏品自动兑换灵境币。', { fontFamily: 'Microsoft YaHei', fontSize: '13px', color: '#60758a' });
     this.stardustText = this.add.text(GAME_WIDTH - 42, 32, '', { fontFamily: 'Microsoft YaHei', fontSize: '15px', color: '#a66b25', fontStyle: 'bold' }).setOrigin(1, 0);
     this.ticketText = this.add.text(GAME_WIDTH - 42, 62, '', { fontFamily: 'Microsoft YaHei', fontSize: '14px', color: '#348c72', fontStyle: 'bold' }).setOrigin(1, 0);
     this.progressText = this.add.text(GAME_WIDTH - 42, 92, '', { fontFamily: 'Microsoft YaHei', fontSize: '13px', color: '#52667d', fontStyle: 'bold' }).setOrigin(1, 0);
@@ -111,8 +117,8 @@ export class RelicDrawScene extends Phaser.Scene {
     this.add.rectangle(panelX + 267, panelY, 534, 548, FRESH.PAPER, 0.96).setStrokeStyle(2, FRESH.MINT, 0.42);
 
     this.add.text(732, 142, '抽取说明', { fontFamily: 'Microsoft YaHei', fontSize: '16px', color: '#42506d', fontStyle: 'bold' });
-    this.add.text(732, 172, '优先消耗答题券，不足时消耗 3 ✦ 星愿徽记。', { fontFamily: 'Microsoft YaHei', fontSize: '12px', color: '#60758a' });
-    this.add.text(732, 194, '每件藏品仅可入库一次，重复获得自动兑换星愿徽记。', { fontFamily: 'Microsoft YaHei', fontSize: '12px', color: '#60758a' });
+    this.add.text(732, 172, '优先消耗答题券，不足时消耗 3 ✦ 灵境币。', { fontFamily: 'Microsoft YaHei', fontSize: '12px', color: '#60758a' });
+    this.add.text(732, 194, '每件藏品仅可入库一次，重复获得自动兑换灵境币。', { fontFamily: 'Microsoft YaHei', fontSize: '12px', color: '#60758a' });
     const quizButton = this.makeAction('去答题赢抽奖券（10 题对 8 题）', '#58bd92', () => openChildScene(this, 'QuizScene'));
     quizButton.setPosition(panelX + 267, 236).setFontSize('13px');
 
@@ -127,16 +133,19 @@ export class RelicDrawScene extends Phaser.Scene {
     });
 
     this.add.text(732, 488, '我的藏品', { fontFamily: 'Microsoft YaHei', fontSize: '16px', color: '#42506d', fontStyle: 'bold' });
-    RELIC_ORDER.forEach((id, index) => {
-      const relic = RELICS[id];
-      const col = index % 2; const row = Math.floor(index / 2);
-      const x = 722 + col * 258; const y = 518 + row * 21;
-      const glyph = createRelicIcon(this, relic, x + 8, y, 16, 16);
-      const name = this.add.text(x + 30, y, relic.name, { fontFamily: 'Microsoft YaHei', fontSize: '11px', color: '#42506d' }).setOrigin(0, 0.5);
-      const mark = this.add.text(x + 246, y, '', { fontFamily: 'Microsoft YaHei', fontSize: '10px', fontStyle: 'bold' }).setOrigin(1, 0.5);
-      this.poolMarks.push(mark);
-      void glyph; void name;
-    });
+    this.poolGrid = this.add.container(0, 0);
+    this.poolPrev = this.add.text(806, 664, '‹ 上一页', {
+      fontFamily: 'Microsoft YaHei', fontSize: '11px', color: '#42506d', backgroundColor: '#e8f5f2', padding: { x: 8, y: 4 }, fontStyle: 'bold',
+    }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+    this.poolPageText = this.add.text(972, 664, '', {
+      fontFamily: 'Arial', fontSize: '12px', color: '#52667d', fontStyle: 'bold',
+    }).setOrigin(0.5);
+    this.poolNext = this.add.text(1138, 664, '下一页 ›', {
+      fontFamily: 'Microsoft YaHei', fontSize: '11px', color: '#42506d', backgroundColor: '#e8f5f2', padding: { x: 8, y: 4 }, fontStyle: 'bold',
+    }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+    this.poolPrev.on('pointerdown', () => { if (this.poolPage > 0) { this.poolPage -= 1; this.renderPoolGrid(); } });
+    this.poolNext.on('pointerdown', () => { if (this.poolPage < this.poolPageCount - 1) { this.poolPage += 1; this.renderPoolGrid(); } });
+    this.renderPoolGrid();
   }
 
   private makeAction(label: string, color: string, onClick: () => void): Phaser.GameObjects.Text {
@@ -162,23 +171,47 @@ export class RelicDrawScene extends Phaser.Scene {
     const stardust = getStardust();
     const tickets = getDrawTickets();
     const owned = getOwnedRelics();
-    this.stardustText.setText(`✦ 星愿徽记  ${Number.isFinite(stardust) ? stardust : '∞'}`);
+    this.stardustText.setText(`✦ 灵境币  ${Number.isFinite(stardust) ? stardust : '∞'}`);
     this.ticketText.setText(`🎟 答题券  ${Number.isFinite(tickets) ? tickets : '∞'}`);
     this.progressText.setText(`藏品收录  ${owned.length} / ${RELIC_ORDER.length}`);
     // 放回抽取永远不会被禁用；仅在两种货币都不足一次时降低按钮存在感。
     const affordable = (Number.isFinite(tickets) ? tickets >= 1 : true) || (Number.isFinite(stardust) ? stardust >= RELIC_DRAW_STARDUST_COST : true);
     this.drawOnceButton.setAlpha(affordable ? 1 : 0.5);
     this.drawTenButton.setAlpha(affordable ? 1 : 0.5);
-    RELIC_ORDER.forEach((id, index) => {
-      const isOwned = owned.includes(id);
-      const holder = getRelicHolder(id);
-      this.poolMarks[index]?.setText(isOwned ? (holder ? '装配' : '已入库') : '未获得')
-        .setColor(isOwned ? (holder ? '#d7527c' : '#348c72') : '#9aa8a4');
-    });
+    this.renderPoolGrid(owned);
     sharpenSceneText(this);
   }
 
-  /** 单次抽取的付费：优先答题券，不足时消耗星愿徽记。 */
+  /** 我的藏品：分页网格（每页 6 行 × 2 列），避免装备增多后溢出面板。 */
+  private renderPoolGrid(owned?: RelicId[]): void {
+    const ownedIds = owned ?? getOwnedRelics();
+    const perPage = 12;
+    this.poolPageCount = Math.max(1, Math.ceil(RELIC_ORDER.length / perPage));
+    this.poolPage = Math.min(this.poolPage, this.poolPageCount - 1);
+    this.poolGrid.removeAll(true);
+    this.poolMarks = [];
+    const start = this.poolPage * perPage;
+    RELIC_ORDER.slice(start, start + perPage).forEach((id, index) => {
+      const relic = RELICS[id];
+      const col = index % 2; const row = Math.floor(index / 2);
+      const x = 722 + col * 258; const y = 512 + row * 22;
+      const isOwned = ownedIds.includes(id);
+      const holder = getRelicHolder(id);
+      const glyph = createRelicIcon(this, relic, x + 8, y, 15, 15, isOwned ? 1 : 0.3);
+      const name = this.add.text(x + 30, y, relic.name, { fontFamily: 'Microsoft YaHei', fontSize: '11px', color: '#42506d' }).setOrigin(0, 0.5);
+      const mark = this.add.text(x + 246, y, isOwned ? (holder ? '装配' : '已入库') : '未获得', {
+        fontFamily: 'Microsoft YaHei', fontSize: '10px', fontStyle: 'bold',
+        color: isOwned ? (holder ? '#d7527c' : '#348c72') : '#9aa8a4',
+      }).setOrigin(1, 0.5);
+      this.poolMarks.push(mark);
+      this.poolGrid.add([glyph, name, mark]);
+    });
+    this.poolPageText.setText(`${this.poolPage + 1} / ${this.poolPageCount}`);
+    this.poolPrev.setAlpha(this.poolPage > 0 ? 1 : 0.35);
+    this.poolNext.setAlpha(this.poolPage < this.poolPageCount - 1 ? 1 : 0.35);
+  }
+
+  /** 单次抽取的付费：优先答题券，不足时消耗灵境币。 */
   private payOneDraw(): boolean {
     if (consumeDrawTicket()) return true;
     return spendStardust(RELIC_DRAW_STARDUST_COST);
@@ -189,7 +222,7 @@ export class RelicDrawScene extends Phaser.Scene {
     const results: RelicDrawResult[] = [];
     for (let i = 0; i < count; i++) {
       if (!this.payOneDraw()) {
-        if (results.length === 0) this.showToast('答题券与星愿徽记都不足啦', 0xff6585);
+        if (results.length === 0) this.showToast('答题券与灵境币都不足啦', 0xff6585);
         break;
       }
       results.push(drawRandomRelic());

@@ -72,7 +72,7 @@ export class MenuScene extends Phaser.Scene {
       { icon: '📖', label: '枝江图鉴', scene: CodexScene.KEY, color: '#4eb3cf', hover: '#e9f8fb' },
       { icon: '🎒', label: '角色背包', scene: BackpackScene.KEY, color: '#e85f91', hover: '#fcebf2' },
       { icon: '🎡', label: '抽卡转盘', scene: RelicDrawScene.KEY, color: '#a66b25', hover: '#fdf3e3' },
-      { icon: '🛒', label: '融合商店', scene: ShopScene.KEY, color: '#348c72', hover: '#e8f5f2' },
+      { icon: '🛒', label: '商店', scene: ShopScene.KEY, color: '#348c72', hover: '#e8f5f2' },
     ];
     const startX = GAME_WIDTH / 2 - ((entries.length - 1) * 148) / 2;
     entries.forEach((entry, index) => {

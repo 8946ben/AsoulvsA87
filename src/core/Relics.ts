@@ -1,22 +1,22 @@
-﻿import { awardStardust, getCollectionRank, isPlantCollected } from './Collection';
+import { awardStardust, getCollectionRank, isPlantCollected } from './Collection';
 import { RELIC_ORDER, RELICS, type RelicConfig, type RelicEffects, type RelicId, type RelicRarity } from '../data/relics';
 import type { PlantType } from '../data/plants';
 import { isDeveloperMode } from './DeveloperMode';
 
 /**
  * 枝江装备的持有、装配与抽卡状态。
- * 藏品只能通过「抽卡转盘」获得：消耗星愿徽记或答题赢得的抽奖券。
+ * 藏品只能通过「抽卡转盘」获得：消耗灵境币或答题赢得的抽奖券。
  * 装配关系为「藏品 → 角色」的单向映射：一件藏品同一时间只能交给一名角色，
  * 一名角色同一时间也只能持有一件藏品（装配新藏品会自动归还原有藏品） */
 const STORAGE_KEY = 'asoul-relic-inventory-v1';
 
-/** 星愿徽记抽卡定价（答题券抽卡固定消耗 1 张）。 */
+/** 灵境币抽卡定价（答题券抽卡固定消耗 1 张）。 */
 export const RELIC_DRAW_STARDUST_COST = 3;
 
 /** 抽卡各稀有度概率（%）：S 2% / A 8% / B 20% / C 40% / D 30%，合计 100。 */
 export const RARITY_DRAW_WEIGHT: Record<RelicRarity, number> = { s: 2, a: 8, b: 20, c: 40, d: 30 };
 
-/** 重复获得藏品时按稀有度兑换的星愿徽记。 */
+/** 重复获得藏品时按稀有度兑换的灵境币。 */
 export const RARITY_DUPLICATE_REFUND: Record<RelicRarity, number> = { s: 15, a: 8, b: 4, c: 2, d: 1 };
 
 interface RelicState {
@@ -30,9 +30,9 @@ interface RelicState {
 export interface RelicDrawResult {
   ok: boolean;
   relic: RelicConfig;
-  /** true 表示重复获得：不再入库，已自动兑换星愿徽记。 */
+  /** true 表示重复获得：不再入库，已自动兑换灵境币。 */
   duplicate: boolean;
-  /** 重复兑换获得的星愿徽记数量。 */
+  /** 重复兑换获得的灵境币数量。 */
   refund: number;
 }
 
@@ -99,7 +99,7 @@ export function consumeDrawTicket(): boolean {
 
 /**
  * 放回抽取：每次都从完整奖池按稀有度概率随机，奖池永不枯竭。
- * 每件藏品仅可入库一次；重复获得时自动按稀有度兑换星愿徽记（S15/A8/B4/C2/D1）。
+ * 每件藏品仅可入库一次；重复获得时自动按稀有度兑换灵境币（S15/A8/B4/C2/D1）。
  */
 export function drawRandomRelic(): RelicDrawResult {
   const totalWeight = RELIC_ORDER.reduce((sum, id) => sum + RARITY_DRAW_WEIGHT[RELICS[id].rarity], 0);

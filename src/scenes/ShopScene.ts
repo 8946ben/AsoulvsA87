@@ -1,10 +1,11 @@
 import Phaser from 'phaser';
 import { GAME_HEIGHT, GAME_WIDTH } from '../config/GameConfig';
-import { getCoins, isTechUnlocked, techRequiresMet, unlockTech } from '../core/Coins';
+import { isTechUnlocked, techRequiresMet, unlockTech } from '../core/Coins';
 import { isDeveloperMode } from '../core/DeveloperMode';
 import { sharpenSceneText, sharpenText } from '../core/TextQuality';
 import { PLANTS } from '../data/plants';
-import { COIN_PER_CLEAR, COIN_PER_INTACT_ALPACA, TECH_NODES, type TechNode } from '../data/techTree';
+import { getStardust } from '../core/Collection';
+import { TECH_NODES, type TechNode } from '../data/techTree';
 import { createFreshBackdrop, FRESH } from '../ui/FreshTheme';
 import { type ParentSceneData, returnToParentScene } from '../core/SceneNavigation';
 
@@ -43,10 +44,11 @@ export class ShopScene extends Phaser.Scene {
     this.add.text(43, 72, 'ZHIJIANG SHOP', {
       fontFamily: 'Arial', fontSize: '13px', color: '#e85f91', fontStyle: 'bold', letterSpacing: 2,
     });
-    this.add.text(GAME_WIDTH - 42, 34, `金币 ${getCoins()}`, {
+    const stardust = getStardust();
+    this.add.text(GAME_WIDTH - 42, 34, `✦ 灵境币  ${Number.isFinite(stardust) ? stardust : '∞'}`, {
       fontFamily: 'Microsoft YaHei', fontSize: '20px', color: '#9b6b22', fontStyle: 'bold',
     }).setOrigin(1, 0);
-    this.add.text(GAME_WIDTH - 42, 66, `通关固定 +${COIN_PER_CLEAR} 金币 · 每保留一只完整羊驼 +${COIN_PER_INTACT_ALPACA}`, {
+    this.add.text(GAME_WIDTH - 42, 66, '通关战役与重复装备兑换可获得灵境币', {
       fontFamily: 'Microsoft YaHei', fontSize: '12px', color: '#71809a',
     }).setOrigin(1, 0);
     if (isDeveloperMode()) {
@@ -72,7 +74,7 @@ export class ShopScene extends Phaser.Scene {
     const config = PLANTS[node.id];
     const unlocked = isTechUnlocked(node.id);
     const requiresMet = techRequiresMet(node.id);
-    const affordable = getCoins() >= node.cost;
+    const affordable = getStardust() >= node.cost;
 
     const container = this.add.container(x, y);
     const bg = this.add.rectangle(0, 0, w, h, unlocked ? 0xe9f8ef : FRESH.PAPER, 0.97)
@@ -109,7 +111,7 @@ export class ShopScene extends Phaser.Scene {
       }).setOrigin(0.5));
       return;
     }
-    const label = affordable ? `解锁 · ${node.cost} 金币` : `金币不足 · 需要 ${node.cost}`;
+    const label = affordable ? `解锁 · ${node.cost} ✦` : `灵境币不足 · 需要 ${node.cost} ✦`;
     const button = sharpenText(this.add.text(0, h / 2 - 46, label, {
       fontFamily: 'Microsoft YaHei', fontSize: '15px', fontStyle: 'bold',
       color: affordable ? '#704d18' : '#87938f', backgroundColor: affordable ? '#ffe39a' : '#e5ece8',

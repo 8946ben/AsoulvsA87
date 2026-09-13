@@ -15,7 +15,7 @@ export class ModeSelectScene extends Phaser.Scene {
     createFreshBackdrop(this, 'garden');
     this.add.text(GAME_WIDTH / 2, 62, '选择游戏模式', { fontFamily: 'Microsoft YaHei', fontSize: '38px', color: '#42506d', fontStyle: 'bold' }).setOrigin(0.5);
     this.add.text(GAME_WIDTH / 2, 108, '每一次守护舞台，都有不同的故事', { fontFamily: 'Microsoft YaHei', fontSize: '15px', color: '#60758a' }).setOrigin(0.5);
-    this.createModeCard(355, 365, '闯关模式', 'CAMPAIGN', '按章节推进固定关卡\n解锁角色、金币与融合科技', '进入章节选择', FRESH.BLUE, () => this.scene.start('ChapterSelectScene'));
+    this.createModeCard(355, 365, '闯关模式', 'CAMPAIGN', '按章节推进固定关卡\n解锁角色、灵境币与融合科技', '进入章节选择', FRESH.BLUE, () => this.scene.start('ChapterSelectScene'));
     this.createModeCard(925, 365, '肉鸽模式', 'ROGUELIKE', '随机路线、招募进阶与收藏品\n失败会结束本次巡演，但每局路线不同', '开始探索', FRESH.PINK, () => this.scene.start('RogueHubScene'));
     const back = this.add.text(52, GAME_HEIGHT - 43, '← 返回上级页面  ESC', { fontFamily: 'Microsoft YaHei', fontSize: '14px', color: '#52667d', backgroundColor: '#edf7f5', padding: { x: 16, y: 10 } }).setInteractive({ useHandCursor: true });
     back.on('pointerdown', () => returnToParentScene(this, this.returnScene));
