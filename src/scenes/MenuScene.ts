@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { GAME_HEIGHT, GAME_WIDTH, TEX } from '../config/GameConfig';
-import { activateDeveloperMode, isDeveloperMode } from '../core/DeveloperMode';
+import { activateDeveloperMode, deactivateDeveloperMode, isDeveloperMode } from '../core/DeveloperMode';
 import { sharpenSceneText, sharpenText } from '../core/TextQuality';
 import { createFreshBackdrop, FRESH } from '../ui/FreshTheme';
 import { CodexScene } from './CodexScene';
@@ -110,7 +110,14 @@ export class MenuScene extends Phaser.Scene {
     this.developerButton.on('pointerover', () => this.developerButton.setScale(1.03).setBackgroundColor('#dff4ef'));
     this.developerButton.on('pointerout', () => { this.developerButton.setScale(1); this.refreshDeveloperButton(); });
     this.developerButton.on('pointerdown', () => {
-      if (!isDeveloperMode()) this.openDeveloperLogin();
+      if (isDeveloperMode()) {
+        // 已启用时再次点击即关闭，方便随时切回正常进度。
+        deactivateDeveloperMode();
+        this.refreshDeveloperButton();
+        this.cameras.main.flash(150, 255, 214, 232, false);
+        return;
+      }
+      this.openDeveloperLogin();
     });
   }
 

@@ -10,6 +10,15 @@ export function isDeveloperMode(): boolean {
   }
 }
 
+/** 关闭开发者模式：清除会话标记，之后可随时重新输入口令开启。 */
+export function deactivateDeveloperMode(): void {
+  try {
+    window.sessionStorage.removeItem(SESSION_KEY);
+  } catch {
+    // 存储不可用时保持原状，调用方会按未开启处理。
+  }
+}
+
 export function activateDeveloperMode(code: string): boolean {
   if (code.trim().toLowerCase() !== ACCESS_CODE) return false;
   try {

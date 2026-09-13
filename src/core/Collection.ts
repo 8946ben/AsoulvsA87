@@ -17,7 +17,10 @@ export function isAdvanceable(type: PlantType): boolean {
 interface CollectionState {
   version: 1;
   stardust: number;
+  /** 当前处于 Ⅱ 阶的角色。 */
   ranks: Partial<Record<PlantType, 2>>;
+  /** 曾支付过进阶费用的角色：切回 Ⅰ 阶后再进阶不重复收费。 */
+  advancedPaid: Partial<Record<PlantType, true>>;
 }
 
 export interface AdvanceResult {
@@ -31,14 +34,27 @@ function readState(): CollectionState {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw) as Partial<CollectionState>;
+      const ranks = parsed.ranks ?? {};
+      // 旧存档迁移：处于 Ⅱ 阶即视为已支付过进阶费用。
+      const advancedPaid: Partial<Record<PlantType, true>> = { ...(parsed.advancedPaid ?? {}) };
+      for (const [id, value] of Object.entries(ranks)) {
+        if (value === 2) advancedPaid[id as PlantType] = true;
+      }
       return {
         version: 1,
         stardust: Math.max(0, Math.floor(parsed.stardust ?? 18)),
-        ranks: parsed.ranks ?? {},
+        ranks,
+        advancedPaid,
       };
     }
   } catch { /* 无痕模式或损坏存档时回退为本局默认值。 */ }
-  return { version: 1, stardust: 18, ranks: {} };
+  return { version: 1, stardust: 18, ranks: {}, advancedPaid: {} };
+}
+
+/** 该角色是否曾支付过进阶费用（切回 Ⅰ 阶后再进阶不重复收费）。 */
+export function hasPaidForAdvance(type: PlantType): boolean {
+  const state = readState();
+  return state.advancedPaid[type] === true || state.ranks[type] === 2;
 }
 
 function writeState(state: CollectionState): void {
@@ -105,11 +121,18 @@ export function advancePlant(type: PlantType): AdvanceResult {
   const state = readState();
   if (!isPlantCollected(type)) return { ok: false, reason: 'locked', stardust: state.stardust };
   if (!isAdvanceable(type) || state.ranks[type] === 2) return { ok: false, reason: 'max-rank', stardust: state.stardust };
+  // 曾支付过进阶费用的角色（含开发者模式）再次进阶免费；仅首次收费。
+  if (state.advancedPaid[type] === true) {
+    state.ranks[type] = 2;
+    writeState(state);
+    return { ok: true, stardust: state.stardust };
+  }
   // 开发者模式徽记无限：不校验也不扣除存量。
   if (!isDeveloperMode()) {
     if (state.stardust < ADVANCE_COST) return { ok: false, reason: 'insufficient-stardust', stardust: state.stardust };
     state.stardust -= ADVANCE_COST;
   }
+  state.advancedPaid[type] = true;
   state.ranks[type] = 2;
   writeState(state);
   return { ok: true, stardust: state.stardust };

@@ -1,9 +1,12 @@
 import Phaser from 'phaser';
 import { GAME_HEIGHT, GAME_WIDTH } from '../config/GameConfig';
 import { sharpenSceneText, sharpenText } from '../core/TextQuality';
+import { isPlantCollected } from '../core/Collection';
+import { isRelicOwned } from '../core/Relics';
+import { getDiscoveredEnemyCount, isEnemyDiscovered } from '../core/CodexProgress';
 import { CODEX_PLANT_ORDER, PLANTS, type PlantConfig } from '../data/plants';
 import { describeRelicEffects, RARITY_COLOR, RARITY_LABEL, RELICS, RELIC_ORDER, type RelicConfig } from '../data/relics';
-import { ZOMBIES, type ZombieConfig, type ZombieType } from '../data/zombies';
+import { ENEMY_CODEX_ORDER, ZOMBIES, type ZombieConfig } from '../data/zombies';
 import { createFreshBackdrop, FRESH } from '../ui/FreshTheme';
 import { createRelicIcon } from '../ui/RelicIcon';
 import { type ParentSceneData, returnToParentScene } from '../core/SceneNavigation';
@@ -12,18 +15,7 @@ type CodexTab = 'allies' | 'enemies' | 'relics';
 const COLUMNS = 4;
 const PAGE_SIZE = COLUMNS * 2;
 
-const ENEMY_ORDER: ZombieType[] = [
-  'basic', 'cone', 'phone', 'flag', 'screen',
-  'balloon', 'ladder', 'football', 'sled', 'miner',
-  'bucket', 'pole', 'dragon',
-];
-
 const TAB_ORDER: CodexTab[] = ['allies', 'enemies', 'relics'];
-const TAB_COUNT_TEXT: Record<CodexTab, (total: number) => string> = {
-  allies: (total) => `我方角色 · ${total} 位（含融合）`,
-  enemies: (total) => `已记录敌人 · ${total} 类`,
-  relics: (total) => `枝江装备 · ${total} 件`,
-};
 
 /** 双方单位与藏品资料库：所有内容直接读取当前数据，避免图鉴与实际数值脱节。 */
 export class CodexScene extends Phaser.Scene {
@@ -120,7 +112,14 @@ export class CodexScene extends Phaser.Scene {
   }
 
   private totalOfTab(tab: CodexTab): number {
-    return tab === 'allies' ? CODEX_PLANT_ORDER.length : tab === 'enemies' ? ENEMY_ORDER.length : RELIC_ORDER.length;
+    return tab === 'allies' ? CODEX_PLANT_ORDER.length : tab === 'enemies' ? ENEMY_CODEX_ORDER.length : RELIC_ORDER.length;
+  }
+
+  /** 各页签的解锁计数：角色以收录为准、敌人以遭遇为准、装备以入库为准。 */
+  private unlockedOfTab(tab: CodexTab): number {
+    if (tab === 'allies') return CODEX_PLANT_ORDER.filter((type) => isPlantCollected(type)).length;
+    if (tab === 'enemies') return getDiscoveredEnemyCount(ENEMY_CODEX_ORDER.length);
+    return RELIC_ORDER.filter((id) => isRelicOwned(id)).length;
   }
 
   private renderCurrentPage(): void {
@@ -129,9 +128,12 @@ export class CodexScene extends Phaser.Scene {
     else if (this.activeTab === 'enemies') this.renderEnemies();
     else this.renderRelics();
     const total = this.totalOfTab(this.activeTab);
+    const unlocked = this.unlockedOfTab(this.activeTab);
     const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
     const page = this.pageByTab[this.activeTab];
-    this.countText.setText(TAB_COUNT_TEXT[this.activeTab](total));
+    const unit = this.activeTab === 'allies' ? '位' : this.activeTab === 'enemies' ? '类' : '件';
+    const label = this.activeTab === 'allies' ? '我方角色' : this.activeTab === 'enemies' ? '敌方档案' : '枝江装备';
+    this.countText.setText(`${label} · 已解锁 ${unlocked} / ${total} ${unit}`);
     this.pageText.setText(`${page + 1} / ${pages}`);
     this.prevButton.setAlpha(page > 0 ? 1 : 0.34);
     this.nextButton.setAlpha(page < pages - 1 ? 1 : 0.34);
@@ -167,29 +169,31 @@ export class CodexScene extends Phaser.Scene {
       const col = index % COLUMNS; const row = Math.floor(index / COLUMNS);
       const x = startX + col * (cardW + gapX) + cardW / 2;
       const y = 164 + row * (cardH + gapY) + cardH / 2;
-      this.content.add(this.createAllyCard(x, y, PLANTS[type], offset + index + 1, cardW, cardH));
+      const discovered = isPlantCollected(type);
+      this.content.add(this.createAllyCard(x, y, PLANTS[type], offset + index + 1, cardW, cardH, discovered));
     });
   }
 
-  private createAllyCard(x: number, y: number, config: PlantConfig, index: number, w: number, h: number): Phaser.GameObjects.Container {
+  private createAllyCard(x: number, y: number, config: PlantConfig, index: number, w: number, h: number, discovered: boolean): Phaser.GameObjects.Container {
     const card = this.add.container(x, y);
-    const bg = this.add.rectangle(0, 0, w, h, FRESH.PAPER, 0.97).setStrokeStyle(2, config.accent, 0.32).setInteractive({ useHandCursor: true });
-    const strip = this.add.rectangle(-w / 2 + 4, 0, 7, h - 10, config.accent, 0.86);
+    const bg = this.add.rectangle(0, 0, w, h, FRESH.PAPER, 0.97).setStrokeStyle(2, config.accent, discovered ? 0.32 : 0.16).setInteractive({ useHandCursor: true });
+    const strip = this.add.rectangle(-w / 2 + 4, 0, 7, h - 10, config.accent, discovered ? 0.86 : 0.25);
     const number = this.add.text(-w / 2 + 18, -h / 2 + 12, String(index).padStart(2, '0'), { fontFamily: 'Arial', fontSize: '11px', color: '#71809a', fontStyle: 'bold' });
     const imageX = -w / 2 + 61; const textX = -w / 2 + 116; const textW = w - 132;
     const image = this.fitImage(this.add.image(imageX, 16, config.texture), 86, 112, config.visualScaleY);
-    const name = this.add.text(textX, -86, config.name, { fontFamily: 'Microsoft YaHei', fontSize: '19px', color: '#42506d', fontStyle: 'bold' });
-    const role = this.add.text(textX, -56, config.role, { fontFamily: 'Microsoft YaHei', fontSize: '11px', color: Phaser.Display.Color.IntegerToColor(config.accent).rgba });
+    if (!discovered) image.setTintFill(0x151a24);
+    const name = this.add.text(textX, -86, discovered ? config.name : '？？？', { fontFamily: 'Microsoft YaHei', fontSize: '19px', color: discovered ? '#42506d' : '#5a6472', fontStyle: 'bold' });
+    const role = this.add.text(textX, -56, discovered ? config.role : '尚未获得', { fontFamily: 'Microsoft YaHei', fontSize: '11px', color: discovered ? Phaser.Display.Color.IntegerToColor(config.accent).rgba : '#71809a' });
     const fusion = config.type === 'xingkongtang' || config.type === 'xilanai' || config.type === 'jiaxinnaitang' || config.type === 'yigehun';
-    const stats = this.add.text(textX, -9, fusion ? `融合单位 · 生命 ${config.hp}` : `应援 ${config.cost} · 生命 ${config.hp}`, { fontFamily: 'Microsoft YaHei', fontSize: '11px', color: '#a66b25' });
+    const stats = this.add.text(textX, -9, discovered ? (fusion ? `融合单位 · 生命 ${config.hp}` : `应援 ${config.cost} · 生命 ${config.hp}`) : '？？？', { fontFamily: 'Microsoft YaHei', fontSize: '11px', color: '#a66b25' });
     const formula = config.type === 'xingkongtang'
       ? '贝极星＋嘉心糖'
       : config.type === 'xilanai' ? '贝极星＋奶淇琳' : config.type === 'jiaxinnaitang' ? '奶淇琳＋嘉心糖' : config.type === 'yigehun' ? '三张基础卡三重融合' : '';
-    const cooldown = this.add.text(textX, 15, fusion ? formula : `冷却 ${(config.cooldown / 1000).toFixed(1)} 秒`, { fontFamily: 'Microsoft YaHei', fontSize: '11px', color: '#71809a' });
-    const desc = this.add.text(textX, 41, config.desc, { fontFamily: 'Microsoft YaHei', fontSize: '11px', color: '#5e6f84', wordWrap: { width: textW, useAdvancedWrap: true }, lineSpacing: 3 });
-    const quote = this.add.text(textX, -34, config.quote ? `“${config.quote}”` : '', { fontFamily: 'Microsoft YaHei', fontSize: '10px', color: '#8a94a6', fontStyle: 'italic', wordWrap: { width: textW, useAdvancedWrap: true }, lineSpacing: 1 });
+    const cooldown = this.add.text(textX, 15, discovered ? (fusion ? formula : `冷却 ${(config.cooldown / 1000).toFixed(1)} 秒`) : '', { fontFamily: 'Microsoft YaHei', fontSize: '11px', color: '#71809a' });
+    const desc = this.add.text(textX, 41, discovered ? config.desc : '获得该角色后解锁完整档案', { fontFamily: 'Microsoft YaHei', fontSize: '11px', color: discovered ? '#5e6f84' : '#9aa8a4', wordWrap: { width: textW, useAdvancedWrap: true }, lineSpacing: 3 });
+    const quote = this.add.text(textX, -34, discovered && config.quote ? `“${config.quote}”` : '', { fontFamily: 'Microsoft YaHei', fontSize: '10px', color: '#8a94a6', fontStyle: 'italic', wordWrap: { width: textW, useAdvancedWrap: true }, lineSpacing: 1 });
     card.add([bg, strip, number, image, name, role, stats, cooldown, desc, quote]);
-    this.bindCardHover(card, bg, config.accent);
+    if (discovered) this.bindCardHover(card, bg, config.accent);
     return card;
   }
 
@@ -197,35 +201,37 @@ export class CodexScene extends Phaser.Scene {
     const cardW = 286; const cardH = 200; const gapX = 16; const gapY = 16;
     const totalW = cardW * COLUMNS + gapX * (COLUMNS - 1); const startX = (GAME_WIDTH - totalW) / 2;
     const offset = this.pageByTab.enemies * PAGE_SIZE;
-    ENEMY_ORDER.slice(offset, offset + PAGE_SIZE).forEach((type, index) => {
+    ENEMY_CODEX_ORDER.slice(offset, offset + PAGE_SIZE).forEach((type, index) => {
       const col = index % COLUMNS; const row = Math.floor(index / COLUMNS);
       const x = startX + col * (cardW + gapX) + cardW / 2;
       const y = 164 + row * (cardH + gapY) + cardH / 2;
-      this.content.add(this.createEnemyCard(x, y, ZOMBIES[type], offset + index + 1, cardW, cardH));
+      const discovered = isEnemyDiscovered(type);
+      this.content.add(this.createEnemyCard(x, y, ZOMBIES[type], offset + index + 1, cardW, cardH, discovered));
     });
   }
 
-  private createEnemyCard(x: number, y: number, config: ZombieConfig, index: number, w: number, h: number): Phaser.GameObjects.Container {
+  private createEnemyCard(x: number, y: number, config: ZombieConfig, index: number, w: number, h: number, discovered: boolean): Phaser.GameObjects.Container {
     const accent = config.boss ? 0xd36aff : config.flagWave ? 0xffd15f : config.flying ? 0x78ddff : config.type === 'knight' ? 0xff557f : 0xff7598;
     const card = this.add.container(x, y);
-    const bg = this.add.rectangle(0, 0, w, h, config.boss ? 0xffeef7 : 0xfff7f5, 0.97).setStrokeStyle(2, accent, config.boss ? 0.62 : 0.3).setInteractive({ useHandCursor: true });
-    const strip = this.add.rectangle(-w / 2 + 4, 0, 7, h - 10, accent, 0.88);
+    const bg = this.add.rectangle(0, 0, w, h, config.boss ? 0xffeef7 : 0xfff7f5, 0.97).setStrokeStyle(2, accent, discovered ? (config.boss ? 0.62 : 0.3) : 0.15).setInteractive({ useHandCursor: true });
+    const strip = this.add.rectangle(-w / 2 + 4, 0, 7, h - 10, accent, discovered ? 0.88 : 0.3);
     const number = this.add.text(-w / 2 + 18, -h / 2 + 12, `E-${String(index).padStart(2, '0')}`, { fontFamily: 'Arial', fontSize: '11px', color: '#9a6e7e', fontStyle: 'bold' });
     const imageX = -w / 2 + 61; const textX = -w / 2 + 116; const textW = w - 132;
     const image = this.fitImage(this.add.image(imageX, 14, config.texture), 92, 118);
-    const name = this.add.text(textX, -76, config.name, { fontFamily: 'Microsoft YaHei', fontSize: '17px', color: '#5a465f', fontStyle: 'bold' });
-    const tags = [
+    if (!discovered) image.setTintFill(0x1d1420);
+    const name = this.add.text(textX, -76, discovered ? config.name : '？？？', { fontFamily: 'Microsoft YaHei', fontSize: '17px', color: discovered ? '#5a465f' : '#5a6472', fontStyle: 'bold' });
+    const tags = discovered ? [
       config.boss ? 'BOSS' : '', config.flagWave ? '大型波次标志' : '', config.flying ? '飞越植物' : '',
       config.enragedSpeedMultiplier ? '掉落手机后加速' : '', config.canVault ? '越过首个阻挡' : '',
       config.accessoryBreakHp && !config.enragedSpeedMultiplier ? '防具可破坏' : '', config.charge ? '高速冲锋' : '',
       config.crushPlants ? '碾压植物' : '', config.tunneling ? '钻地绕后' : '', config.summonInterval ? '召唤骑士' : '',
-    ].filter(Boolean).join(' · ') || '敌方单位';
-    const tag = this.add.text(textX, -48, tags, { fontFamily: 'Microsoft YaHei', fontSize: '10px', color: Phaser.Display.Color.IntegerToColor(accent).rgba, fontStyle: 'bold', wordWrap: { width: textW, useAdvancedWrap: true } });
-    const stats = this.add.text(textX, -13, `生命 ${config.hp} · 移速 ${config.speed}`, { fontFamily: 'Microsoft YaHei', fontSize: '11px', color: '#9b5570' });
-    const attack = this.add.text(textX, 12, `啃食 ${config.attackDps}/秒`, { fontFamily: 'Microsoft YaHei', fontSize: '11px', color: '#8c6b78' });
-    const quote = this.add.text(textX, 40, `“${config.quote}”`, { fontFamily: 'Microsoft YaHei', fontSize: '10px', color: '#745f68', fontStyle: 'italic', wordWrap: { width: textW, useAdvancedWrap: true }, lineSpacing: 2 });
+    ].filter(Boolean).join(' · ') || '敌方单位' : '尚未遭遇';
+    const tag = this.add.text(textX, -48, tags, { fontFamily: 'Microsoft YaHei', fontSize: '10px', color: discovered ? Phaser.Display.Color.IntegerToColor(accent).rgba : '#71809a', fontStyle: 'bold', wordWrap: { width: textW, useAdvancedWrap: true } });
+    const stats = this.add.text(textX, -13, discovered ? `生命 ${config.hp} · 移速 ${config.speed}` : '？？？', { fontFamily: 'Microsoft YaHei', fontSize: '11px', color: '#9b5570' });
+    const attack = this.add.text(textX, 12, discovered ? `啃食 ${config.attackDps}/秒` : '遭遇后解锁', { fontFamily: 'Microsoft YaHei', fontSize: '11px', color: '#8c6b78' });
+    const quote = this.add.text(textX, 40, discovered ? `“${config.quote}”` : '', { fontFamily: 'Microsoft YaHei', fontSize: '10px', color: '#745f68', fontStyle: 'italic', wordWrap: { width: textW, useAdvancedWrap: true }, lineSpacing: 2 });
     card.add([bg, strip, number, image, name, tag, stats, attack, quote]);
-    this.bindCardHover(card, bg, accent);
+    if (discovered) this.bindCardHover(card, bg, accent);
     return card;
   }
 
@@ -237,25 +243,28 @@ export class CodexScene extends Phaser.Scene {
       const col = index % COLUMNS; const row = Math.floor(index / COLUMNS);
       const x = startX + col * (cardW + gapX) + cardW / 2;
       const y = 164 + row * (cardH + gapY) + cardH / 2;
-      this.content.add(this.createRelicCard(x, y, RELICS[id], offset + index + 1, cardW, cardH));
+      const discovered = isRelicOwned(id);
+      this.content.add(this.createRelicCard(x, y, RELICS[id], offset + index + 1, cardW, cardH, discovered));
     });
   }
 
-  private createRelicCard(x: number, y: number, config: RelicConfig, index: number, w: number, h: number): Phaser.GameObjects.Container {
+  private createRelicCard(x: number, y: number, config: RelicConfig, index: number, w: number, h: number, discovered: boolean): Phaser.GameObjects.Container {
     const accent = RARITY_COLOR[config.rarity];
     const card = this.add.container(x, y);
-    const bg = this.add.rectangle(0, 0, w, h, FRESH.PAPER, 0.97).setStrokeStyle(2, accent, 0.4).setInteractive({ useHandCursor: true });
-    const strip = this.add.rectangle(-w / 2 + 4, 0, 7, h - 10, accent, 0.86);
+    const bg = this.add.rectangle(0, 0, w, h, FRESH.PAPER, 0.97).setStrokeStyle(2, accent, discovered ? 0.4 : 0.16).setInteractive({ useHandCursor: true });
+    const strip = this.add.rectangle(-w / 2 + 4, 0, 7, h - 10, accent, discovered ? 0.86 : 0.25);
     const number = this.add.text(-w / 2 + 18, -h / 2 + 12, `R-${String(index).padStart(2, '0')}`, { fontFamily: 'Arial', fontSize: '11px', color: '#71809a', fontStyle: 'bold' });
     const imageX = -w / 2 + 61; const textX = -w / 2 + 116; const textW = w - 132;
-    const glyph = createRelicIcon(this, config, imageX, 14, 82, 82);
-    const name = this.add.text(textX, -86, config.name, { fontFamily: 'Microsoft YaHei', fontSize: '19px', color: '#42506d', fontStyle: 'bold' });
-    const rarity = this.add.text(textX, -56, `${RARITY_LABEL[config.rarity]}藏品 · 转盘抽取`, { fontFamily: 'Microsoft YaHei', fontSize: '11px', color: Phaser.Display.Color.IntegerToColor(accent).rgba, fontStyle: 'bold' });
-    const effect = this.add.text(textX, -32, describeRelicEffects(config.effects).join('，'), { fontFamily: 'Microsoft YaHei', fontSize: '11px', color: '#5e6f84', wordWrap: { width: textW, useAdvancedWrap: true }, lineSpacing: 3 });
-    const allowed = this.add.text(textX, 8, config.allowedTypes ? `仅 ${config.allowedTypes.map((t) => PLANTS[t].name).join('、')} 可装配` : '全体角色可装配', { fontFamily: 'Microsoft YaHei', fontSize: '10px', color: '#a66b25', fontStyle: 'bold', wordWrap: { width: textW, useAdvancedWrap: true }, lineSpacing: 2 });
-    const quote = this.add.text(textX, 52, `“${config.quote}”`, { fontFamily: 'Microsoft YaHei', fontSize: '10px', color: '#8a94a6', fontStyle: 'italic', wordWrap: { width: textW, useAdvancedWrap: true }, lineSpacing: 2 });
-    card.add([bg, strip, number, glyph, name, rarity, effect, allowed, quote]);
-    this.bindCardHover(card, bg, accent, FRESH.PAPER, 0.4);
+    const glyph = createRelicIcon(this, config, imageX, 14, 82, 82, discovered ? 1 : 0.22);
+    if (!discovered) glyph.setTintFill(0x171b26);
+    const name = this.add.text(textX, -86, discovered ? config.name : '？？？', { fontFamily: 'Microsoft YaHei', fontSize: '19px', color: discovered ? '#42506d' : '#5a6472', fontStyle: 'bold' });
+    const rarity = this.add.text(textX, -56, discovered ? `${RARITY_LABEL[config.rarity]}藏品 · 转盘抽取` : '？？？ · 转盘抽取', { fontFamily: 'Microsoft YaHei', fontSize: '11px', color: discovered ? Phaser.Display.Color.IntegerToColor(accent).rgba : '#71809a', fontStyle: 'bold' });
+    // 效果文字可能换行至多行，「可装配」与语录按实际高度向下顺延，避免相互重叠。
+    const effect = this.add.text(textX, -32, discovered ? describeRelicEffects(config.effects).join('，') : '获得该装备后解锁完整档案', { fontFamily: 'Microsoft YaHei', fontSize: '11px', color: discovered ? '#5e6f84' : '#9aa8a4', wordWrap: { width: textW, useAdvancedWrap: true }, lineSpacing: 3 });
+    const allowedY = -32 + effect.height + 6;
+    const allowed = this.add.text(textX, allowedY, discovered ? (config.allowedTypes ? `仅 ${config.allowedTypes.map((t) => PLANTS[t].name).join('、')} 可装配` : '全体角色可装配') : '', { fontFamily: 'Microsoft YaHei', fontSize: '10px', color: '#a66b25', fontStyle: 'bold', wordWrap: { width: textW, useAdvancedWrap: true }, lineSpacing: 2 });
+    card.add([bg, strip, number, glyph, name, rarity, effect, allowed]);
+    if (discovered) this.bindCardHover(card, bg, accent, FRESH.PAPER, 0.4);
     return card;
   }
 

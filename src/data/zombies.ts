@@ -45,6 +45,13 @@ export interface ZombieConfig {
   boss?: boolean;
 }
 
+/** 图鉴敌人条目的固定顺序（不含彩蛋单位骑士与珈乐）。 */
+export const ENEMY_CODEX_ORDER: ZombieType[] = [
+  'basic', 'cone', 'phone', 'flag', 'screen',
+  'balloon', 'ladder', 'football', 'sled', 'miner',
+  'bucket', 'pole', 'dragon',
+];
+
 export const ZOMBIES: Record<ZombieType, ZombieConfig> = {
   basic: {
     type: 'basic', name: 'A87', quote: 'A8 最常见的生物，它们只懂得蠕动',

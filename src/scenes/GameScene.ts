@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { GAME_HEIGHT, GAME_WIDTH, GRID, HOUSE_LINE_X, LAWNMOWER_X, PLANT_DISPLAY, SUN_RULES, TEX, WAVE_RULES, ZOMBIE_SPAWN_X } from '../config/GameConfig';
 import { Grid } from '../core/Grid';
 import { isTechUnlocked } from '../core/Coins';
+import { recordEnemySeen } from '../core/CodexProgress';
 import { mergeRelicEffects } from '../core/Relics';
 import { awardStardust } from '../core/Collection';
 import type { RelicEffects } from '../data/relics';
@@ -478,6 +479,7 @@ export class GameScene extends Phaser.Scene {
 
   private spawnZombie(type: ZombieType, row: number, x = ZOMBIE_SPAWN_X, wave = this.issuedWave): void {
     const zombie = new Zombie(this, x, this.grid.rowToY(row) - 4, type, row, this.level.zombieModifiers, wave); this.zombies.push(zombie);
+    recordEnemySeen(type);
     // 计划怪与召唤物都计入当前波血量池，供提前出波判定使用（与杂交版一致）。
     if (wave === this.issuedWave) this.waveHpIssued += zombie.maxHp;
     if (ZOMBIES[type].boss) this.showBossBanner(ZOMBIES[type]);

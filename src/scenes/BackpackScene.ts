@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { GAME_HEIGHT, GAME_WIDTH } from '../config/GameConfig';
-import { ADVANCE_COST, advancePlant, getCollectedPlants, getCollectionRank, getStardust, isAdvanceable, isPlantCollected, revertPlant } from '../core/Collection';
+import { ADVANCE_COST, advancePlant, getCollectedPlants, getCollectionRank, getStardust, hasPaidForAdvance, isAdvanceable, isPlantCollected, revertPlant } from '../core/Collection';
 import { equipRelic, getEquippedRelics, getOwnedRelics, getRelicEffects, getRelicHolder, isRelicOwned, unequipRelic } from '../core/Relics';
 import { sharpenSceneText, sharpenText } from '../core/TextQuality';
 import { describeRelicEffects, RARITY_COLOR, RARITY_LABEL, RELICS, RELIC_ORDER, type RelicId } from '../data/relics';
@@ -98,7 +98,7 @@ export class BackpackScene extends Phaser.Scene {
     back.on('pointerover', () => back.setBackgroundColor('#d1eeee'));
     back.on('pointerout', () => back.setBackgroundColor('#e6f5f4'));
     back.on('pointerdown', () => returnToParentScene(this, this.returnScene));
-    this.add.text(GAME_WIDTH - 42, GAME_HEIGHT - 28, '战役结算获得灵境币用于进阶 · 藏品经答题与抽卡转盘获得', {
+    this.add.text(GAME_WIDTH - 42, GAME_HEIGHT - 28, '战役结算获得灵境币用于进阶 · 装备经答题与抽卡转盘获得', {
       fontFamily: 'Microsoft YaHei', fontSize: '12px', color: '#71809a',
     }).setOrigin(1, 1);
   }
@@ -117,8 +117,8 @@ export class BackpackScene extends Phaser.Scene {
     } else {
       if (!(this.selectedRelic in RELICS)) this.selectedRelic = RELIC_ORDER[0];
       this.subtitleText.setText('ZHIJIANG RELIC ARCHIVE');
-      this.listLabel.setText('藏品陈列');
-      this.detailLabel.setText('藏品详情');
+      this.listLabel.setText('装备陈列');
+      this.detailLabel.setText('装备详情');
       const ownedCount = getOwnedRelics().length;
       this.countText.setText(`已入库 ${ownedCount} / ${RELIC_ORDER.length}`);
       this.renderRelicList();
@@ -223,10 +223,6 @@ export class BackpackScene extends Phaser.Scene {
       const portrait = this.fitImage(this.add.image(630, 390, config.texture), 280, 350, config.visualScaleY).setAlpha(owned ? 1 : 0.2);
       this.detailLayer.add([portraitHalo, portrait]);
     }
-    const modelTag = this.add.text(630, 650, rank >= 2 && portraitTexture === config.advancedPortrait ? 'Ⅱ 阶进阶立绘' : hasPortrait ? '角色立绘 · 非 Q 版' : '战场模型 · Q版', {
-      fontFamily: 'Microsoft YaHei', fontSize: '11px', color: '#52667d', backgroundColor: '#e8f5f2', padding: { x: 12, y: 6 }, fontStyle: 'bold',
-    }).setOrigin(0.5);
-
     const index = CODEX_PLANT_ORDER.indexOf(type) + 1;
     const code = this.add.text(852, 166, `NO. ${String(index).padStart(2, '0')}`, { fontFamily: 'Arial', fontSize: '12px', color: '#71809a', fontStyle: 'bold' });
     const title = this.add.text(852, 190, owned ? config.name : '未收录角色', { fontFamily: 'Microsoft YaHei', fontSize: '30px', color: owned ? '#42506d' : '#82918e', fontStyle: 'bold' });
@@ -331,7 +327,9 @@ export class BackpackScene extends Phaser.Scene {
         advance.on('pointerout', () => advance!.setScale(1));
         advance.on('pointerdown', () => { revertPlant(type); this.refresh(); });
       } else {
-        advance = this.add.text(1124, 640, `进阶至Ⅱ阶  ·  ${ADVANCE_COST} ✦`, {
+        // 曾付费进阶过的角色：切回 Ⅰ 阶后再进阶免费。
+        const label = hasPaidForAdvance(type) ? '切换至 Ⅱ 阶 · 免费' : `进阶至Ⅱ阶  ·  ${ADVANCE_COST} ✦`;
+        advance = this.add.text(1124, 640, label, {
           fontFamily: 'Microsoft YaHei', fontSize: '15px', color: '#ffffff', backgroundColor: '#e85f91', padding: { x: 21, y: 11 }, fontStyle: 'bold',
         }).setOrigin(0.5).setInteractive({ useHandCursor: true });
         advance.on('pointerover', () => advance!.setScale(1.035));
@@ -339,7 +337,7 @@ export class BackpackScene extends Phaser.Scene {
         advance.on('pointerdown', () => this.tryAdvance(type));
       }
     }
-    const details: Phaser.GameObjects.GameObject[] = [modelTag, code, title, role, line, description, quote, stats, progressTitle, ...traitTexts, ...slotObjects];
+    const details: Phaser.GameObjects.GameObject[] = [code, title, role, line, description, quote, stats, progressTitle, ...traitTexts, ...slotObjects];
     if (advance) details.push(advance);
     this.detailLayer.add(details);
   }
@@ -399,15 +397,12 @@ export class BackpackScene extends Phaser.Scene {
     backing.lineStyle(2, owned ? accent : 0xaebbb8, owned ? 0.55 : 0.3);
     backing.strokeRoundedRect(630 - 122, 372 - 122, 244, 244, 18);
     const glyph = createRelicIcon(this, relic, 630, 366, 180, 180, owned ? 1 : 0.35);
-    const rarityTag = this.add.text(630, 524, `${RARITY_LABEL[relic.rarity]}藏品`, {
+    const rarityTag = this.add.text(630, 524, `${RARITY_LABEL[relic.rarity]}装备`, {
       fontFamily: 'Microsoft YaHei', fontSize: '12px', color: owned ? '#ffffff' : '#f5f2ea', backgroundColor: accentText, padding: { x: 14, y: 7 }, fontStyle: 'bold',
     }).setOrigin(0.5).setAlpha(owned ? 1 : 0.45);
     const holderText = this.add.text(630, 566, !owned ? '？？？' : holder ? `当前持有 · ${PLANTS[holder].name}` : '尚未装配给任何角色', {
       fontFamily: 'Microsoft YaHei', fontSize: '12px', color: holder ? '#d7527c' : '#71809a', fontStyle: 'bold',
     }).setOrigin(0.5);
-    const quote = this.add.text(630, 612, owned ? `“${relic.quote}”` : '“？？？”', {
-      fontFamily: 'Microsoft YaHei', fontSize: '11px', color: '#8190a0', fontStyle: 'italic', align: 'center', wordWrap: { width: 300, useAdvancedWrap: true },
-    }).setOrigin(0.5, 0);
 
     // 右栏：档案与操作。
     const index = RELIC_ORDER.indexOf(relic.id) + 1;
@@ -418,7 +413,7 @@ export class BackpackScene extends Phaser.Scene {
     });
     const line = this.add.graphics(); line.lineStyle(2, accent, 0.38); line.beginPath(); line.moveTo(852, 266); line.lineTo(1236, 266); line.strokePath();
 
-    const effectTitle = this.add.text(852, 286, '藏品效果', { fontFamily: 'Microsoft YaHei', fontSize: '15px', color: '#42506d', fontStyle: 'bold' });
+    const effectTitle = this.add.text(852, 286, '装备效果', { fontFamily: 'Microsoft YaHei', fontSize: '15px', color: '#42506d', fontStyle: 'bold' });
     const effectLines = describeRelicEffects(relic.effects).map((text, i) => this.add.text(852, 316 + i * 24, `· ${text}`, {
       fontFamily: 'Microsoft YaHei', fontSize: '13px', color: '#52667d',
     }));
@@ -441,7 +436,7 @@ export class BackpackScene extends Phaser.Scene {
     const allowTitle = this.add.text(852, effectBottom + 14, '可装配角色', { fontFamily: 'Microsoft YaHei', fontSize: '15px', color: '#42506d', fontStyle: 'bold' });
     const chips = this.createRelicChips(relic.id, effectBottom + 44);
     chips.forEach((chip) => chip.setAlpha(owned ? 1 : 0.3));
-    const holderHint = this.add.text(852, 624, !owned ? '？？？' : holder ? '再次点击持有者的名字可卸下藏品' : '点击角色名即完成装配', {
+    const holderHint = this.add.text(852, 624, !owned ? '？？？' : holder ? '再次点击持有者的名字可卸下装备' : '点击角色名即完成装配', {
       fontFamily: 'Microsoft YaHei', fontSize: '11px', color: '#8b9997', wordWrap: { width: 180, useAdvancedWrap: true },
     });
 
@@ -458,7 +453,7 @@ export class BackpackScene extends Phaser.Scene {
         fontFamily: 'Microsoft YaHei', fontSize: '15px', color: '#ffffff', backgroundColor: '#aab8b2', padding: { x: 21, y: 11 }, fontStyle: 'bold',
       }).setOrigin(0.5);
     }
-    this.detailLayer.add([backing, glyph, rarityTag, holderText, quote, code, title, meta, line, effectTitle, ...effectLines, allowTitle, ...chips, holderHint, action]);
+    this.detailLayer.add([backing, glyph, rarityTag, holderText, code, title, meta, line, effectTitle, ...effectLines, allowTitle, ...chips, holderHint, action]);
   }
 
   /** 可装配角色名单：点击装配/卸下；未收录角色置灰。全体型藏品按收录名单展开。 */
@@ -515,7 +510,7 @@ export class BackpackScene extends Phaser.Scene {
     const pickerRoot = this.add.container(0, 0).setDepth(300);
     const overlay = this.add.rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2, GAME_WIDTH, GAME_HEIGHT, 0x000000, 0.5);
     const panel = this.add.rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2, 500, 400, 0xfffffb, 0.98).setStrokeStyle(2, 0x4eb3cf, 0.6);
-    const title = sharpenText(this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 170, '选择要装配的藏品', {
+    const title = sharpenText(this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 170, '选择要装配的装备', {
       fontFamily: 'Microsoft YaHei', fontSize: '18px', color: '#42506d', fontStyle: 'bold',
     }).setOrigin(0.5));
     const closeBtn = sharpenText(this.add.text(GAME_WIDTH / 2 + 220, GAME_HEIGHT / 2 - 170, '✕', {
@@ -532,7 +527,7 @@ export class BackpackScene extends Phaser.Scene {
     });
 
     if (ownedRelics.length === 0) {
-      const emptyText = sharpenText(this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2, '暂无可用藏品\n请前往「枝江装备」页或抽卡转盘获取', {
+      const emptyText = sharpenText(this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2, '暂无可用装备\n请前往「枝江装备」页或抽卡转盘获取', {
         fontFamily: 'Microsoft YaHei', fontSize: '14px', color: '#9aa8a4', align: 'center',
       }).setOrigin(0.5));
       pickerRoot.add(emptyText);
