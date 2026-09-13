@@ -177,7 +177,7 @@ export class CodexScene extends Phaser.Scene {
     const strip = this.add.rectangle(-w / 2 + 4, 0, 7, h - 10, config.accent, 0.86);
     const number = this.add.text(-w / 2 + 18, -h / 2 + 12, String(index).padStart(2, '0'), { fontFamily: 'Arial', fontSize: '11px', color: '#71809a', fontStyle: 'bold' });
     const imageX = -w / 2 + 61; const textX = -w / 2 + 116; const textW = w - 132;
-    const image = this.fitImage(this.add.image(imageX, 16, config.texture), 86, 112);
+    const image = this.fitImage(this.add.image(imageX, 16, config.texture), 86, 112, config.visualScaleY);
     const name = this.add.text(textX, -86, config.name, { fontFamily: 'Microsoft YaHei', fontSize: '19px', color: '#42506d', fontStyle: 'bold' });
     const role = this.add.text(textX, -56, config.role, { fontFamily: 'Microsoft YaHei', fontSize: '11px', color: Phaser.Display.Color.IntegerToColor(config.accent).rgba });
     const fusion = config.type === 'xingkongtang' || config.type === 'xilanai' || config.type === 'jiaxinnaitang' || config.type === 'yigehun';
@@ -259,10 +259,10 @@ export class CodexScene extends Phaser.Scene {
     return card;
   }
 
-  private fitImage(image: Phaser.GameObjects.Image, maxW: number, maxH: number): Phaser.GameObjects.Image {
+  private fitImage(image: Phaser.GameObjects.Image, maxW: number, maxH: number, visualScaleY = 1): Phaser.GameObjects.Image {
     const source = image.texture.getSourceImage() as HTMLImageElement | HTMLCanvasElement;
     const scale = Math.min(maxW / source.width, maxH / source.height);
-    return image.setScale(scale);
+    return image.setScale(scale, scale * visualScaleY);
   }
 
   private bindCardHover(card: Phaser.GameObjects.Container, bg: Phaser.GameObjects.Rectangle, accent: number, baseFill = FRESH.PAPER, baseStrokeAlpha = 0.3): void {

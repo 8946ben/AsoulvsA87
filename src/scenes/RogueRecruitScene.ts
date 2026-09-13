@@ -39,7 +39,7 @@ export class RogueRecruitScene extends Phaser.Scene {
     g.lineStyle(1, config.accent, 0.3); g.strokeCircle(x, 290, 83);
     tourText(this, x - 157, 181, offer.nextRank === 2 ? 'PROMOTION  /  进阶' : 'NEW MEMBER  /  招募', 10, TOUR.red, true);
     tourText(this, x + 157, 180, offer.nextRank === 2 ? 'RANK II' : 'RANK I', 12, TOUR.text, true).setOrigin(1, 0);
-    tourPortrait(this, x, 286, config.texture, 176, 177).setAlpha(affordable ? 1 : 0.55);
+    tourPortrait(this, x, 286, config.texture, 176, 177, config.visualScaleY).setAlpha(affordable ? 1 : 0.55);
     tourText(this, x - 157, 410, config.name, 27, TOUR.text, true);
     tourText(this, x + 157, 423, config.role, 12, TOUR.subtext).setOrigin(1, 0.5);
     tourText(this, x - 157, 457, offer.nextRank === 2 ? '解锁进阶特性' : '首次招募 · 解锁核心能力', 13, TOUR.red, true);

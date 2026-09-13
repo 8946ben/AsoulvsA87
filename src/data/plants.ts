@@ -53,6 +53,8 @@ export interface PlantConfig {
   texture: string;
   /** 以透明画布内的实际可见边界适配战场格子，避免角色被留白缩小。 */
   fitVisibleBounds?: boolean;
+  /** 角色的纵向视觉校正倍率；用于修正原画内容偏宽导致的显示压扁。 */
+  visualScaleY?: number;
   /** 非 Q 版官方立绘纹理；图鉴/背包详情优先展示，战斗仍使用 texture 的 Q 版模型。 */
   portrait?: string;
   /** Ⅱ 阶专属立绘纹理；背包在该角色进阶后优先展示，战斗不受影响。 */
@@ -154,7 +156,7 @@ export const PLANTS: Record<PlantType, PlantConfig> = {
   },
   xingkongtang: {
     type: 'xingkongtang', name: '星空糖', role: '星糖融合射手', cost: 0, cooldown: 0,
-    hp: 1000, behavior: 'lifesteal', texture: TEX.PLANT_XINGKONGTANG, fitVisibleBounds: true, portrait: TEX.PORTRAIT_XINGKONGTANG, advancedPortrait: TEX.ADVANCED_PORTRAIT_XINGKONGTANG,
+    hp: 1000, behavior: 'lifesteal', texture: TEX.PLANT_XINGKONGTANG, fitVisibleBounds: true, visualScaleY: 1.12, portrait: TEX.PORTRAIT_XINGKONGTANG, advancedPortrait: TEX.ADVANCED_PORTRAIT_XINGKONGTANG,
     desc: '贝极星＋嘉心糖；吸血并有 30% 概率造成 3 倍伤害',
     stageTraits: ['每次攻击造成伤害的 50% 回复自身生命，30% 概率造成 3 倍暴击伤害'],
     advanceTraits: ['贝拉和嘉然在场时生命值翻倍、攻击间隔缩短为 0.5 秒、吸血提升至 100%'], quote: '有人知道超级嘉贝的下一句是什么吗', accent: 0xffd44f,
@@ -171,7 +173,7 @@ export const PLANTS: Record<PlantType, PlantConfig> = {
   },
   jiaxinnaitang: {
     type: 'jiaxinnaitang', name: '嘉心奶糖', role: '八向爆糖投手', cost: 0, cooldown: 0,
-    hp: 300, behavior: 'burstlobber', texture: TEX.PLANT_JIAXINNAITANG, fitVisibleBounds: true, portrait: TEX.PORTRAIT_JIAXINNAITANG, advancedPortrait: TEX.ADVANCED_PORTRAIT_JIAXINNAITANG,
+    hp: 300, behavior: 'burstlobber', texture: TEX.PLANT_JIAXINNAITANG, fitVisibleBounds: true, visualScaleY: 1.26, portrait: TEX.PORTRAIT_JIAXINNAITANG, advancedPortrait: TEX.ADVANCED_PORTRAIT_JIAXINNAITANG,
     desc: '奶淇琳＋嘉心糖；冰淇淋主弹炸出 8 枚糖果',
     stageTraits: ['投掷糖果冰激凌炮弹，炸开时向四面八方发射 8 颗糖果子弹（每颗 30 点伤害）'],
     advanceTraits: ['乃琳和嘉然在场时 30% 概率暴击（150% 伤害），且子弹替换为可二次爆炸的冰激凌炮弹'], quote: '爆了爆了！', accent: 0xffa6bc,

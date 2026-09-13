@@ -33,7 +33,7 @@ export class SeedCard extends Phaser.GameObjects.Container {
     const frame = scene.add.image(0, 0, TEX.CARD_FRAME).setDisplaySize(CARD_W, CARD_H);
     const name = scene.add.text(0, -43, config.name, { fontFamily: 'Microsoft YaHei, sans-serif', fontSize: '13px', color: '#42506d', fontStyle: 'bold' }).setOrigin(0.5);
     const rank = scene.add.text(28, -48, unitRank >= 2 ? 'Ⅱ' : 'Ⅰ', { fontFamily: 'Arial', fontSize: '9px', color: '#ffffff', backgroundColor: unitRank >= 2 ? '#e85f91' : '#58bd92', padding: { x: 3, y: 2 }, fontStyle: 'bold' }).setOrigin(1, 0);
-    this.icon = scene.add.image(0, -8, config.texture).setDisplaySize(54, 61);
+    this.icon = scene.add.image(0, -8, config.texture).setDisplaySize(54, 61 * (config.visualScaleY ?? 1));
     this.costText = scene.add.text(0, 41, String(config.cost), { fontFamily: 'Arial', fontSize: '15px', color: '#b47724', fontStyle: 'bold' }).setOrigin(0.5);
     this.statusDot = scene.add.circle(-24, 41, 3, config.accent, 1);
     this.cooldownMask = scene.add.graphics();

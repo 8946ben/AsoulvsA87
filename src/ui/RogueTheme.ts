@@ -37,10 +37,11 @@ export function tourButton(scene: Phaser.Scene, x: number, y: number, width: num
   return button;
 }
 
-export function tourPortrait(scene: Phaser.Scene, x: number, y: number, texture: string, width: number, height: number): Phaser.GameObjects.Image {
+export function tourPortrait(scene: Phaser.Scene, x: number, y: number, texture: string, width: number, height: number, visualScaleY = 1): Phaser.GameObjects.Image {
   const portrait = scene.add.image(x, y, texture);
   const source = portrait.texture.getSourceImage() as HTMLImageElement | HTMLCanvasElement;
-  return portrait.setScale(Math.min(width / source.width, height / source.height));
+  const scale = Math.min(width / source.width, height / source.height);
+  return portrait.setScale(scale, scale * visualScaleY);
 }
 
 export function createRogueBackdrop(scene: Phaser.Scene, variant: RogueBackdropVariant): Phaser.GameObjects.Graphics {

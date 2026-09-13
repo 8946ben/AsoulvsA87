@@ -80,7 +80,8 @@ export class ShopScene extends Phaser.Scene {
 
     const icon = this.add.image(0, -h / 2 + 78, config.texture);
     const src = icon.texture.getSourceImage() as HTMLImageElement | HTMLCanvasElement;
-    icon.setScale(Math.min(86 / src.width, 86 / src.height));
+    const iconScale = Math.min(86 / src.width, 86 / src.height);
+    icon.setScale(iconScale, iconScale * (config.visualScaleY ?? 1));
     if (!unlocked) icon.setAlpha(0.58).setTint(0xaebdb8);
 
     const name = this.add.text(0, -h / 2 + 140, config.name, {

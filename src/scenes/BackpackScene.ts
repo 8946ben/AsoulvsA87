@@ -153,7 +153,7 @@ export class BackpackScene extends Phaser.Scene {
       const card = this.add.rectangle(x, y, cardW, cardH, fill, 0.99)
         .setStrokeStyle(2, config.accent, selected ? 0.95 : 0.3)
         .setInteractive({ useHandCursor: true });
-      const icon = this.fitImage(this.add.image(x - 56, y, config.texture), 42, 43);
+      const icon = this.fitImage(this.add.image(x - 56, y, config.texture), 42, 43, config.visualScaleY);
       const rank = getCollectionRank(type);
       const name = this.add.text(x - 27, y - 14, config.name, {
         fontFamily: 'Microsoft YaHei', fontSize: '12px', color: '#42506d', fontStyle: 'bold',
@@ -198,7 +198,7 @@ export class BackpackScene extends Phaser.Scene {
       this.detailLayer.add([backing, portrait]);
     } else {
       const portraitHalo = this.add.ellipse(630, 392, 316, 420, owned ? config.accent : 0xaebbb8, owned ? 0.13 : 0.08).setStrokeStyle(2, owned ? config.accent : 0xaebbb8, 0.36);
-      const portrait = this.fitImage(this.add.image(630, 390, config.texture), 280, 350).setAlpha(owned ? 1 : 0.2);
+      const portrait = this.fitImage(this.add.image(630, 390, config.texture), 280, 350, config.visualScaleY).setAlpha(owned ? 1 : 0.2);
       this.detailLayer.add([portraitHalo, portrait]);
     }
     const modelTag = this.add.text(630, 650, rank >= 2 && portraitTexture === config.advancedPortrait ? 'Ⅱ 阶进阶立绘' : hasPortrait ? '角色立绘 · 非 Q 版' : '战场模型 · Q版', {
@@ -578,8 +578,9 @@ export class BackpackScene extends Phaser.Scene {
       : '推进主线以收录角色';
   }
 
-  private fitImage(image: Phaser.GameObjects.Image, maxW: number, maxH: number): Phaser.GameObjects.Image {
+  private fitImage(image: Phaser.GameObjects.Image, maxW: number, maxH: number, visualScaleY = 1): Phaser.GameObjects.Image {
     const source = image.texture.getSourceImage() as HTMLImageElement | HTMLCanvasElement;
-    return image.setScale(Math.min(maxW / source.width, maxH / source.height));
+    const scale = Math.min(maxW / source.width, maxH / source.height);
+    return image.setScale(scale, scale * visualScaleY);
   }
 }

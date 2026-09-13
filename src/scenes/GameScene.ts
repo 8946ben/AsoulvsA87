@@ -72,6 +72,7 @@ export class GameScene extends Phaser.Scene {
   private pauseShowcaseName!: Phaser.GameObjects.Text;
   private pauseShowcaseBaseY = 0;
   private pauseShowcaseBaseScale = 1;
+  private pauseShowcaseBaseScaleY = 1;
   private shovelMode = false;
   private shovelButton!: Phaser.GameObjects.Image;
   private portalCursorPreview: Phaser.GameObjects.Image | null = null;
@@ -323,7 +324,8 @@ export class GameScene extends Phaser.Scene {
 
     this.pauseShowcase.setTexture(config.texture).setPosition(GAME_WIDTH / 2, this.pauseShowcaseBaseY).setAngle(0);
     this.pauseShowcaseBaseScale = Math.min(154 / width, 178 / height);
-    this.pauseShowcase.setScale(this.pauseShowcaseBaseScale);
+    this.pauseShowcaseBaseScaleY = this.pauseShowcaseBaseScale * (config.visualScaleY ?? 1);
+    this.pauseShowcase.setScale(this.pauseShowcaseBaseScale, this.pauseShowcaseBaseScaleY);
     this.pauseShowcaseName.setText(config.name);
   }
 
@@ -332,7 +334,7 @@ export class GameScene extends Phaser.Scene {
     const breath = 1 + Math.sin(phase * 1.4) * 0.035;
     this.pauseShowcase
       .setY(this.pauseShowcaseBaseY + Math.sin(phase) * 7)
-      .setScale(this.pauseShowcaseBaseScale * breath)
+      .setScale(this.pauseShowcaseBaseScale * breath, this.pauseShowcaseBaseScaleY * breath)
       .setAngle(Math.sin(phase * 0.85) * 2.4);
   }
   private restartCurrentLevel(): void {
@@ -770,12 +772,14 @@ export class GameScene extends Phaser.Scene {
     const existing = this.grid.get(cell.row, cell.col);
     const recipe = existing?.active ? this.getFusionResult(existing.config.type, type) : null;
     const fusion = recipe && this.isFusionAvailable(recipe) ? recipe : null;
-    const previewTexture = PLANTS[fusion ?? type].texture;
+    const previewConfig = PLANTS[fusion ?? type];
+    const previewTexture = previewConfig.texture;
     this.preview.setTexture(previewTexture);
     const previewSource = this.textures.get(previewTexture).getSourceImage() as HTMLImageElement;
     const previewW = previewSource?.width || 78;
     const previewH = previewSource?.height || 94;
-    this.preview.setScale(Math.min(PLANT_DISPLAY.MAX_W / previewW, PLANT_DISPLAY.MAX_H / previewH));
+    const previewScale = Math.min(PLANT_DISPLAY.MAX_W / previewW, PLANT_DISPLAY.MAX_H / previewH);
+    this.preview.setScale(previewScale, previewScale * (previewConfig.visualScaleY ?? 1));
     const canPlant = (!existing?.active || Boolean(fusion)) && this.sunAmount >= this.getEffectiveCost(type);
     this.previewRect.clear(); this.previewRect.fillStyle(canPlant ? 0x58f5b1 : 0xff5575, 0.12); this.previewRect.fillRoundedRect(x - GRID.CELL_W / 2 + 3, y - GRID.CELL_H / 2 + 3, GRID.CELL_W - 6, GRID.CELL_H - 6, 8);
     this.previewRect.lineStyle(3, canPlant ? 0x65efad : 0xff5b77, 0.9); this.previewRect.strokeRoundedRect(x - GRID.CELL_W / 2 + 3, y - GRID.CELL_H / 2 + 3, GRID.CELL_W - 6, GRID.CELL_H - 6, 8);

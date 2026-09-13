@@ -68,7 +68,7 @@ export class RogueMapScene extends Phaser.Scene {
     owned.forEach((type, index) => {
       const x = 165 + index * 47;
       this.add.circle(x, 616, 20, TOUR.paper).setStrokeStyle(1, TOUR.line);
-      tourPortrait(this, x, 614, PLANTS[type].texture, 31, 37);
+      tourPortrait(this, x, 614, PLANTS[type].texture, 31, 37, PLANTS[type].visualScaleY);
       tourText(this, x + 13, 631, run.unitRanks[type] === 2 ? 'Ⅱ' : 'Ⅰ', 9, TOUR.red, true).setOrigin(0.5);
     });
     tourText(this, 48, 621, `${owned.length} 位已招募`, 10, TOUR.subtext);

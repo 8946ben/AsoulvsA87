@@ -75,6 +75,7 @@ export class Plant extends Phaser.GameObjects.Sprite {
   private readonly shadow: Phaser.GameObjects.Ellipse;
   private readonly injuryOverlay?: Phaser.GameObjects.Image;
   private readonly baseScale: number;
+  private readonly baseScaleY: number;
   private readonly dispW: number;
   private readonly dispH: number;
 
@@ -85,7 +86,8 @@ export class Plant extends Phaser.GameObjects.Sprite {
     const srcW = src?.width || 78; const srcH = src?.height || 94;
     const bounds = config.fitVisibleBounds && src ? getVisibleBounds(src) : { width: srcW, height: srcH };
     this.baseScale = Math.min(PLANT_DISPLAY.MAX_W / bounds.width, PLANT_DISPLAY.MAX_H / bounds.height);
-    this.dispW = bounds.width * this.baseScale; this.dispH = bounds.height * this.baseScale;
+    this.baseScaleY = this.baseScale * (config.visualScaleY ?? 1);
+    this.dispW = bounds.width * this.baseScale; this.dispH = bounds.height * this.baseScaleY;
     this.relic = getRelicEffects(type, extraRelic);
     const maxHp = Math.round(config.hp * (this.relic?.hpMultiplier ?? 1));
     this.config = config; this.rank = rank; this.row = row; this.col = col; this.hp = maxHp; this.maxHp = maxHp;
@@ -99,8 +101,8 @@ export class Plant extends Phaser.GameObjects.Sprite {
         .setDepth(this.depth + 0.05)
         .setVisible(false);
     }
-    this.setScale(this.baseScale * 0.35).setAlpha(0);
-    scene.tweens.add({ targets: this, scale: this.baseScale, alpha: 1, duration: 300, ease: 'Back.easeOut' });
+    this.setScale(this.baseScale * 0.35, this.baseScaleY * 0.35).setAlpha(0);
+    scene.tweens.add({ targets: this, scaleX: this.baseScale, scaleY: this.baseScaleY, alpha: 1, duration: 300, ease: 'Back.easeOut' });
   }
 
   update(time: number, delta: number, ctx: PlantContext): void {
@@ -150,7 +152,8 @@ export class Plant extends Phaser.GameObjects.Sprite {
         break;
       case 'bomb':
         this.specialTimer += delta;
-        this.setScale(this.baseScale * (1 + Math.sin(time / 55) * 0.07));
+        const pulse = 1 + Math.sin(time / 55) * 0.07;
+        this.setScale(this.baseScale * pulse, this.baseScaleY * pulse);
         if (!this.resolving && this.specialTimer >= 500) {
           this.resolving = true; ctx.damageGridArea(this.row, this.col, this.attackDamage, 350);
           this.burst(0xff5a91); ctx.replacePlant(this, null);
@@ -309,7 +312,7 @@ export class Plant extends Phaser.GameObjects.Sprite {
     this.transformed = false;
     this.scene.tweens.killTweensOf(this);
     this.setTexture(this.config.texture);
-    this.setPosition(this.x, this.baseY).setScale(this.baseScale).setAlpha(1).setVisible(true).clearTint();
+    this.setPosition(this.x, this.baseY).setScale(this.baseScale, this.baseScaleY).setAlpha(1).setVisible(true).clearTint();
     this.shadow.setVisible(true);
   }
 
@@ -439,7 +442,7 @@ export class Plant extends Phaser.GameObjects.Sprite {
   private resolveSquash(target: Zombie, ctx: PlantContext): void {
     this.resolving = true;
     this.scene.tweens.add({
-      targets: this, x: target.x, y: target.y - 45, scale: this.baseScale * 1.15,
+      targets: this, x: target.x, y: target.y - 45, scaleX: this.baseScale * 1.15, scaleY: this.baseScaleY * 1.15,
       duration: 300, ease: 'Quad.easeOut', yoyo: true,
       onComplete: () => {
         target.takeDamage(this.attackDamage); this.burst(0xff7fbd);
@@ -456,8 +459,8 @@ export class Plant extends Phaser.GameObjects.Sprite {
     this.dianaRapidForm = active;
     this.scene.tweens.killTweensOf(this);
     if (!active) {
-      this.setTexture(this.config.texture).setPosition(this.x, this.baseY).setScale(this.baseScale * 0.78).setAlpha(1).setVisible(true).setAngle(0);
-      this.scene.tweens.add({ targets: this, scale: this.baseScale, duration: 180, ease: 'Back.easeOut' });
+      this.setTexture(this.config.texture).setPosition(this.x, this.baseY).setScale(this.baseScale * 0.78, this.baseScaleY * 0.78).setAlpha(1).setVisible(true).setAngle(0);
+      this.scene.tweens.add({ targets: this, scaleX: this.baseScale, scaleY: this.baseScaleY, duration: 180, ease: 'Back.easeOut' });
       return;
     }
     const source = this.scene.textures.get(TEX.PLANT_DIANA_GATLING).getSourceImage() as HTMLImageElement;
@@ -484,7 +487,7 @@ export class Plant extends Phaser.GameObjects.Sprite {
   /** 攻击间隔：计入装配藏品的攻速倍率（数值越大出手越快）。 */
   private attackIntervalWith(fallback: number): number { return (this.config.attackInterval ?? fallback) / (this.relic?.attackSpeedMultiplier ?? 1); }
   private recoil(): void { this.scene.tweens.add({ targets: this, x: this.x - 4, duration: 65, yoyo: true, ease: 'Quad.easeOut' }); }
-  private pulse(scale: number, duration: number): void { this.scene.tweens.add({ targets: this, scale: this.baseScale * scale, duration, yoyo: true, ease: 'Sine.easeInOut' }); }
+  private pulse(scale: number, duration: number): void { this.scene.tweens.add({ targets: this, scaleX: this.baseScale * scale, scaleY: this.baseScaleY * scale, duration, yoyo: true, ease: 'Sine.easeInOut' }); }
   private burst(color: number): void {
     const ring = this.scene.add.circle(this.x, this.y, 20, color, 0.38).setDepth(70);
     this.scene.tweens.add({ targets: ring, scale: 6, alpha: 0, duration: 460, ease: 'Quad.easeOut', onComplete: () => ring.destroy() });

@@ -29,7 +29,7 @@ export class RogueSetupScene extends Phaser.Scene {
     tourText(this, x + 158, 180, ['均衡入门', '控制续航', '灵活变阵'][index], 11, TOUR.red, true).setOrigin(1, 0);
     squad.units.forEach((type, unitIndex) => {
       const offset = unitIndex - 1;
-      tourPortrait(this, x + offset * 98, unitIndex === 1 ? 274 : 288, PLANTS[type].texture, unitIndex === 1 ? 110 : 91, unitIndex === 1 ? 129 : 106);
+      tourPortrait(this, x + offset * 98, unitIndex === 1 ? 274 : 288, PLANTS[type].texture, unitIndex === 1 ? 110 : 91, unitIndex === 1 ? 129 : 106, PLANTS[type].visualScaleY);
     });
     tourText(this, x - 157, 372, squad.name, 27, TOUR.text, true);
     tourText(this, x - 157, 414, squad.desc, 13, TOUR.subtext);

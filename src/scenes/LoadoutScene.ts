@@ -114,7 +114,7 @@ export class LoadoutScene extends Phaser.Scene {
         continue;
       }
       const config = PLANTS[type];
-      const icon = this.fitImage(this.add.image(x, y - 11, config.texture), 62, 66);
+      const icon = this.fitImage(this.add.image(x, y - 11, config.texture), 62, 66, config.visualScaleY);
       const name = this.add.text(x, y + 37, config.name, { fontFamily: 'Microsoft YaHei', fontSize: '11px', color: '#42506d', fontStyle: 'bold' }).setOrigin(0.5);
       slot.setInteractive({ useHandCursor: true }).on('pointerdown', () => { this.selected.splice(index, 1); this.refresh(); });
       this.selectedLayer.add([icon, name]);
@@ -131,7 +131,7 @@ export class LoadoutScene extends Phaser.Scene {
       const x = startX + col * (cardW + gapX) + cardW / 2; const y = 316 + row * (cardH + gapY) + cardH / 2;
       const bg = this.add.rectangle(x, y, cardW, cardH, selectedIndex >= 0 ? 0xfff0f5 : FRESH.PAPER, 0.96)
         .setStrokeStyle(2, config.accent, selectedIndex >= 0 ? 0.9 : 0.32).setInteractive({ useHandCursor: true });
-      const icon = this.fitImage(this.add.image(x - 72, y, config.texture), 68, 82);
+      const icon = this.fitImage(this.add.image(x - 72, y, config.texture), 68, 82, config.visualScaleY);
       const name = this.add.text(x - 25, y - 42, config.name, { fontFamily: 'Microsoft YaHei', fontSize: '17px', color: '#42506d', fontStyle: 'bold' });
       const unitRank = getUnitRank(this.battleSession, type);
       const rank = this.add.text(x + 96, y - 47, unitRank >= 2 ? 'Ⅱ' : 'Ⅰ', { fontFamily: 'Arial', fontSize: '11px', color: '#ffffff', backgroundColor: unitRank >= 2 ? '#e85f91' : '#58bd92', padding: { x: 6, y: 4 }, fontStyle: 'bold' }).setOrigin(1, 0);
@@ -170,9 +170,10 @@ export class LoadoutScene extends Phaser.Scene {
 
   private goBack(): void { this.scene.start(this.battleSession.mode === 'rogue' ? 'RogueMapScene' : 'LevelSelectScene'); }
 
-  private fitImage(image: Phaser.GameObjects.Image, maxW: number, maxH: number): Phaser.GameObjects.Image {
+  private fitImage(image: Phaser.GameObjects.Image, maxW: number, maxH: number, visualScaleY = 1): Phaser.GameObjects.Image {
     const source = image.texture.getSourceImage() as HTMLImageElement | HTMLCanvasElement;
-    return image.setScale(Math.min(maxW / source.width, maxH / source.height));
+    const scale = Math.min(maxW / source.width, maxH / source.height);
+    return image.setScale(scale, scale * visualScaleY);
   }
 
   private makeButton(x: number, y: number, label: string, onClick: () => void, color: string): Phaser.GameObjects.Text {
