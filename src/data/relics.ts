@@ -226,10 +226,10 @@ export const RELICS: Record<RelicId, RelicConfig> = {
     quote: '线下见，才是真正的见面。',
   },
   'haoting-key': {
-    id: 'haoting-key', name: '豪庭的钥匙', glyph: '🗝️', iconTexture: TEX.RELIC_HAOTING_KEY, rarity: 'b',
+    id: 'haoting-key', name: '豪亭的钥匙', glyph: '🗝️', iconTexture: TEX.RELIC_HAOTING_KEY, rarity: 'b',
     allowedTypes: null,
     effects: { hpRegenPerSec: 50 },
-    quote: '豪庭之钥，守护安宁。',
+    quote: '豪亭之钥，守护安宁。',
   },
   'nanting-key': {
     id: 'nanting-key', name: '南亭的钥匙', glyph: '🗝️', iconTexture: TEX.RELIC_NANTING_KEY, rarity: 'b',

@@ -134,7 +134,7 @@ export class RelicDrawScene extends Phaser.Scene {
       this.add.text(1230, y, `重复兑换 ${RARITY_DUPLICATE_REFUND[rarity]} ✦`, { fontFamily: 'Microsoft YaHei', fontSize: '12px', color: '#a66b25' }).setOrigin(1, 0.5);
     });
 
-    this.add.text(732, 488, '我的藏品', { fontFamily: 'Microsoft YaHei', fontSize: '16px', color: '#42506d', fontStyle: 'bold' });
+    this.add.text(732, 488, '我的装备', { fontFamily: 'Microsoft YaHei', fontSize: '16px', color: '#42506d', fontStyle: 'bold' });
     this.poolGrid = this.add.container(0, 0);
     this.poolPrev = this.add.text(806, 664, '‹ 上一页', {
       fontFamily: 'Microsoft YaHei', fontSize: '11px', color: '#42506d', backgroundColor: '#e8f5f2', padding: { x: 8, y: 4 }, fontStyle: 'bold',
@@ -184,33 +184,40 @@ export class RelicDrawScene extends Phaser.Scene {
     sharpenSceneText(this);
   }
 
-  /** 我的藏品：分页网格（每页 6 行 × 2 列），避免装备增多后溢出面板。 */
+  /** 我的装备：只列出已获得的装备（按 RELIC_ORDER 排序），分页网格每页 6 行 × 2 列，避免增多后溢出面板。 */
   private renderPoolGrid(owned?: RelicId[]): void {
-    const ownedIds = owned ?? getOwnedRelics();
+    const ownedIds = (owned ?? getOwnedRelics())
+      .filter((id) => id in RELICS)
+      .sort((a, b) => RELIC_ORDER.indexOf(a) - RELIC_ORDER.indexOf(b));
     const perPage = 12;
-    this.poolPageCount = Math.max(1, Math.ceil(RELIC_ORDER.length / perPage));
+    this.poolPageCount = Math.max(1, Math.ceil(ownedIds.length / perPage));
     this.poolPage = Math.min(this.poolPage, this.poolPageCount - 1);
     this.poolGrid.removeAll(true);
     this.poolMarks = [];
     const start = this.poolPage * perPage;
-    RELIC_ORDER.slice(start, start + perPage).forEach((id, index) => {
+    ownedIds.slice(start, start + perPage).forEach((id, index) => {
       const relic = RELICS[id];
       const col = index % 2; const row = Math.floor(index / 2);
       const x = 722 + col * 258; const y = 512 + row * 22;
-      const isOwned = ownedIds.includes(id);
       const holder = getRelicHolder(id);
-      const glyph = createRelicIcon(this, relic, x + 8, y, 15, 15, isOwned ? 1 : 0.3);
+      const glyph = createRelicIcon(this, relic, x + 8, y, 15, 15);
       const name = this.add.text(x + 30, y, relic.name, { fontFamily: 'Microsoft YaHei', fontSize: '11px', color: '#42506d' }).setOrigin(0, 0.5);
-      const mark = this.add.text(x + 246, y, isOwned ? (holder ? '装配' : '已入库') : '未获得', {
+      const mark = this.add.text(x + 246, y, holder ? '装配' : '已入库', {
         fontFamily: 'Microsoft YaHei', fontSize: '10px', fontStyle: 'bold',
-        color: isOwned ? (holder ? '#d7527c' : '#348c72') : '#9aa8a4',
+        color: holder ? '#d7527c' : '#348c72',
       }).setOrigin(1, 0.5);
       this.poolMarks.push(mark);
       this.poolGrid.add([glyph, name, mark]);
     });
+    if (ownedIds.length === 0) {
+      this.poolGrid.add(this.add.text(732, 520, '还没有获得任何装备，先抽一次试试吧。', {
+        fontFamily: 'Microsoft YaHei', fontSize: '12px', color: '#9aa8a4',
+      }).setOrigin(0, 0.5));
+    }
     this.poolPageText.setText(`${this.poolPage + 1} / ${this.poolPageCount}`);
-    this.poolPrev.setAlpha(this.poolPage > 0 ? 1 : 0.35);
-    this.poolNext.setAlpha(this.poolPage < this.poolPageCount - 1 ? 1 : 0.35);
+    const paginated = this.poolPageCount > 1;
+    this.poolPrev.setAlpha(paginated && this.poolPage > 0 ? 1 : 0.35);
+    this.poolNext.setAlpha(paginated && this.poolPage < this.poolPageCount - 1 ? 1 : 0.35);
   }
 
   /** 单次抽取的付费：优先答题券，不足时消耗灵境币。 */

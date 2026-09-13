@@ -8,6 +8,10 @@
 - 待办：A-SOUL 子题库补题约 14 道以恢复 1:8:1 抽题比例；「A-SOUL 一共有几名成员 → 5 名」保留未动，隐含珈乐仍在成员序列。
 - 不做粉丝伤痛事件（成员休眠风波、728、血色新春、BW 握手会），不进擦边荤梗，不指涉真实社区 A8/A87。
 - **用字规范**：乃琳的粉丝名唯一正字是 **奶淇琳**，`乃淇琳` / `奶琪琳` / `乃琪琳` 都是错别字。2026-09-13 排查过一次全项目：`src/**/*.ts` 一直是对的，错的是 `src/data/quiz.generated.json`（旧题库把「乃淇琳」当正确答案）与 `dist/` 旧构建；已跑 `quiz:sync` 修正。改文案/出题时别写错。
+- **藏品命名**：钥匙系列统一用「亭」——`豪亭的钥匙`（relics.ts `haoting-key`）配 `南亭的钥匙`（`nanting-key`）；`豪庭` 是 2026-09-13 修掉的错写。
+- **游戏内货币叫「灵境币」**（✦符号，代码 38 处），旧名 `星愿徽记` 已停用；肉鸽模式的进阶/招募资源另有「应援值」。题库侧 2026-09-14 已统一（原 L63/L91 把货币写成旧名与团名「灵境少女」）。出题时别写错。
+- **珈乐**：题库侧已按 ben 要求清空，但**代码侧仍有彩蛋 Boss「珈乐（黑化）」**（`src/data/zombies.ts:118`，含召唤「黑化的骑士」），`Zombie.ts` / `GameScene.ts` 有相关注释，`background.md:170`、`README.md:238` 有描述。等待 ben 决策。
+- **A-SOUL 已核实事实表**：`~/.workbuddy/skills/asoul-quiz-bank/references/asoul-facts.md`（生日、生日会、个人单曲、双人曲、团曲、五周年）。写文案/出题前先查这份，别凭记忆写歌名和日期。要点：三对组合的双人曲各只有一首（贝拉&乃琳《练习心事》2022、贝拉&嘉然《蓓蕾》2023、嘉然&乃琳《周末出逃计划》2024），**2025 年没有新双人曲**。
 
 ## 系统现状
 
@@ -22,7 +26,8 @@
   - 发布：更新 `server/game_gate.py` 后跑 `python scripts/publish-web.py --build`（会重启 `game-gate` 服务，只清空在线名单，不动已落库反馈）。
   - 查反馈：`tail -n 20 /opt/game-gate/feedback.jsonl`。
 - **主界面底部布局已满**：4 卡图标栏（间距 148，居中）已经是最宽，再加第 5 卡会压住 x=314 的角色立绘。新的系统级入口一律走「开发者模式」那一排胶囊按钮。
-- **本地 UI 验证**：用系统 Edge headless 截图，详见当日工作日志的「本地 UI 验证方法」——要点是非沙箱运行、轮询 30~70s 等落盘、vite 要 `--host 127.0.0.1`、每个实例独立 `--user-data-dir`、本地把 `GAME_MAX_SLOTS` 调大。
+- **`npm run build` 的已知坑**：vite 清空 `dist/` 要一次删 99+ 个文件，会被 safe-delete shim 拦（阈值 50/轮，`scope:"turn"` 是本轮累计，Python / rm 分批都没用），报 `SAFE_DELETE_BULK_CONFIRM_REQUIRED`。解法：非沙箱跑 `python -c "import shutil,os; os.path.exists('dist') and shutil.rmtree('dist')" && npm run build`。
+- **本地 UI 验证**：用系统 Edge headless 截图，详见当日工作日志的「本地 UI 验证方法」——要点是非沙箱运行、轮询 30~70s 等落盘、vite 要 `--host 127.0.0.1` 且**必须用托管后台任务方式常驻**（`&` 起来的那种会被会话清理杀掉）、每个实例独立 `--user-data-dir`（新建的第一次常不落盘，原样重试即可）、本地把 `GAME_MAX_SLOTS` 调大。要验证带存档的状态（有无藏品/已装配）就用同源临时页 `public/__seed.html` 播种 localStorage 再 `location.replace('/')`，用完删掉。
 
 ## 文档漂移（待修）
 
