@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { GAME_HEIGHT, GAME_WIDTH } from '../config/GameConfig';
-import { getStardust, spendStardust } from '../core/Collection';
+import { formatStardust, getStardust, spendStardust } from '../core/Collection';
 import {
   consumeDrawTicket, drawRandomRelic, getDrawTickets, getOwnedRelics, getRelicHolder,
   RARITY_DRAW_WEIGHT, RARITY_DUPLICATE_REFUND, RELIC_DRAW_STARDUST_COST,
@@ -131,7 +131,7 @@ export class RelicDrawScene extends Phaser.Scene {
       this.add.rectangle(740, y, 10, 10, accent, 0.9).setOrigin(0, 0.5);
       this.add.text(760, y, RARITY_LABEL[rarity], { fontFamily: 'Microsoft YaHei', fontSize: '13px', color: '#42506d', fontStyle: 'bold' }).setOrigin(0, 0.5);
       this.add.text(842, y, `${RARITY_DRAW_WEIGHT[rarity]}%`, { fontFamily: 'Arial', fontSize: '14px', color: Phaser.Display.Color.IntegerToColor(accent).rgba, fontStyle: 'bold' }).setOrigin(0, 0.5);
-      this.add.text(1230, y, `重复兑换 ${RARITY_DUPLICATE_REFUND[rarity]} ✦`, { fontFamily: 'Microsoft YaHei', fontSize: '12px', color: '#a66b25' }).setOrigin(1, 0.5);
+      this.add.text(1230, y, `重复兑换 ${formatStardust(RARITY_DUPLICATE_REFUND[rarity])} ✦`, { fontFamily: 'Microsoft YaHei', fontSize: '12px', color: '#a66b25' }).setOrigin(1, 0.5);
     });
 
     this.add.text(732, 488, '我的装备', { fontFamily: 'Microsoft YaHei', fontSize: '16px', color: '#42506d', fontStyle: 'bold' });
@@ -173,7 +173,7 @@ export class RelicDrawScene extends Phaser.Scene {
     const stardust = getStardust();
     const tickets = getDrawTickets();
     const owned = getOwnedRelics();
-    this.stardustText.setText(`✦ 灵境币  ${Number.isFinite(stardust) ? stardust : '∞'}`);
+    this.stardustText.setText(`✦ 灵境币  ${formatStardust(stardust)}`);
     this.ticketText.setText(`🎟 答题券  ${Number.isFinite(tickets) ? tickets : '∞'}`);
     this.progressText.setText(`藏品收录  ${owned.length} / ${RELIC_ORDER.length}`);
     // 放回抽取永远不会被禁用；仅在两种货币都不足一次时降低按钮存在感。
@@ -274,7 +274,7 @@ export class RelicDrawScene extends Phaser.Scene {
       const card = this.add.rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2, 460, 330, 0xfffffb, 0.99)
         .setStrokeStyle(3, accent, 0.85);
       const title = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 118,
-        result.duplicate ? `重复藏品 · 兑换 +${result.refund} ✦` : '恭喜收录新藏品！',
+        result.duplicate ? `重复藏品 · 兑换 +${formatStardust(result.refund)} ✦` : '恭喜收录新藏品！',
         { fontFamily: 'Microsoft YaHei', fontSize: '15px', color: result.duplicate ? '#a66b25' : '#e85f91', fontStyle: 'bold' }).setOrigin(0.5);
       const glyph = createRelicIcon(this, result.relic, GAME_WIDTH / 2, GAME_HEIGHT / 2 - 34, 88, 88);
       const name = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 + 42, `${result.relic.name} · ${RARITY_LABEL[result.relic.rarity]}`, { fontFamily: 'Microsoft YaHei', fontSize: '24px', color: '#42506d', fontStyle: 'bold' }).setOrigin(0.5);
@@ -296,7 +296,7 @@ export class RelicDrawScene extends Phaser.Scene {
         const name = this.add.text(x + 32, y - 12, result.relic.name, { fontFamily: 'Microsoft YaHei', fontSize: '13px', color: '#42506d', fontStyle: 'bold' }).setOrigin(0, 0.5);
         const rarity = this.add.text(x + 132, y - 12, RARITY_LABEL[result.relic.rarity], { fontFamily: 'Microsoft YaHei', fontSize: '10px', color: Phaser.Display.Color.IntegerToColor(accent).rgba, fontStyle: 'bold' }).setOrigin(0, 0.5);
         const outcome = result.duplicate
-          ? this.add.text(x + 246, y - 12, `+${result.refund} ✦`, { fontFamily: 'Microsoft YaHei', fontSize: '12px', color: '#a66b25', fontStyle: 'bold' }).setOrigin(1, 0.5)
+          ? this.add.text(x + 246, y - 12, `+${formatStardust(result.refund)} ✦`, { fontFamily: 'Microsoft YaHei', fontSize: '12px', color: '#a66b25', fontStyle: 'bold' }).setOrigin(1, 0.5)
           : this.add.text(x + 246, y - 12, '新藏品！', { fontFamily: 'Microsoft YaHei', fontSize: '12px', color: '#348c72', fontStyle: 'bold' }).setOrigin(1, 0.5);
         rows.push(chip, glyph, name, rarity, outcome);
       });

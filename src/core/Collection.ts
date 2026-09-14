@@ -7,6 +7,20 @@ import { getLevelProgress } from './LevelProgress';
 const STORAGE_KEY = 'asoul-character-collection-v1';
 export const ADVANCE_COST = 6;
 
+/**
+ * 灵境币最小面额是 0.1（D 级重复兑换 0.1 ✦），因此按「一位小数」记账。
+ * 0.1 在二进制浮点里无法精确表示，逐次相加会漂出 0.30000000000000004 这类脏值，
+ * 所以每次写账（获得 / 消费 / 读档）都四舍五入回一位小数。
+ */
+export function roundStardust(value: number): number {
+  return Math.round(value * 10) / 10;
+}
+
+/** 灵境币显示文本：整数不补小数位（18 而非 18.0），小数保留一位；开发者模式为 ∞。 */
+export function formatStardust(value: number): string {
+  return Number.isFinite(value) ? String(roundStardust(value)) : '∞';
+}
+
 export type CollectionRank = 0 | 1 | 2;
 
 /** 是否拥有Ⅱ阶进阶机制（由角色配置的Ⅱ阶特性决定）。 */
@@ -42,7 +56,7 @@ function readState(): CollectionState {
       }
       return {
         version: 1,
-        stardust: Math.max(0, Math.floor(parsed.stardust ?? 18)),
+        stardust: Math.max(0, roundStardust(parsed.stardust ?? 18)),
         ranks,
         advancedPaid,
       };
@@ -99,10 +113,10 @@ export function revertPlant(type: PlantType): AdvanceResult {
   return { ok: true, stardust: state.stardust };
 }
 
-/** 每场普通战役结算提供进阶材料。 */
+/** 每场普通战役结算提供进阶材料；重复装备兑换也走这里，故支持小数。 */
 export function awardStardust(amount: number): number {
   const state = readState();
-  state.stardust += Math.max(0, Math.floor(amount));
+  state.stardust = roundStardust(state.stardust + Math.max(0, amount));
   writeState(state);
   return state.stardust;
 }
@@ -112,7 +126,7 @@ export function spendStardust(amount: number): boolean {
   if (isDeveloperMode()) return true;
   const state = readState();
   if (state.stardust < amount) return false;
-  state.stardust -= amount;
+  state.stardust = roundStardust(state.stardust - amount);
   writeState(state);
   return true;
 }
@@ -130,7 +144,7 @@ export function advancePlant(type: PlantType): AdvanceResult {
   // 开发者模式徽记无限：不校验也不扣除存量。
   if (!isDeveloperMode()) {
     if (state.stardust < ADVANCE_COST) return { ok: false, reason: 'insufficient-stardust', stardust: state.stardust };
-    state.stardust -= ADVANCE_COST;
+    state.stardust = roundStardust(state.stardust - ADVANCE_COST);
   }
   state.advancedPaid[type] = true;
   state.ranks[type] = 2;

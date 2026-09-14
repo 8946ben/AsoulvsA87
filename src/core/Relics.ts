@@ -16,8 +16,8 @@ export const RELIC_DRAW_STARDUST_COST = 3;
 /** 抽卡各稀有度概率（%）：S 2% / A 8% / B 20% / C 40% / D 30%，合计 100。 */
 export const RARITY_DRAW_WEIGHT: Record<RelicRarity, number> = { s: 2, a: 8, b: 20, c: 40, d: 30 };
 
-/** 重复获得藏品时按稀有度兑换的灵境币。 */
-export const RARITY_DUPLICATE_REFUND: Record<RelicRarity, number> = { s: 15, a: 8, b: 4, c: 2, d: 1 };
+/** 重复获得藏品时按稀有度兑换的灵境币（低稀有度按小数兑换，货币按一位小数记账）。 */
+export const RARITY_DUPLICATE_REFUND: Record<RelicRarity, number> = { s: 15, a: 8, b: 3, c: 0.5, d: 0.1 };
 
 interface RelicState {
   version: 1;
@@ -99,7 +99,7 @@ export function consumeDrawTicket(): boolean {
 
 /**
  * 放回抽取：每次都从完整奖池按稀有度概率随机，奖池永不枯竭。
- * 每件藏品仅可入库一次；重复获得时自动按稀有度兑换灵境币（S15/A8/B4/C2/D1）。
+ * 每件藏品仅可入库一次；重复获得时自动按稀有度兑换灵境币（S15/A8/B3/C0.5/D0.1）。
  */
 export function drawRandomRelic(): RelicDrawResult {
   const totalWeight = RELIC_ORDER.reduce((sum, id) => sum + RARITY_DRAW_WEIGHT[RELICS[id].rarity], 0);

@@ -4,7 +4,7 @@ import { isTechUnlocked, techRequiresMet, unlockTech } from '../core/Coins';
 import { isDeveloperMode } from '../core/DeveloperMode';
 import { sharpenSceneText, sharpenText } from '../core/TextQuality';
 import { PLANTS } from '../data/plants';
-import { getStardust } from '../core/Collection';
+import { formatStardust, getStardust } from '../core/Collection';
 import { TECH_NODES, type TechNode } from '../data/techTree';
 import { createFreshBackdrop, FRESH } from '../ui/FreshTheme';
 import { type ParentSceneData, returnToParentScene } from '../core/SceneNavigation';
@@ -45,7 +45,7 @@ export class ShopScene extends Phaser.Scene {
       fontFamily: 'Arial', fontSize: '13px', color: '#e85f91', fontStyle: 'bold', letterSpacing: 2,
     });
     const stardust = getStardust();
-    this.add.text(GAME_WIDTH - 42, 34, `✦ 灵境币  ${Number.isFinite(stardust) ? stardust : '∞'}`, {
+    this.add.text(GAME_WIDTH - 42, 34, `✦ 灵境币  ${formatStardust(stardust)}`, {
       fontFamily: 'Microsoft YaHei', fontSize: '20px', color: '#9b6b22', fontStyle: 'bold',
     }).setOrigin(1, 0);
     this.add.text(GAME_WIDTH - 42, 66, '通关战役与重复装备兑换可获得灵境币', {

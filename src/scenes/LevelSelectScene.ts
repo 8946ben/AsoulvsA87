@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { GAME_HEIGHT, GAME_WIDTH } from '../config/GameConfig';
-import { getStardust } from '../core/Collection';
+import { formatStardust, getStardust } from '../core/Collection';
 import { isDeveloperMode } from '../core/DeveloperMode';
 import { sharpenSceneText, sharpenText } from '../core/TextQuality';
 import { getLevelProgress } from '../core/LevelProgress';
@@ -147,6 +147,6 @@ export class LevelSelectScene extends Phaser.Scene {
 
   private currencyLabel(): string {
     const stardust = getStardust();
-    return `商店  ·  ✦ 灵境币 ${Number.isFinite(stardust) ? stardust : '∞'}`;
+    return `商店  ·  ✦ 灵境币 ${formatStardust(stardust)}`;
   }
 }

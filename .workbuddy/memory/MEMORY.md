@@ -19,7 +19,8 @@
 - 「枝江装备」= 藏品系统，代码在 `src/data/relics.ts`（配置）+ `src/core/Relics.ts`（持有/装配/抽卡）+ `src/scenes/BackpackScene.ts`、`RelicDrawScene.ts`。
 - 关键约束：`RelicEffects` 只有 6 个数值字段（hpRegenPerSec / hpMultiplier / damageMultiplier / attackSpeedMultiplier / produceBonus / costMultiplier）；概率、弹射、光环等新机制必须走 `specialEffect`，并在 `src/entities/Plant.ts` 消费。
 - 装备槽位：`getCollectionRank` ≥ 2 时 2 件，否则 1 件。
-- 抽卡：`RARITY_DRAW_WEIGHT`（S2/A8/B20/C40/D30）、`RARITY_DUPLICATE_REFUND`（S15/A8/B4/C2/D1）、`RELIC_DRAW_STARDUST_COST = 3`。
+- 抽卡：`RARITY_DRAW_WEIGHT`（S2/A8/B20/C40/D30）、`RARITY_DUPLICATE_REFUND`（S15/A8/**B3/C0.5/D0.1**）、`RELIC_DRAW_STARDUST_COST = 3`。
+- **灵境币按「一位小数」记账**（2026-09-14 起，因 C/D 档重复兑换为 0.5 / 0.1）：`Collection.ts` 的 `roundStardust` / `formatStardust` 是唯一入口 —— 读档、入账、扣减、进阶扣费四处都必须收敛回一位小数，否则 `Math.floor` 会把 0.1 抹成 0。显示别自己拼字符串，统一走 `formatStardust`（整数不补小数位、`Infinity`→`∞`）。
 - **玩家反馈系统**（2026-09-13 实装）：主界面底部「💬 意见反馈」（与「开发者模式」并排）→ `src/scenes/FeedbackScene.ts` → `src/core/Feedback.ts` → `POST api/feedback` → `server/game_gate.py` → 服务器 `/opt/game-gate/feedback.jsonl`（一行一条 JSON）。
   - 自由文本输入必须用原生 DOM 控件（`src/ui/DomField.ts`）：Phaser 的键盘事件收不到中文输入法。**没有**启用 Phaser `dom.createContainer`，别再试图改全局 game config。
   - 服务器不可达时反馈落 `localStorage` 待补交，靠记录里的 `id` 在服务端去重。

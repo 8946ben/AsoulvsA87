@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { GAME_HEIGHT, GAME_WIDTH } from '../config/GameConfig';
-import { ADVANCE_COST, advancePlant, getCollectedPlants, getCollectionRank, getStardust, hasPaidForAdvance, isAdvanceable, isPlantCollected, revertPlant } from '../core/Collection';
+import { ADVANCE_COST, advancePlant, formatStardust, getCollectedPlants, getCollectionRank, getStardust, hasPaidForAdvance, isAdvanceable, isPlantCollected, revertPlant } from '../core/Collection';
 import { equipRelic, getEquippedRelics, getOwnedRelics, getRelicEffects, getRelicHolder, isRelicOwned, unequipRelic } from '../core/Relics';
 import { sharpenSceneText, sharpenText } from '../core/TextQuality';
 import { describeRelicEffects, RARITY_COLOR, RARITY_LABEL, RELICS, RELIC_ORDER, type RelicId } from '../data/relics';
@@ -127,7 +127,7 @@ export class BackpackScene extends Phaser.Scene {
       this.renderRelicDetail();
     }
     const stardust = getStardust();
-    this.stardustText.setText(`✦ 灵境币  ${Number.isFinite(stardust) ? stardust : '∞'}`);
+    this.stardustText.setText(`✦ 灵境币  ${formatStardust(stardust)}`);
     sharpenSceneText(this);
   }
 
