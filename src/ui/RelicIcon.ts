@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import type { RelicConfig } from '../data/relics';
+import { resolveRelicIconTexture } from '../core/RelicIconTextures';
 
 /** Creates an equipment visual, preferring approved icon art and falling back to its emoji glyph. */
 export function createRelicIcon(
@@ -11,8 +12,12 @@ export function createRelicIcon(
   maxHeight: number,
   alpha = 1,
 ): Phaser.GameObjects.Image | Phaser.GameObjects.Text {
-  if (relic.iconTexture && scene.textures.exists(relic.iconTexture)) {
-    const icon = scene.add.image(x, y, relic.iconTexture).setAlpha(alpha);
+  // 按显示尺寸选预缩放档位，避免 1254px 源图直接压到十几像素发糊。
+  const textureKey = relic.iconTexture
+    ? resolveRelicIconTexture(scene, relic.iconTexture, maxWidth, maxHeight)
+    : undefined;
+  if (textureKey) {
+    const icon = scene.add.image(x, y, textureKey).setAlpha(alpha);
     const source = icon.texture.getSourceImage() as HTMLImageElement | HTMLCanvasElement;
     return icon.setScale(Math.min(maxWidth / source.width, maxHeight / source.height));
   }

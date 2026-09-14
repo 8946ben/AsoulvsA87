@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { ASSETS } from '../config/GameConfig';
 import { AssetNormalizer } from '../core/AssetNormalizer';
+import { installRelicIconTextures } from '../core/RelicIconTextures';
 import { TextureFactory } from '../core/TextureFactory';
 import { MenuScene } from './MenuScene';
 
@@ -42,6 +43,9 @@ export class BootScene extends Phaser.Scene {
     // 真实素材统一去除连通白底、裁切并缩放到目标尺寸，
     // 之后 Zombie / Projectile / Sun / Plant 拿到的都是规范尺寸，无需各自适配
     AssetNormalizer.normalize(this);
+
+    // 装备图标额外按显示尺寸预分档：源图 1254px，直接压到 15 世界像素只会糊成一团
+    installRelicIconTextures(this);
 
     this.scene.start(MenuScene.KEY);
   }

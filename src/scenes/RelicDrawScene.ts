@@ -95,14 +95,15 @@ export class RelicDrawScene extends Phaser.Scene {
         .setRotation(mid + Math.PI / 2);
       this.wheel.add(glyph);
     });
-    // 外圈与中心装饰。
+    // 外圈。
     const rim = this.add.graphics();
     rim.lineStyle(6, FRESH.PINK_DARK, 0.85);
     rim.strokeCircle(WHEEL_X, WHEEL_Y, WHEEL_R + 4);
-    rim.fillStyle(0xfffaed, 1); rim.fillCircle(WHEEL_X, WHEEL_Y, 58);
-    rim.lineStyle(3, FRESH.PINK_DARK, 0.7); rim.strokeCircle(WHEEL_X, WHEEL_Y, 58);
-    this.add.text(WHEEL_X, WHEEL_Y - 8, '枝江', { fontFamily: 'Microsoft YaHei', fontSize: '20px', color: '#e85f91', fontStyle: 'bold' }).setOrigin(0.5).setDepth(151);
-    this.add.text(WHEEL_X, WHEEL_Y + 16, '藏品转盘', { fontFamily: 'Microsoft YaHei', fontSize: '12px', color: '#71809a' }).setOrigin(0.5).setDepth(151);
+    // 中心轴心：遮住扇区尖端的汇聚线，不做文字。
+    const hub = this.add.graphics().setDepth(151);
+    hub.fillStyle(0xfffdf5, 1); hub.fillCircle(WHEEL_X, WHEEL_Y, 17);
+    hub.lineStyle(3, FRESH.PINK_DARK, 0.72); hub.strokeCircle(WHEEL_X, WHEEL_Y, 17);
+    hub.fillStyle(FRESH.PINK_DARK, 0.85); hub.fillCircle(WHEEL_X, WHEEL_Y, 6);
     void pointer;
   }
 
@@ -198,12 +199,12 @@ export class RelicDrawScene extends Phaser.Scene {
     ownedIds.slice(start, start + perPage).forEach((id, index) => {
       const relic = RELICS[id];
       const col = index % 2; const row = Math.floor(index / 2);
-      const x = 722 + col * 258; const y = 512 + row * 22;
+      const x = 722 + col * 258; const y = 514 + row * 24;
       const holder = getRelicHolder(id);
-      const glyph = createRelicIcon(this, relic, x + 8, y, 15, 15);
-      const name = this.add.text(x + 30, y, relic.name, { fontFamily: 'Microsoft YaHei', fontSize: '11px', color: '#42506d' }).setOrigin(0, 0.5);
+      const glyph = createRelicIcon(this, relic, x + 9, y, 17, 17);
+      const name = this.add.text(x + 32, y, relic.name, { fontFamily: 'Microsoft YaHei', fontSize: '12.5px', color: '#42506d' }).setOrigin(0, 0.5);
       const mark = this.add.text(x + 246, y, holder ? '装配' : '已入库', {
-        fontFamily: 'Microsoft YaHei', fontSize: '10px', fontStyle: 'bold',
+        fontFamily: 'Microsoft YaHei', fontSize: '11px', fontStyle: 'bold',
         color: holder ? '#d7527c' : '#348c72',
       }).setOrigin(1, 0.5);
       this.poolMarks.push(mark);
