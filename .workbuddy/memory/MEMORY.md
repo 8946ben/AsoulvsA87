@@ -15,6 +15,7 @@
 
 ## 系统现状
 
+- **肉鸽模式仅开发者模式可见**（2026-09-14 起）：`ModeSelectScene` 在 `isDeveloperMode()` 为假时**不创建**肉鸽卡片，闯关卡居中；肉鸽唯一入口就是这张卡，其余 `Rogue*` 场景只在肉鸽流程内互跳。开发者模式状态行会提示「额外开放肉鸽模式」。要重新公开，删掉 ModeSelectScene 里的判断即可。
 - 「枝江装备」= 藏品系统，代码在 `src/data/relics.ts`（配置）+ `src/core/Relics.ts`（持有/装配/抽卡）+ `src/scenes/BackpackScene.ts`、`RelicDrawScene.ts`。
 - 关键约束：`RelicEffects` 只有 6 个数值字段（hpRegenPerSec / hpMultiplier / damageMultiplier / attackSpeedMultiplier / produceBonus / costMultiplier）；概率、弹射、光环等新机制必须走 `specialEffect`，并在 `src/entities/Plant.ts` 消费。
 - 装备槽位：`getCollectionRank` ≥ 2 时 2 件，否则 1 件。

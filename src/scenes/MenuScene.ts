@@ -140,7 +140,7 @@ export class MenuScene extends Phaser.Scene {
       .setText(enabled ? '开发者模式 · 已启用' : '开发者模式')
       .setBackgroundColor(enabled ? '#d9f3e7' : '#edf5f5')
       .setColor(enabled ? '#317d67' : '#52667d');
-    this.developerStatus.setText(enabled ? '全部关卡可直接进入 · 不写入普通通关进度' : '开发测试入口');
+    this.developerStatus.setText(enabled ? '全部关卡直接进入 · 额外开放肉鸽模式 · 不写入普通通关进度' : '开发测试入口');
   }
 
   private openDeveloperLogin(): void {
