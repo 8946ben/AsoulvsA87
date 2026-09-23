@@ -5,9 +5,9 @@ $stagingDir = Join-Path $projectRoot '.portable-app'
 $electronDir = Join-Path $projectRoot 'node_modules\electron\dist'
 $electronCache = Join-Path $env:LOCALAPPDATA 'electron\Cache'
 $outputRoot = Join-Path $projectRoot 'out'
-$outputDir = Join-Path $outputRoot 'AsoulvsA87-win32-x64'
+$outputDir = Join-Path $outputRoot 'defenseZJ-win32-x64'
 
-if ((Split-Path -Parent $outputDir) -ne $outputRoot -or (Split-Path -Leaf $outputDir) -ne 'AsoulvsA87-win32-x64') {
+if ((Split-Path -Parent $outputDir) -ne $outputRoot -or (Split-Path -Leaf $outputDir) -ne 'defenseZJ-win32-x64') {
   throw "Unexpected portable output path: $outputDir"
 }
 if (-not (Test-Path -LiteralPath (Join-Path $stagingDir 'package.json'))) {
@@ -34,7 +34,7 @@ if (Test-Path -LiteralPath (Join-Path $electronDir 'electron.exe')) {
 }
 
 $electronExe = Join-Path $outputDir 'electron.exe'
-$gameExe = Join-Path $outputDir 'AsoulvsA87.exe'
+$gameExe = Join-Path $outputDir 'defenseZJ.exe'
 Move-Item -LiteralPath $electronExe -Destination $gameExe -Force
 
 $resourcesDir = Join-Path $outputDir 'resources'

@@ -11,7 +11,6 @@ import { QuizScene } from './scenes/QuizScene';
 import { CodexScene } from './scenes/CodexScene';
 import { LevelSelectScene } from './scenes/LevelSelectScene';
 import { ShopScene } from './scenes/ShopScene';
-import { FeedbackScene } from './scenes/FeedbackScene';
 import { LoadoutScene } from './scenes/LoadoutScene';
 import { ModeSelectScene } from './scenes/ModeSelectScene';
 import { ChapterSelectScene } from './scenes/ChapterSelectScene';
@@ -41,7 +40,7 @@ const config: Phaser.Types.Core.GameConfig = {
   },
   scene: [
     BootScene, MenuScene, BackpackScene, RelicDrawScene, QuizScene, ModeSelectScene, ChapterSelectScene, LevelSelectScene, LoadoutScene,
-    CodexScene, ShopScene, FeedbackScene, RogueHubScene, RogueSetupScene, RogueMapScene, RogueRecruitScene,
+    CodexScene, ShopScene, RogueHubScene, RogueSetupScene, RogueMapScene, RogueRecruitScene,
     RogueEventScene, RogueRewardScene, RogueSummaryScene, GameScene,
   ],
 };

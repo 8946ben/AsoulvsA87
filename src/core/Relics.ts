@@ -72,14 +72,20 @@ export function isRelicOwned(id: RelicId): boolean {
   return getOwnedRelics().includes(id);
 }
 
-/** 答题抽奖券余额；开发者模式不限量。 */
+/** 答题抽奖券余额；开发者模式显示固定 9999（抽卡仍不消耗真实存量）。 */
 export function getDrawTickets(): number {
-  if (isDeveloperMode()) return Number.POSITIVE_INFINITY;
+  if (isDeveloperMode()) return 9999;
   return readState().tickets;
 }
 
-/** 答题达标（10 题对 8 题）后的奖励入账。 */
+/** 清空装备库存存档（清空进度用）：持有、装配与答题券全部归零。 */
+export function resetRelicInventory(): void {
+  try { window.localStorage.removeItem(STORAGE_KEY); } catch { /* 无痕模式下本就没有持久化数据 */ }
+}
+
+/** 答题达标（10 题对 8 题）后的奖励入账。开发者模式不写真实存量。 */
 export function awardDrawTickets(amount: number): number {
+  if (isDeveloperMode()) return getDrawTickets();
   const state = readState();
   state.tickets += Math.max(0, Math.floor(amount));
   writeState(state);
@@ -100,6 +106,7 @@ export function consumeDrawTicket(): boolean {
 /**
  * 放回抽取：每次都从完整奖池按稀有度概率随机，奖池永不枯竭。
  * 每件藏品仅可入库一次；重复获得时自动按稀有度兑换灵境币（S15/A8/B3/C0.5/D0.1）。
+ * 开发者模式只演示结果，不把入库与兑换写进真实存档。
  */
 export function drawRandomRelic(): RelicDrawResult {
   const totalWeight = RELIC_ORDER.reduce((sum, id) => sum + RARITY_DRAW_WEIGHT[RELICS[id].rarity], 0);
@@ -118,8 +125,10 @@ export function drawRandomRelic(): RelicDrawResult {
     awardStardust(refund);
     return { ok: true, relic: picked, duplicate: true, refund };
   }
-  state.owned.push(picked.id);
-  writeState(state);
+  if (!isDeveloperMode()) {
+    state.owned.push(picked.id);
+    writeState(state);
+  }
   return { ok: true, relic: picked, duplicate: false, refund: 0 };
 }
 

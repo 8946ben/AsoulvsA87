@@ -20,17 +20,20 @@
 - 关键约束：`RelicEffects` 只有 6 个数值字段（hpRegenPerSec / hpMultiplier / damageMultiplier / attackSpeedMultiplier / produceBonus / costMultiplier）；概率、弹射、光环等新机制必须走 `specialEffect`，并在 `src/entities/Plant.ts` 消费。
 - 装备槽位：`getCollectionRank` ≥ 2 时 2 件，否则 1 件。
 - 抽卡：`RARITY_DRAW_WEIGHT`（S2/A8/B20/C40/D30）、`RARITY_DUPLICATE_REFUND`（S15/A8/**B3/C0.5/D0.1**）、`RELIC_DRAW_STARDUST_COST = 3`。
-- **灵境币按「一位小数」记账**（2026-09-14 起，因 C/D 档重复兑换为 0.5 / 0.1）：`Collection.ts` 的 `roundStardust` / `formatStardust` 是唯一入口 —— 读档、入账、扣减、进阶扣费四处都必须收敛回一位小数，否则 `Math.floor` 会把 0.1 抹成 0。显示别自己拼字符串，统一走 `formatStardust`（整数不补小数位、`Infinity`→`∞`）。
+- **灵境币按「一位小数」记账**（2026-09-14 起，因 C/D 档重复兑换为 0.5 / 0.1）：`Collection.ts` 的 `roundStardust` / `formatStardust` 是唯一入口 —— 读档、入账、扣减、进阶扣费四处都必须收敛回一位小数，否则 `Math.floor` 会把 0.1 抹成 0。显示别自己拼字符串，统一走 `formatStardust`（整数不补小数位；`Infinity`→`∞` 分支仅作兜底，2026-09-17 起开发者模式余额返回固定 9999，不再有 Infinity）。
 - **玩家反馈系统**（2026-09-13 实装）：主界面底部「💬 意见反馈」（与「开发者模式」并排）→ `src/scenes/FeedbackScene.ts` → `src/core/Feedback.ts` → `POST api/feedback` → `server/game_gate.py` → 服务器 `/opt/game-gate/feedback.jsonl`（一行一条 JSON）。
   - 自由文本输入必须用原生 DOM 控件（`src/ui/DomField.ts`）：Phaser 的键盘事件收不到中文输入法。**没有**启用 Phaser `dom.createContainer`，别再试图改全局 game config。
   - 服务器不可达时反馈落 `localStorage` 待补交，靠记录里的 `id` 在服务端去重。
   - **只收正文**：2026-09-13 按 ben 要求删掉了联系方式输入框与页面右上角说明，`Feedback.ts` 里 `contact?` 仍保留（可选，服务端写空串）。
   - 发布：更新 `server/game_gate.py` 后跑 `python scripts/publish-web.py --build`（会重启 `game-gate` 服务，只清空在线名单，不动已落库反馈）。
   - 查反馈：`tail -n 20 /opt/game-gate/feedback.jsonl`。
-- **主界面底部布局已满**：4 卡图标栏（间距 148，居中）已经是最宽，再加第 5 卡会压住 x=314 的角色立绘。新的系统级入口一律走「开发者模式」那一排胶囊按钮。
+- **系统级入口收进左上角「⚙ 设置」**（2026-09-17 起）：开发者模式从底部胶囊迁入设置面板，面板内另有「清空所有进度」（两次点击确认，3 秒超时；`src/core/ProgressReset.ts` 清关卡/科技树/收藏/装备/图鉴/肉鸽残局六类存档，不动待提交反馈）。开发者模式下灵境币与答题券**显示固定 9999**（消费仍不写账）。底部 4 卡图标栏不变，下方只剩居中的「💬 意见反馈」。新的系统级入口继续往设置面板里加，别再加底部图标栏。
+- **开发者模式不得污染真实存档**（2026-09-18 起，ben 要求）：所有持久化写入都必须有 `isDeveloperMode()` 守卫 —— 已覆盖：抽卡入库（`drawRandomRelic`）、重复兑换灵境币（`awardStardust`）、答题券奖励（`awardDrawTickets`）、关卡进度与战斗灵境币（GameScene 结算本就有守卫）。**角色进阶走会话级覆盖**：`Collection.ts` 的 `sessionRanks`（内存 Map）——`advancePlant`/`revertPlant` 在开发者模式只写它，`getCollectionRank` 开发者模式下优先读它，`resetSessionAdvanceRanks()` 在关闭开发者模式时由 MenuScene 调用清空；刷新页面天然丢弃。这样Ⅱ阶形态、双装备槽（`equipRelic` 的 maxSlots 走 `getCollectionRank`）和战斗预览（`BattleSession.getUnitRank` 同样走它）都能在开发者模式正常演示，存档零写入。之前「开发者模式抽卡把 bella-hammer 写进初始存档」的事故就是缺这类守卫导致的。
 - **`npm run build` 的已知坑**：vite 清空 `dist/` 要一次删 95+ 个文件，会被 safe-delete shim 拦（阈值 50），报 `SAFE_DELETE_BULK_CONFIRM_REQUIRED`。`python -c "...shutil.rmtree('dist')" && npm run build` 这个老解法 **2026-09-14 实测会被拦**。可靠姿势是**改名而不是删**：`mv dist .dist-old-$$ && npm run build`（重命名不触发删除拦截），构建完再单独跑一次非沙箱 Python `shutil.rmtree('.dist-old-...')` 清旧目录（实测这条能过）。
 - **转盘（`RelicDrawScene.createWheel`）中心不放文字**（2026-09-14 ben 要求）：原来的「枝江 / 藏品转盘」两行已删，改为 depth 151 的 17 半径小轴心遮住扇区汇聚线。注意 `wheel` 容器是 depth 150，画在 `rim`（depth 0）里的任何中心装饰都会被整片盖住 —— 中心的东西必须显式提 depth。
 - **本地 UI 验证**：用系统 Edge headless 截图，详见当日工作日志的「本地 UI 验证方法」——要点是非沙箱运行、轮询 30~70s 等落盘、vite 要 `--host 127.0.0.1` 且**必须用托管后台任务方式常驻**（`&` 起来的那种会被会话清理杀掉）、每个实例独立 `--user-data-dir`（新建的第一次常不落盘，原样重试即可）、本地把 `GAME_MAX_SLOTS` 调大。要验证带存档的状态（有无藏品/已装配）就用同源临时页 `public/__seed.html` 播种 localStorage 再 `location.replace('/')`，用完删掉。
+  - **headless 下别用 page.keyboard 给 Phaser 输文字**（2026-09-17 实测）：Phaser 3.90 在 headless Edge 里 keydown 会按队列累积重复发射（`f` 变 `f,ft,ftq…`），口令弹窗会拼出脏串报「口令错误」；原始代码同样复现，是有头环境/真机没有的问题。自动化要开开发者模式就直接播种 `sessionStorage['asoul-developer-mode-v1']='enabled'`，鼠标点击不受影响。
+- **「满屏蛋脸简笔画」= TextureFactory 占位图，不是存档坏了**（2026-09-17 事故）：玩家截图里敌人全变成朴素蛋脸（白椭圆+橙眼+暗红嘴+粉腮红），与 `TextureFactory.drawA87/drawA87Variant` 逐笔吻合——占位图只在 BootScene preload 时**真实图片加载失败**才会生成（`emit` 查 `textures.exists`），与清进度/存档完全无关。当次事故根因：ben 的 vite dev server（5173）在我编辑代码触发 HMR 整页刷新期间，因 watch `reference/emoji/*.png` 被锁抛 EBUSY **整个进程崩溃**（dev.log 末尾有堆栈），页面在服务器半死窗口重载 → 58MB 图片批量 404 → 占位图。已修：① vite watch ignored 增加 `**/reference/**`；② BootScene 统计 FILE_LOAD_ERROR，非零时不再静默降级，改为「资源加载失败 + 重试加载」整屏界面（`window.BootLoader.fail()` 撤 DOM 加载层，重试 = `scene.restart()` 重跑 preload，走浏览器缓存很快）。排障口诀：先 `TextureFactory` 对笔迹 → 再看 `dev.log`/`netstat :5173` → 干净环境复现清流程。
 
 ## 文档漂移（待修）
 

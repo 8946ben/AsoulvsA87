@@ -175,10 +175,10 @@ export class RelicDrawScene extends Phaser.Scene {
     const tickets = getDrawTickets();
     const owned = getOwnedRelics();
     this.stardustText.setText(`✦ 灵境币  ${formatStardust(stardust)}`);
-    this.ticketText.setText(`🎟 答题券  ${Number.isFinite(tickets) ? tickets : '∞'}`);
+    this.ticketText.setText(`🎟 答题券  ${tickets}`);
     this.progressText.setText(`藏品收录  ${owned.length} / ${RELIC_ORDER.length}`);
     // 放回抽取永远不会被禁用；仅在两种货币都不足一次时降低按钮存在感。
-    const affordable = (Number.isFinite(tickets) ? tickets >= 1 : true) || (Number.isFinite(stardust) ? stardust >= RELIC_DRAW_STARDUST_COST : true);
+    const affordable = tickets >= 1 || stardust >= RELIC_DRAW_STARDUST_COST;
     this.drawOnceButton.setAlpha(affordable ? 1 : 0.5);
     this.drawTenButton.setAlpha(affordable ? 1 : 0.5);
     this.renderPoolGrid(owned);

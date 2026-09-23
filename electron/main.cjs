@@ -1,6 +1,13 @@
 const path = require('node:path');
 const { app, BrowserWindow, Menu } = require('electron');
 
+// Portable build: keep web storage under save-data/ next to the exe, so every
+// extracted copy starts from a clean state instead of reusing %APPDATA% leftovers.
+// Dev runs (electron:start) keep the default profile via the isPackaged guard.
+if (app.isPackaged) {
+  app.setPath('userData', path.join(path.dirname(app.getPath('exe')), 'save-data'));
+}
+
 function createWindow() {
   const window = new BrowserWindow({
     width: 1280,

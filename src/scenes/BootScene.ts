@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { ASSETS } from '../config/GameConfig';
+import { ASSETS, GAME_HEIGHT, GAME_WIDTH } from '../config/GameConfig';
 import { AssetNormalizer } from '../core/AssetNormalizer';
 import { installRelicIconTextures } from '../core/RelicIconTextures';
 import { TextureFactory } from '../core/TextureFactory';
@@ -17,14 +17,18 @@ import { MenuScene } from './MenuScene';
  */
 export class BootScene extends Phaser.Scene {
   static readonly KEY = 'BootScene';
+  /** 本次 preload 中加载失败的资源数；非零时 create() 不再进入游戏，改为给出重试入口。 */
+  private failedFileCount = 0;
 
   constructor() {
     super(BootScene.KEY);
   }
 
   preload(): void {
+    this.failedFileCount = 0;
     // 加载进度汇报给 index.html 的即显加载层（window.BootLoader）
     this.load.on('progress', (value: number) => window.BootLoader?.progress(value));
+    this.load.on(Phaser.Loader.Events.FILE_LOAD_ERROR, () => { this.failedFileCount += 1; });
 
     // 加载真实素材。个别文件缺失不会中断流程——
     // create() 里的 TextureFactory 会为未覆盖的 key 补上占位图。
@@ -34,6 +38,15 @@ export class BootScene extends Phaser.Scene {
   }
 
   create(): void {
+    // 素材批量加载失败（服务器不可达、网络抖动等）时不静默降级成占位图，
+    // 那样玩家会看到满屏简笔画还以为存档坏了；改为整屏提示并提供重试。
+    if (this.failedFileCount > 0) {
+      // DOM 加载层盖在画布上（z-index 9999），先撤掉才能点到重试按钮。
+      window.BootLoader?.fail('资源加载失败');
+      this.showRetryScreen();
+      return;
+    }
+
     // 资源全部就绪，撤掉 DOM 加载层，露出游戏画面
     window.BootLoader?.done();
 
@@ -48,5 +61,23 @@ export class BootScene extends Phaser.Scene {
     installRelicIconTextures(this);
 
     this.scene.start(MenuScene.KEY);
+  }
+
+  /** 资源加载失败的重试界面：不生成任何占位纹理，重试后从缓存快速补齐缺失文件。 */
+  private showRetryScreen(): void {
+    this.add.rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2, GAME_WIDTH, GAME_HEIGHT, 0xbcefff, 1);
+    this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 70, '资源加载失败', {
+      fontFamily: 'Microsoft YaHei', fontSize: '34px', color: '#42506d', fontStyle: 'bold',
+    }).setOrigin(0.5);
+    this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 22, `${this.failedFileCount} 个资源未能下载，贴图会不完整。请检查网络或本地服务器后重试。`, {
+      fontFamily: 'Microsoft YaHei', fontSize: '15px', color: '#5f6d86', wordWrap: { width: 640 }, align: 'center',
+    }).setOrigin(0.5);
+    const retry = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 + 40, '重试加载', {
+      fontFamily: 'Microsoft YaHei', fontSize: '18px', color: '#ffffff', backgroundColor: '#e85f91',
+      padding: { x: 34, y: 13 }, fontStyle: 'bold',
+    }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+    retry.on('pointerover', () => retry.setScale(1.05));
+    retry.on('pointerout', () => retry.setScale(1));
+    retry.on('pointerdown', () => this.scene.restart());
   }
 }

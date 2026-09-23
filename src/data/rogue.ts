@@ -23,7 +23,7 @@ export interface RogueRelic {
 }
 
 export const ROGUE_REGIONS = [
-  { name: '花园前厅', subtitle: '清风仍在，白虫初现', accent: 0x66d2b1 },
+  { name: '花园前厅', subtitle: '敌人初现', accent: 0x66d2b1 },
   { name: '暮色街区', subtitle: '热点与路障挤满巡演路线', accent: 0x8c9fe8 },
   { name: '星光主舞台', subtitle: '在最终返场守住最后的生命值', accent: 0xf08faf },
 ] as const;

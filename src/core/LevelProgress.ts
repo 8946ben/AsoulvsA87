@@ -43,3 +43,11 @@ export function completeLevel(levelId: number): LevelProgress {
   writeCompleted(completed);
   return { completed, unlocked: Math.min(ALL_LEVELS.length, completed + 1) };
 }
+
+/** 清空关卡进度（清空进度用）：新旧两版键一并移除，回到第 1 关。 */
+export function resetLevelProgress(): void {
+  try {
+    window.localStorage.removeItem(STORAGE_KEY);
+    window.localStorage.removeItem(LEGACY_STORAGE_KEY);
+  } catch { /* 无痕模式下本就没有持久化数据 */ }
+}

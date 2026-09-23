@@ -16,12 +16,24 @@ export function roundStardust(value: number): number {
   return Math.round(value * 10) / 10;
 }
 
-/** 灵境币显示文本：整数不补小数位（18 而非 18.0），小数保留一位；开发者模式为 ∞。 */
+/** 灵境币显示文本：整数不补小数位（18 而非 18.0），小数保留一位。 */
 export function formatStardust(value: number): string {
   return Number.isFinite(value) ? String(roundStardust(value)) : '∞';
 }
 
 export type CollectionRank = 0 | 1 | 2;
+
+/**
+ * 开发者模式的会话级阶位覆盖：进阶/回退只改这份内存态，
+ * localStorage 全程不动。仅在开发者模式开启时参与读取，
+ * 关闭开发者模式（resetSessionAdvanceRanks）或刷新页面即丢弃。
+ */
+const sessionRanks: Partial<Record<PlantType, CollectionRank>> = {};
+
+/** 丢弃开发者模式的会话级阶位覆盖。 */
+export function resetSessionAdvanceRanks(): void {
+  for (const key of Object.keys(sessionRanks) as PlantType[]) delete sessionRanks[key];
+}
 
 /** 是否拥有Ⅱ阶进阶机制（由角色配置的Ⅱ阶特性决定）。 */
 export function isAdvanceable(type: PlantType): boolean {
@@ -93,18 +105,36 @@ export function isPlantCollected(type: PlantType): boolean {
 }
 
 export function getCollectionRank(type: PlantType): CollectionRank {
+  // 开发者模式的会话覆盖优先：进阶预览不落盘，但界面/装备槽/战斗都能看到。
+  if (isDeveloperMode()) {
+    const overlay = sessionRanks[type];
+    if (overlay !== undefined) return overlay;
+  }
   if (!isPlantCollected(type)) return 0;
   if (!isAdvanceable(type)) return 1;
   return readState().ranks[type] === 2 ? 2 : 1;
 }
 
+/** 灵境币余额；开发者模式显示固定 9999（消费仍不走账，避免改写正常存档）。 */
 export function getStardust(): number {
-  if (isDeveloperMode()) return Number.POSITIVE_INFINITY;
+  if (isDeveloperMode()) return 9999;
   return readState().stardust;
 }
 
-/** Ⅱ 阶切回 Ⅰ 阶：免费撤销进阶状态，随时可再次进阶。 */
+/** 清空角色收藏存档（清空进度用）：灵境币与进阶状态回到初始值。 */
+export function resetCollection(): void {
+  try { window.localStorage.removeItem(STORAGE_KEY); } catch { /* 无痕模式下本就没有持久化数据 */ }
+}
+
+/** Ⅱ 阶切回 Ⅰ 阶：免费撤销进阶状态，随时可再次进阶。开发者模式只改会话覆盖。 */
 export function revertPlant(type: PlantType): AdvanceResult {
+  if (isDeveloperMode()) {
+    if (!isAdvanceable(type) || getCollectionRank(type) !== 2) {
+      return { ok: false, reason: 'max-rank', stardust: getStardust() };
+    }
+    sessionRanks[type] = 1;
+    return { ok: true, stardust: getStardust() };
+  }
   const state = readState();
   if (!isPlantCollected(type)) return { ok: false, reason: 'locked', stardust: state.stardust };
   if (!isAdvanceable(type) || state.ranks[type] !== 2) return { ok: false, reason: 'max-rank', stardust: state.stardust };
@@ -113,8 +143,9 @@ export function revertPlant(type: PlantType): AdvanceResult {
   return { ok: true, stardust: state.stardust };
 }
 
-/** 每场普通战役结算提供进阶材料；重复装备兑换也走这里，故支持小数。 */
+/** 每场普通战役结算提供进阶材料；重复装备兑换也走这里，故支持小数。开发者模式不写真实余额。 */
 export function awardStardust(amount: number): number {
+  if (isDeveloperMode()) return getStardust();
   const state = readState();
   state.stardust = roundStardust(state.stardust + Math.max(0, amount));
   writeState(state);
@@ -132,20 +163,25 @@ export function spendStardust(amount: number): boolean {
 }
 
 export function advancePlant(type: PlantType): AdvanceResult {
+  if (isDeveloperMode()) {
+    // 开发者模式：只写会话级覆盖，Ⅱ阶形态与双装备槽本会话内可预览，存档零写入。
+    if (!isAdvanceable(type) || getCollectionRank(type) === 2) {
+      return { ok: false, reason: 'max-rank', stardust: getStardust() };
+    }
+    sessionRanks[type] = 2;
+    return { ok: true, stardust: getStardust() };
+  }
   const state = readState();
   if (!isPlantCollected(type)) return { ok: false, reason: 'locked', stardust: state.stardust };
   if (!isAdvanceable(type) || state.ranks[type] === 2) return { ok: false, reason: 'max-rank', stardust: state.stardust };
-  // 曾支付过进阶费用的角色（含开发者模式）再次进阶免费；仅首次收费。
+  // 曾支付过进阶费用的角色再次进阶免费；仅首次收费。
   if (state.advancedPaid[type] === true) {
     state.ranks[type] = 2;
     writeState(state);
     return { ok: true, stardust: state.stardust };
   }
-  // 开发者模式徽记无限：不校验也不扣除存量。
-  if (!isDeveloperMode()) {
-    if (state.stardust < ADVANCE_COST) return { ok: false, reason: 'insufficient-stardust', stardust: state.stardust };
-    state.stardust = roundStardust(state.stardust - ADVANCE_COST);
-  }
+  if (state.stardust < ADVANCE_COST) return { ok: false, reason: 'insufficient-stardust', stardust: state.stardust };
+  state.stardust = roundStardust(state.stardust - ADVANCE_COST);
   state.advancedPaid[type] = true;
   state.ranks[type] = 2;
   writeState(state);

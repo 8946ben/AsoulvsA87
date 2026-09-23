@@ -15,10 +15,13 @@ New-Item -ItemType Directory -Path $stagingDir | Out-Null
 Copy-Item -LiteralPath (Join-Path $projectRoot 'dist') -Destination $stagingDir -Recurse
 Copy-Item -LiteralPath (Join-Path $projectRoot 'electron') -Destination $stagingDir -Recurse
 
+# -Encoding UTF8: the default ANSI decoding mangles CJK text and breaks JSON parsing.
+# Keep this file ASCII-only: PowerShell 5.1 reads BOM-less scripts as ANSI.
+$manifest = Get-Content (Join-Path $projectRoot 'package.json') -Raw -Encoding UTF8 | ConvertFrom-Json
 $runtimePackage = [ordered]@{
   name = 'asoul-vs-a87'
-  productName = 'AsoulvsA87'
-  version = '0.1.0'
+  productName = 'defenseZJ'
+  version = $manifest.version
   main = 'electron/main.cjs'
   description = 'A-SOUL 同人塔防游戏'
 }

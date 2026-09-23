@@ -46,10 +46,10 @@ export const ALL_LEVELS: LevelConfig[] = [
     id: 1, name: '第一幕 · 区区之众', description: '用最基础的产能与射击熟悉舞台防线。',
     startingSun: 200, availablePlants: P1, featuredEnemies: ['basic', 'flag'], reward: '解锁角色卡 · 奶淇琳', accent: 0x58d7ff,
     waves: [
-      wave(9000, '零散白虫', [spawn('basic', 2, 3400)]),
+      wave(9000, '零散敌人', [spawn('basic', 2, 3400)]),
       wave(40000, '蠕动试探', [spawn('basic', 3, 2600)]),
       wave(30000, '三三两两', [spawn('basic', 3, 2400)]),
-      wave(20000, '白虫渐多', [spawn('basic', 4, 2100)]),
+      wave(20000, '敌人渐多', [spawn('basic', 4, 2100)]),
       wave(20000, '第一轮返场', [spawn('basic', 6, 1800)], true),
       wave(25000, '区区之众', [spawn('basic', 8, 1500)], true),
     ],
@@ -58,7 +58,7 @@ export const ALL_LEVELS: LevelConfig[] = [
     id: 2, name: '第二幕 · 热点追踪', description: '刷手机 A87 失去手机后会暴怒加速。',
     startingSun: 200, availablePlants: P2, featuredEnemies: ['basic', 'cone', 'phone', 'flag'], reward: '解锁角色卡 · 小海诺', accent: 0x6fc6ff,
     waves: [
-      wave(9000, '白虫前奏', [spawn('basic', 3, 2500)]),
+      wave(9000, '敌人前奏', [spawn('basic', 3, 2500)]),
       wave(40000, '新款帽子', [spawn('basic', 3, 2200), spawn('cone', 1, 0)]),
       wave(30000, '路障成列', [spawn('basic', 4, 2100), spawn('cone', 2, 3200)]),
       wave(20000, '热点预兆', [spawn('basic', 4, 1900), spawn('cone', 2, 3000)], true),
@@ -86,7 +86,7 @@ export const ALL_LEVELS: LevelConfig[] = [
     id: 4, name: '第四幕 · 逾山越海', description: '梯子 A87 会绕过第一次遇到的植物障碍。',
     startingSun: 225, availablePlants: P4, featuredEnemies: ['basic', 'screen', 'ladder', 'flag'], reward: '解锁角色卡 · 贝拉', accent: 0xff8eba, zombieModifiers: { damageMultiplier: 1.1, hpMultiplier: 1.1 },
     waves: [
-      wave(9000, '白虫铺场', [spawn('basic', 4, 2200)]),
+      wave(9000, '敌人铺场', [spawn('basic', 4, 2200)]),
       wave(40000, '梯子初现', [spawn('basic', 3, 2100), spawn('ladder', 1, 0)]),
       wave(30000, '铁门压阵', [spawn('basic', 3, 2000), spawn('screen', 2, 3400)]),
       wave(20000, '试爬高峰', [spawn('basic', 4, 1900), spawn('ladder', 2, 3000)], true),
@@ -102,7 +102,7 @@ export const ALL_LEVELS: LevelConfig[] = [
     id: 5, name: '第五幕 · A8 区能飞', description: '气球 A87 会飞越植物，必须在抵达舞台前击落。',
     startingSun: 250, availablePlants: P5, featuredEnemies: ['basic', 'phone', 'screen', 'balloon', 'flag'], reward: '解锁角色卡 · 乃琳', accent: 0xbf86ff, zombieModifiers: { damageMultiplier: 1.1, hpMultiplier: 1.3 },
     waves: [
-      wave(9000, '白虫集结', [spawn('basic', 4, 2200)]),
+      wave(9000, '敌人集结', [spawn('basic', 4, 2200)]),
       wave(40000, '手机护卫', [spawn('basic', 4, 2000), spawn('phone', 2, 3400)]),
       wave(30000, '气球升空', [spawn('basic', 4, 2000), spawn('balloon', 2, 3000)]),
       wave(20000, 'A8 预备', [spawn('basic', 5, 1800), spawn('phone', 2, 3200)], true),
@@ -118,7 +118,7 @@ export const ALL_LEVELS: LevelConfig[] = [
     id: 6, name: '第六幕 · 冲锋号角', description: '橄榄球与撑杆 A87 发起高速冲锋，近线防御迎来考验。',
     startingSun: 250, availablePlants: P6, featuredEnemies: ['basic', 'pole', 'football', 'bucket'], reward: '解锁角色卡 · 嘉然', accent: 0xff668d, zombieModifiers: { damageMultiplier: 1.3, speedMultiplier: 1.3 },
     waves: [
-      wave(9000, '白虫先锋', [spawn('basic', 4, 2200)]),
+      wave(9000, '敌人先锋', [spawn('basic', 4, 2200)]),
       wave(40000, '撑杆先遣', [spawn('basic', 3, 2000), spawn('pole', 2, 3200)]),
       wave(30000, '铁桶登场', [spawn('basic', 4, 2000), spawn('bucket', 1, 0)]),
       wave(20000, '先锋列阵', [spawn('basic', 4, 1900), spawn('pole', 2, 3000), spawn('bucket', 1, 0)], true),
@@ -134,7 +134,7 @@ export const ALL_LEVELS: LevelConfig[] = [
     id: 7, name: '第七幕 · 橄榄球手', description: '新旧特化敌人连续登场，波次间隔进一步缩短。',
     startingSun: 275, availablePlants: P7, featuredEnemies: ['screen', 'ladder', 'football', 'sled', 'flag'], reward: '解锁角色卡 · 思诺', accent: 0xffa15d, zombieModifiers: { damageMultiplier: 1.5, hpMultiplier: 1.5 },
     waves: [
-      wave(9000, '密集白虫', [spawn('basic', 5, 1900)]),
+      wave(9000, '密集敌人', [spawn('basic', 5, 1900)]),
       wave(40000, '铁门列队', [spawn('basic', 3, 1900), spawn('screen', 3, 2800)]),
       wave(30000, '雪橇试车', [spawn('basic', 4, 1800), spawn('ladder', 2, 2800), spawn('sled', 1, 0)]),
       wave(20000, '骑士巡游', [spawn('basic', 4, 1800), spawn('screen', 3, 2600), spawn('ladder', 2, 2800)], true),

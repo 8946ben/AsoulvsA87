@@ -24,6 +24,7 @@ declare global {
       phase(text: string): void;
       progress(p: number): void;
       done(): void;
+      fail(text: string): void;
     };
   }
 }

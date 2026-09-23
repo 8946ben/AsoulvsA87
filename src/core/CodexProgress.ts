@@ -47,3 +47,8 @@ export function getDiscoveredEnemyCount(total: number): number {
   if (isDeveloperMode()) return total;
   return readState().enemies.length;
 }
+
+/** 清空敌人遭遇记录（清空进度用）：图鉴回到未解锁状态。 */
+export function resetCodexProgress(): void {
+  try { window.localStorage.removeItem(STORAGE_KEY); } catch { /* 无痕模式下本就没有持久化数据 */ }
+}

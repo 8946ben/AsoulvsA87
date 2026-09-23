@@ -38,3 +38,8 @@ export function unlockTech(id: PlantType): boolean {
   } catch { /* 无痕模式下只保留本局结果 */ }
   return true;
 }
+
+/** 清空科技树购买记录（清空进度用）。 */
+export function resetTechTree(): void {
+  try { window.localStorage.removeItem(TECH_KEY); } catch { /* 无痕模式下本就没有持久化数据 */ }
+}

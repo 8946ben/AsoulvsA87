@@ -77,6 +77,16 @@
               el.remove();
               console.info('[boot] loader removed');
             }, 450);
+          },
+          fail: function (text) {
+            if (removed) return;
+            removed = true;
+            status.textContent = text;
+            el.classList.add('boot-hide');
+            setTimeout(function () {
+              el.remove();
+              console.warn('[boot] loader removed after failure');
+            }, 450);
           }
         };
       })();

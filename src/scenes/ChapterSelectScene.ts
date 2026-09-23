@@ -19,7 +19,9 @@ export class ChapterSelectScene extends Phaser.Scene {
       this.add.text(x - 406, y - 64, `CHAPTER ${String(chapter.index).padStart(2, '0')}`, { fontFamily: 'Arial', fontSize: '13px', color: '#3c8ea8', fontStyle: 'bold' });
       this.add.text(x - 406, y - 25, chapter.name, { fontFamily: 'Microsoft YaHei', fontSize: '31px', color: '#42506d', fontStyle: 'bold' });
       this.add.text(x - 406, y + 18, chapter.subtitle, { fontFamily: 'Microsoft YaHei', fontSize: '15px', color: '#e85f91', fontStyle: 'bold' });
-      this.add.text(x - 156, y + 44, chapter.description, { fontFamily: 'Microsoft YaHei', fontSize: '13px', color: '#60758a', wordWrap: { width: 520 } }).setOrigin(0, 0.5);
+      if (chapter.description) {
+        this.add.text(x - 156, y + 44, chapter.description, { fontFamily: 'Microsoft YaHei', fontSize: '13px', color: '#60758a', wordWrap: { width: 520 } }).setOrigin(0, 0.5);
+      }
       this.add.text(x + 390, y - 48, `${progress.completed} / ${chapter.levels.length}`, { fontFamily: 'Arial', fontSize: '24px', color: '#3c8ea8', fontStyle: 'bold' }).setOrigin(1, 0.5);
       this.add.text(x + 390, y + 48, '进入章节 →', { fontFamily: 'Microsoft YaHei', fontSize: '15px', color: '#ffffff', backgroundColor: '#62cae8', padding: { x: 20, y: 10 }, fontStyle: 'bold' }).setOrigin(1, 0.5);
       card.on('pointerover', () => card.setFillStyle(0xeaf8f3, 1)); card.on('pointerout', () => card.setFillStyle(FRESH.PAPER, 0.98)); card.on('pointerdown', () => this.scene.start('LevelSelectScene'));

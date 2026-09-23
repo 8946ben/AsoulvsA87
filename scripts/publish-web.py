@@ -15,11 +15,12 @@
 - 每次修改配置前都会先备份为 sites-available/xujie.bak-asoul-<时间戳>；
   `nginx -t` 失败会自动还原备份且不 reload。
 - 本机依赖：paramiko；root 密码沿用 D:\\waw\\novel-site\\server-credentials.txt。
-- 部署后访问：https://47.114.37.80/game/
+- 部署后访问：https://<服务器地址>/game/（地址不入库，见 GAME_PUBLISH_HOST）。
 """
 from __future__ import annotations
 
 import hashlib
+import os
 import subprocess
 import sys
 import time
@@ -27,7 +28,10 @@ from pathlib import Path
 
 import paramiko
 
-HOST = "47.114.37.80"
+# 服务器地址不入库：发布前通过环境变量 GAME_PUBLISH_HOST 注入，例如 1.2.3.4。
+HOST = os.environ.get("GAME_PUBLISH_HOST", "")
+if not HOST:
+    raise SystemExit("请先设置环境变量 GAME_PUBLISH_HOST（目标服务器地址）后再发布。")
 REMOTE_DIR = "/opt/game"
 SITE_FILE = "/etc/nginx/sites-available/xujie"
 CRED_FILE = Path(r"D:\waw\novel-site\server-credentials.txt")
